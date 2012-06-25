@@ -32,16 +32,6 @@ end
 --  Generates a map
 --
 function _M:generate()
-	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		self._tiles.base[y] = {}
-		self._tiles.object[y] = {}
-		self._tiles.roof[y] = {}
-		for x = 1, self._sizeInTiles[1] do
-			self._tiles.base[y][x] = math.floor(math.random()*3) + 37
-		end
-	end	
-	
 	-- insert objet
 	local function addObject(name, x, y)		
 		local definition = self._tileSet._definitions[name]
@@ -63,10 +53,20 @@ function _M:generate()
 		end
 	end
 	
-	addObject('short_tree',66,66)
-	addObject('tall_tree',70,72)
-	addObject('pine_tree',50,52)
-	addObject('pine_tree',68,58)
+	for y = 1, self._sizeInTiles[2] do
+		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
+		self._tiles.base[y] = {}
+		self._tiles.object[y] = {}
+		self._tiles.roof[y] = {}
+		for x = 1, self._sizeInTiles[1] do
+			self._tiles.base[y][x] = math.floor(math.random()*3) + 37			
+			if y > 5 and y < self._sizeInTiles[2] - 5 and 
+				x > 5 and x < self._sizeInTiles[1] - 5 and 
+				math.random() > 0.98 then
+					addObject('pine_tree',x,y)
+			end
+		end
+	end	
 	
 	print()
 end

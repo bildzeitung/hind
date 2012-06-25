@@ -15,8 +15,8 @@ function love.load()
 	tileSets[ts:name()] = ts
 	
 	-- the size of the world
-	local worldX = 500 * 32
-	local worldY = 500 * 32
+	local worldX = 1000 * 32
+	local worldY = 1000 * 32
 	buckets = createBuckets(500, worldX, worldY)
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
@@ -73,13 +73,14 @@ end
 --  Creates the actors
 --
 function createActors()
-	local numActors = 2000
+	local numActors = 5000
 	local size = daMap:size()
 	
 	actors = {}
 	hero = factories.createActor('princess.dat')
 	hero:animation('standright')
-	hero:position(2048,2016)
+	-- put the hero in the middle of the map for fun
+	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
 	table.insert(actors, hero)
 	hero.player = true

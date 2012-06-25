@@ -65,29 +65,43 @@ function _M:generate()
 	addObject('short_tree',66,66)
 	addObject('tall_tree',70,72)
 	addObject('pine_tree',50,52)
-	addObject('pine_tree',68,58)	
+	addObject('pine_tree',68,58)
 end
-
 
 --
 --  Create colliders
 --
-function _M:createColliders()
+function _M:createColliders(buckets)
 	self._colliders = {}
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
 	local tx, ty = 0 ,0 
+	
+	local cellSize = buckets.cellSize
+	local columns = buckets.columns	
+	local function hash(x,y)
+		return math.floor(math.floor(x / cellSize) +
+				(math.floor(y / cellSize) * columns)) + 1
+	end
 	
 	local function addCollider(layer, x, y)
 		local tile = self._tiles[layer][y][x]
 		if tile then
 			local boundary = bs[tile]
 			if boundary then
-				table.insert(self._colliders,
-					{tx + boundary[1] + ts[1] / 2, 
+				local ids = {}
+				local boundary = { tx + boundary[1] + ts[1] / 2, 
 					ty + boundary[2] + ts[2] / 2,
 					tx + boundary[3] + ts[1] / 2,
-					ty + boundary[4] + ts[2] / 2})
+					ty + boundary[4] + ts[2] / 2}									
+						
+				ids[hash(boundary[1], boundary[2])] = true
+				ids[hash(boundary[1], boundary[4])] = true
+				ids[hash(boundary[3], boundary[2])] = true
+				ids[hash(boundary[3], boundary[4])] = true
+												
+				table.insert(self._colliders,
+					{ _boundary = boundary, _ids = ids })
 			end	
 		end
 	end
@@ -102,6 +116,18 @@ function _M:createColliders()
 		end
 		ty = ty + ts[2]
 	end	
+end
+
+--
+--  Registers the map in the proper
+--	collision buckets
+--
+function _M:registerBuckets(buckets)
+	for _, v in pairs(self._colliders) do
+		for k, _ in pairs(v._ids) do	
+			table.insert(buckets[k], v)
+		end
+	end
 end
 
 --

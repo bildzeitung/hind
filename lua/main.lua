@@ -6,7 +6,7 @@
 
 require 'factories'
 
-local numActors = 100
+local numActors = 1000
 
 function love.load()
 	tileSets = {}
@@ -16,9 +16,14 @@ function love.load()
 	local ts = factories.createTileset('fem1.dat')
 	tileSets[ts:name()] = ts
 	
-	daMap = factories.createMap('outdoor', { 500, 500 })
+	-- the size of the world
+	local worldX = 500 * 32
+	local worldY = 500 * 32
+	buckets = createBuckets(250, worldX, worldY)
+		
+	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
-	daMap:createColliders()
+	daMap:createColliders(buckets)
 	
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,800,600)
@@ -112,13 +117,55 @@ function love.draw()
 		love.graphics.rectangle( 'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
 
 		for k, v in ipairs(daMap._colliders) do
-			love.graphics.rectangle( 'line', v[1] - cw[1], v[2] - cw[2], v[3] - v[1], v[4] - v[2])
+			local b = v._boundary
+			love.graphics.rectangle( 'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
 		end
 	end
 	
 	love.graphics.setPixelEffect()
 	
 	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
+	
+	local y = 30
+	for k, v in pairs(girl._bucketIds) do
+		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
+		y = y + 20
+	end
+	
+	love.graphics.print('Boundary: ' .. girl._boundary[1] .. ', ' .. 
+		girl._boundary[2] .. ', ' .. 
+		girl._boundary[3] .. ', ' .. 
+		girl._boundary[4], 10, y)		
+	y=y+20
+	
+	if girl._collidee then
+		love.graphics.print('Collidee: ' .. girl._collidee._boundary[1] .. ', ' .. 
+		girl._collidee._boundary[2] .. ', ' .. 
+		girl._collidee._boundary[3] .. ', ' .. 
+		girl._collidee._boundary[4], 10, y)		
+		y=y+20
+	end
+end
+
+--
+--  Creates and returns the collision buckets
+--
+function createBuckets(cellSize, worldX, worldY)
+	local b = {}
+	b.cellSize = cellSize
+	b.columns = math.floor(worldX / b.cellSize)
+	b.rows = math.floor(worldY / b.cellSize)
+	return b
+end
+
+--
+--  Clears the collision buckets
+--
+function clearBuckets(b)
+	-- create new collision buckets
+	for i = 1, b.columns*buckets.rows do
+		b[i] = {}
+	end
 end
 
 function love.update(dt)
@@ -206,22 +253,23 @@ function love.update(dt)
 		end
 		v:update(dt)
 	end
+
+	-- collision detection
+	clearBuckets(buckets)
+	-- add the actors to the collision buckets
+	for k, v in ipairs(girls) do
+		v:registerBuckets(buckets)
+	end	
+	girl:registerBuckets(buckets)
+	-- add the map collision items
+	daMap:registerBuckets(buckets)
 	
-	-- @TODO collision detection
-	-- amongst all actors and
-	-- collidable objects	
-	for k, v in pairs(daMap._colliders ) do
-		local hit = true
-		if v[1] > girl._boundary[3] or
-			v[3] < girl._boundary[1] or
-			v[2] > girl._boundary[4] or
-			v[4] < girl._boundary[2] then
-				hit = false
-			end		
-		if hit then
-			girl:collide()
-		end
+	-- test collistion between all actors
+	-- and close collidable objects
+	for k, v in pairs(girls) do
+		v:checkCollision(buckets)
 	end
+	girl:checkCollision(buckets)
 	
 	daCamera:zoom(zoom)
 	daCamera:center(girl._position[1], girl._position[2])

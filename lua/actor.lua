@@ -129,15 +129,75 @@ function _M:collide(other)
 			self._lastPosUpdate[2] = 0
 	end
 	
-	self:calculateBoundary()
+	self._collidee = other
+end
+
+--
+--  Checks for collision with nearby objects
+--
+function _M:checkCollision(buckets)
+	self._collidee = nil
+	
+	for k, _ in pairs(self._bucketIds) do
+		for _, v in ipairs(buckets[k]) do
+			if v ~= self then
+				local hit = true		
+				if v._boundary[1] > self._boundary[3] or
+					v._boundary[3] < self._boundary[1] or
+					v._boundary[2] > self._boundary[4] or
+					v._boundary[4] < self._boundary[2] then
+					hit = false
+				end			
+				if hit then	
+					self:collide(v)
+					if v.collide then	
+						v:collide(self)
+					end
+				end
+			end
+		end
+	end
+end
+
+
+--
+--  Returns the spatial buckets 
+--  that the object currently occupies
+--
+function _M:spatialBuckets(buckets)
+	local cellSize = buckets.cellSize
+	local columns = buckets.columns
+	local ids = {}
+	
+	local function hash(x,y)
+		return math.floor(math.floor(x / cellSize) +
+				(math.floor(y / cellSize) * columns)) + 1
+	end
+		
+	ids[hash(self._boundary[1], self._boundary[2])] = true
+	ids[hash(self._boundary[1], self._boundary[4])] = true
+	ids[hash(self._boundary[3], self._boundary[2])] = true
+	ids[hash(self._boundary[3], self._boundary[4])] = true
+	
+	return ids
+end
+
+--
+--  Registers the actor in the proper
+--	collision buckets
+--
+function _M:registerBuckets(buckets)
+	-- calculates the spatial buckets
+	self._bucketIds = self:spatialBuckets(buckets)
+	for k, _ in pairs(self._bucketIds) do
+		table.insert(buckets[k], self)
+	end	
 end
 
 --
 --  Performs a collision calculation
 --
 function _M:calculateBoundary()	
-	-- @TODO collision detection
-	-- spatial hashing
 	-- update the boundary box 
 	local ts = self._currentAnimation:tileSet()
 	local bs = ts:boundaries()

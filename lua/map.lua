@@ -125,27 +125,30 @@ function _M:registerBuckets(buckets)
 end
 
 --
---  Returns a table with the ids that correspond to the
---	visible tiles
+--  Returns a table with the ids that 
+--	correspond to the bucket cells
 --
-function _M:visibleIds(buckets)
+function _M:visibleIds(camera, b)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()
-	local zoomX = cv[3] / cw[3] 
-	local zoomY = cv[4] / cw[4]	
-	local ztx = ts[1] * zoomX
-	local zty = ts[2] * zoomY
 						
-	local stx = math.floor(cw[1] / ts[1])
-	local etx = stx + math.floor(cv[3] / ztx) + 2
-	local sty = math.floor(cw[2] / ts[2])
-	local ety = sty + math.floor(cv[4] / zty) + 2
+	local stx = math.floor(cw[1] / ts[1]) - 3
+	local etx = stx + math.floor(cv[3] / ts[1]) + 3
+	local sty = math.floor(cw[2] / ts[2]) - 3
+	local ety = sty + math.floor(cv[4] / ts[2]) + 3
+	
+	local ids = {}
 	
 	for y = sty, ety do
-		for x = stx, etx do		
+		local ty = y * ts[2]
+		for x = stx, etx do	
+			local tx = x * ts[1]			
+			ids[b.hash(tx, ty)] = true
 		end
 	end
+	
+	return ids
 end
 
 --
@@ -184,14 +187,14 @@ function _M:draw(camera, drawTable)
 			local tile = self._tiles.base[y][x]
 			table.insert(drawTable, 
 				{ y * ts[1] + th[tile], im, tq[tile], 
-				cx, cy, htsx, htsy})
+				cx, cy, zoomX, zoomY, htsx, htsy})
 				
 			-- draw the object layer if a tile exists
 			local tile = self._tiles.object[y][x]
 			if tile then
 				table.insert(drawTable, 
 					{ y * ts[1] + th[tile], im, tq[tile], 
-					cx, cy, htsx, htsy})
+					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
 					
 			-- draw the roof layer if a tile exists
@@ -199,7 +202,7 @@ function _M:draw(camera, drawTable)
 			if tile then
 				table.insert(drawTable, 
 					{ y * ts[1] + th[tile], im, tq[tile], 
-					cx, cy, htsx, htsy})
+					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
 				
 			cx = cx + ztx

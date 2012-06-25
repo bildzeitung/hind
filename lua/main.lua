@@ -45,9 +45,16 @@ function love.load()
 	girl:map(daMap)
 	
 	zoom = 1
-	
-	showCollisionBoundaries = false
 
+	visibleIds = {}
+	currentShader = nil
+	showCollisionBoundaries = false
+end
+
+--
+--  Creates the custom shaders
+--
+function loadEffects()
 	spotLightEffect = love.graphics.newPixelEffect [[
 		extern vec2 pos[2];
 		extern vec2 size[2];
@@ -78,23 +85,22 @@ function love.load()
 			return color;
 		}	
 	]]
-	
-	currentShader = nil
 end
 
 function love.draw()
+	-- set up the draw table
 	local drawTable = {}
-	local cw = daCamera:window()
-	local cv = daCamera:viewport()	
-	local zoomX = cv[3] / cw[3] 
-	local zoomY = cv[4] / cw[4]	
 	
+	-- draw the map
 	daMap:draw(daCamera, drawTable)
-	for k, v in ipairs(girls) do
-		v:draw(daCamera, drawTable)
+	-- draw only the visible items
+	for k, _ in pairs(visibleIds) do
+		for _, v in ipairs(buckets[k]) do
+			if v.draw then
+				v:draw(daCamera, drawTable)
+			end
+		end
 	end
-
-	girl:draw(daCamera, drawTable)
 	
 	table.sort(drawTable, function(a,b)
 		return a[1] < b[1] end)
@@ -103,8 +109,8 @@ function love.draw()
 	
 	for k, v in ipairs(drawTable) do
 		love.graphics.drawq(v[2], v[3], 
-			v[4], v[5], 0, zoomX, zoomY,
-			v[6], v[7])
+			v[4], v[5], 0, v[6], v[7], 
+			v[8], v[9])
 	end
 	
 	if showCollisionBoundaries then
@@ -275,6 +281,10 @@ function love.update(dt)
 	end
 	girl:checkCollision(buckets)
 	
+	-- zoom and center the map on the main character
 	daCamera:zoom(zoom)
 	daCamera:center(girl._position[1], girl._position[2])
+	
+	-- get the list of visible ids
+	visibleIds = daMap:visibleIds(daCamera, buckets)	
 end

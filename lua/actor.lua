@@ -76,7 +76,7 @@ function _M:draw(camera, drawTable)
 	table.insert(drawTable, 
 		{ self._position[2] + of[2], im, tq[frame], 
 		self._screenPos[1], self._screenPos[2],
-		of[1], of[2] })
+		zoomX, zoomY, of[1], of[2] })
 end
 
 --

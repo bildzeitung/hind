@@ -125,10 +125,16 @@ function _M:registerBuckets(buckets)
 end
 
 --
---  Returns a table with the ids that 
---	correspond to the bucket cells
+--  Returns a table with the ids for the bucket cells
+--	that surround the camera.
 --
-function _M:visibleIds(camera, b)
+--	Inputs:
+--		camera - the camera
+--		b - the bucket table
+--		padding - the number of cells on either side of the
+--			visble tiles to include
+--
+function _M:nearIds(camera, b, padding)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()
@@ -136,13 +142,13 @@ function _M:visibleIds(camera, b)
 	local zoomY = cv[4] / cw[4]	
 	local ztx = ts[1] * zoomX
 	local zty = ts[2] * zoomY
-	local htsx = ts[1] / 2
-	local htsy = ts[2] / 2
+	local tcx = math.floor(b.cellSize / ztx) * padding
+	local tcy = math.floor(b.cellSize / zty) * padding
 						
-	local stx = math.floor(cw[1] / ts[1]) - 10 * zoomX
-	local etx = stx + math.floor(cv[3] / ztx) + 10 * zoomX
-	local sty = math.floor(cw[2] / ts[2]) - 10 * zoomY
-	local ety = sty + math.floor(cv[4] / zty) + 10 * zoomX
+	local stx = math.floor(cw[1] / ts[1]) - tcx
+	local etx = stx + math.floor(cv[3] / ztx) + tcx
+	local sty = math.floor(cw[2] / ts[2]) - tcy
+	local ety = sty + math.floor(cv[4] / zty) + tcy
 	
 	local ids = {}
 	

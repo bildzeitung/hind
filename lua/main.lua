@@ -28,21 +28,24 @@ function love.load()
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,800,600)
 	
-	girls = {}
+	actors = {}
+	
+	hero = factories.createActor('princess.dat')
+	hero:animation('standright')
+	hero:position(2048,2016)
+	hero:map(daMap)
+	table.insert(actors, hero)
+	hero.player = true
+		
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
-		local girl = factories.createActor('princess.dat')
-		girl:animation('standright')
-		girl:position(math.random() * 7000 + 1000, math.random() * 7000 + 1000)
-		girl:map(daMap)
-		girls[i] = girl
+		local a = factories.createActor('princess.dat')
+		a:animation('standright')
+		a:position(math.random() * 7000 + 1000, math.random() * 7000 + 1000)
+		a:map(daMap)
+		table.insert(actors, a)
 	end
-	
-	girl = factories.createActor('princess.dat')
-	girl:animation('standright')
-	girl:position(2048,2016)
-	girl:map(daMap)
 	
 	zoom = 1
 
@@ -118,17 +121,16 @@ function love.draw()
 	
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
-		for k, v in ipairs(girls) do
+		for k, v in ipairs(actors) do
 			local b = v._boundary
-			love.graphics.rectangle( 'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+			love.graphics.rectangle(
+				'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
 		end	
 		
-		local b = girl._boundary
-		love.graphics.rectangle( 'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
-
 		for k, v in ipairs(daMap._colliders) do
 			local b = v._boundary
-			love.graphics.rectangle( 'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
+			love.graphics.rectangle(
+				'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
 		end
 	end
 	
@@ -137,22 +139,22 @@ function love.draw()
 	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
 	
 	local y = 30
-	for k, v in pairs(girl._bucketIds) do
+	for k, v in pairs(hero._bucketIds) do
 		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
 		y = y + 20
 	end
 	
-	love.graphics.print('Boundary: ' .. girl._boundary[1] .. ', ' .. 
-		girl._boundary[2] .. ', ' .. 
-		girl._boundary[3] .. ', ' .. 
-		girl._boundary[4], 10, y)		
+	love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
+		hero._boundary[2] .. ', ' .. 
+		hero._boundary[3] .. ', ' .. 
+		hero._boundary[4], 10, y)		
 	y=y+20
 	
-	if girl._collidee then
-		love.graphics.print('Collidee: ' .. girl._collidee._boundary[1] .. ', ' .. 
-		girl._collidee._boundary[2] .. ', ' .. 
-		girl._collidee._boundary[3] .. ', ' .. 
-		girl._collidee._boundary[4], 10, y)		
+	if hero._collidee then
+		love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
+		hero._collidee._boundary[2] .. ', ' .. 
+		hero._collidee._boundary[3] .. ', ' .. 
+		hero._collidee._boundary[4], 10, y)		
 		y=y+20
 	end
 end
@@ -186,20 +188,20 @@ function love.update(dt)
 	local vx, vy = 0, 0
 
 	if love.keyboard.isDown('up') then
-        girl:animation('walkup')		
+        hero:animation('walkup')		
 		vy = -125
     elseif
 		love.keyboard.isDown('down') then
-        girl:animation('walkdown')		
+        hero:animation('walkdown')		
 		vy = 125
 	end
 	
 	if love.keyboard.isDown('left') then
-        girl:animation('walkleft')		
+        hero:animation('walkleft')		
 		vx = -125
     elseif
 		love.keyboard.isDown('right') then
-        girl:animation('walkright')		
+        hero:animation('walkright')		
 		vx = 125
 	end
 	
@@ -252,43 +254,45 @@ function love.update(dt)
 		currentShader = nil
 	end
 	
-	girl:velocity(vx, vy)
+	hero:velocity(vx, vy)
 	
 	if vx == 0 and vy == 0 then
-		local anim = girl:animation():name():gsub('walk','stand')
-		girl:animation(anim)
+		local anim = hero:animation():name():gsub('walk','stand')
+		hero:animation(anim)
 	end
 	
-	girl:update(dt)
-	
-	for k, v in ipairs(girls) do
-		if math.random() > 0.95 then
-			v:velocity(math.random()*200-100,math.random()*200-100)
+	for k, v in ipairs(actors) do
+		if not v.player then
+			if math.random() > 0.95 then
+				v:velocity(math.random()*200-100,math.random()*200-100)
+			end
 		end
-		v:update(dt)
 	end
-
+	
+	-- update the actors
+	for k, v in ipairs(actors) do
+		v:update(dt)
+	end	
+	
 	-- collision detection
 	clearBuckets(buckets)
 	-- add the actors to the collision buckets
-	for k, v in ipairs(girls) do
+	for k, v in ipairs(actors) do
 		v:registerBuckets(buckets)
 	end	
-	girl:registerBuckets(buckets)
 	-- add the map collision items
 	daMap:registerBuckets(buckets)
 	
 	-- test collistion between all actors
 	-- and close collidable objects
-	for k, v in pairs(girls) do
+	for k, v in pairs(actors) do
 		v:checkCollision(buckets)
 	end
-	girl:checkCollision(buckets)
 	
 	-- zoom and center the map on the main character
 	daCamera:zoom(zoom)
-	daCamera:center(girl._position[1], girl._position[2])
+	daCamera:center(hero._position[1], hero._position[2])
 	
 	-- get the list of visible ids
-	visibleIds = daMap:visibleIds(daCamera, buckets)	
+	visibleIds = daMap:nearIds(daCamera, buckets, 1)
 end

@@ -132,11 +132,17 @@ function _M:visibleIds(camera, b)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()
+	local zoomX = cv[3] / cw[3] 
+	local zoomY = cv[4] / cw[4]	
+	local ztx = ts[1] * zoomX
+	local zty = ts[2] * zoomY
+	local htsx = ts[1] / 2
+	local htsy = ts[2] / 2
 						
-	local stx = math.floor(cw[1] / ts[1]) - 3
-	local etx = stx + math.floor(cv[3] / ts[1]) + 3
-	local sty = math.floor(cw[2] / ts[2]) - 3
-	local ety = sty + math.floor(cv[4] / ts[2]) + 3
+	local stx = math.floor(cw[1] / ts[1]) - 10 * zoomX
+	local etx = stx + math.floor(cv[3] / ztx) + 10 * zoomX
+	local sty = math.floor(cw[2] / ts[2]) - 10 * zoomY
+	local ety = sty + math.floor(cv[4] / zty) + 10 * zoomX
 	
 	local ids = {}
 	

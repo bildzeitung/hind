@@ -49,6 +49,9 @@ function love.load()
 	visibleIds = {}
 	currentShader = nil
 	showCollisionBoundaries = false
+	
+	-- create the shader effects
+	loadEffects()
 end
 
 --
@@ -113,6 +116,7 @@ function love.draw()
 			v[8], v[9])
 	end
 	
+	local cw = daCamera:window()
 	if showCollisionBoundaries then
 		for k, v in ipairs(girls) do
 			local b = v._boundary
@@ -227,11 +231,11 @@ function love.update(dt)
 		zoom = zoom - 0.01
 	end	
 	
-	if love.keyboard.isDown('e') then
+	if love.keyboard.isDown('h') then
 		showCollisionBoundaries = true
 	end		
 
-	if love.keyboard.isDown('d') then
+	if love.keyboard.isDown('n') then
 		showCollisionBoundaries = false
 	end		
 	

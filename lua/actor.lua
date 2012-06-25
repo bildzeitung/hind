@@ -217,6 +217,8 @@ end
 --  Update function
 --
 function _M:update(dt)
+	self._latestDt = dt
+	
 	self._lastPosUpdate[1] = (dt * self._velocity[1])
 	self._lastPosUpdate[2] = (dt * self._velocity[2])
 	

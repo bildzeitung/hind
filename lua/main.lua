@@ -36,6 +36,8 @@ function love.load()
 	loadEffects()
 	
 	visibleIds = {}
+	visibleActors = {}	
+
 	-- add the actors to the collision buckets
 	for k, v in pairs(actors) do
 		v:update(0.16)
@@ -161,13 +163,11 @@ function love.draw()
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
 		-- draw only the visible items
-		for k, _ in pairs(visibleIds) do
-			for _, v in pairs(buckets[k]) do
-				if v._boundary then
-					local b = v._boundary
-					love.graphics.rectangle(
-						'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
-				end
+		for a, _ in pairs(visibleActors) do
+			if a._boundary then
+				local b = a._boundary
+				love.graphics.rectangle(
+					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
 			end
 		end	
 	end
@@ -181,6 +181,9 @@ function love.draw()
 		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
 		y = y + 20
 	end
+	
+	love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
+	y=y+20		
 	
 	love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
 		hero._position[2], 10, y)		
@@ -277,43 +280,37 @@ function love.update(dt)
 		local anim = hero:animation():name():gsub('walk','stand')
 		hero:animation(anim)
 	end
-	
-	--[[
-	for k, v in ipairs(actors) do
-		if not v.player then
+		
+	-- @TODO AI!!! (DOH!)
+	-- update the visible npcs with some crappy "AI"
+	for a, _ in pairs(visibleActors) do
+		if a.velocity and not a.player then
 			if math.random() > 0.95 then
-				v:velocity(math.random()*200-100,math.random()*200-100)
+				a:velocity(math.random()*200-100,math.random()*200-100)
 			end
-		end
-	end
-	]]
+		end	
+	end	
 
 	-- update only the visible actors
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.update then
-				v:update(dt)
-			end
+	for a, _ in pairs(visibleActors) do
+		if a.update then
+			a:update(dt)
 		end
 	end
 
 	-- update the collision buckets
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.registerBuckets then
-				v:registerBuckets(buckets)
-			end
+	for a, _ in pairs(visibleActors) do
+		if a.registerBuckets then
+			a:registerBuckets(buckets)
 		end
 	end
 	
 	--	
 	-- test collistions for all visible actors
 	--
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.checkCollision then
-				v:checkCollision(buckets)
-			end
+	for a, _ in pairs(visibleActors) do
+		if a.checkCollision then
+			a:checkCollision(buckets)
 		end
 	end	
 		
@@ -323,4 +320,16 @@ function love.update(dt)
 	
 	-- get the list of visible ids
 	visibleIds = daMap:nearIds(daCamera, buckets, 2)
+	
+	-- generate a list of visible actors
+	for k, _ in pairs(visibleActors) do
+		visibleActors[k] = nil
+	end	
+	for k, _ in pairs(visibleIds) do
+		for _, v in pairs(buckets[k]) do
+			if v.checkCollision then
+				visibleActors[v] = true
+			end
+		end
+	end	
 end

@@ -154,7 +154,11 @@ function createBuckets(cellSize, worldX, worldY)
 	local b = {}
 	b.cellSize = cellSize
 	b.columns = math.floor(worldX / b.cellSize)
-	b.rows = math.floor(worldY / b.cellSize)
+	b.rows = math.floor(worldY / b.cellSize)	
+	b.hash = function(x,y)
+		return math.floor(math.floor(x / b.cellSize) +
+				(math.floor(y / b.cellSize) * b.columns)) + 1
+	end		
 	return b
 end
 

@@ -135,11 +135,11 @@ end
 --
 --  Checks for collision with nearby objects
 --
-function _M:checkCollision(buckets)
+function _M:checkCollision(b)
 	self._collidee = nil
 	
 	for k, _ in pairs(self._bucketIds) do
-		for _, v in ipairs(buckets[k]) do
+		for _, v in ipairs(b[k]) do
 			if v ~= self then
 				local hit = true		
 				if v._boundary[1] > self._boundary[3] or
@@ -164,20 +164,13 @@ end
 --  Returns the spatial buckets 
 --  that the object currently occupies
 --
-function _M:spatialBuckets(buckets)
-	local cellSize = buckets.cellSize
-	local columns = buckets.columns
+function _M:spatialBuckets(b)
 	local ids = {}
-	
-	local function hash(x,y)
-		return math.floor(math.floor(x / cellSize) +
-				(math.floor(y / cellSize) * columns)) + 1
-	end
 		
-	ids[hash(self._boundary[1], self._boundary[2])] = true
-	ids[hash(self._boundary[1], self._boundary[4])] = true
-	ids[hash(self._boundary[3], self._boundary[2])] = true
-	ids[hash(self._boundary[3], self._boundary[4])] = true
+	ids[b.hash(self._boundary[1], self._boundary[2])] = true
+	ids[b.hash(self._boundary[1], self._boundary[4])] = true
+	ids[b.hash(self._boundary[3], self._boundary[2])] = true
+	ids[b.hash(self._boundary[3], self._boundary[4])] = true
 	
 	return ids
 end

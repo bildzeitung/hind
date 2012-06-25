@@ -68,21 +68,15 @@ function _M:generate()
 	addObject('pine_tree',68,58)
 end
 
+
 --
 --  Create colliders
 --
-function _M:createColliders(buckets)
+function _M:createColliders(b)
 	self._colliders = {}
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
 	local tx, ty = 0 ,0 
-	
-	local cellSize = buckets.cellSize
-	local columns = buckets.columns	
-	local function hash(x,y)
-		return math.floor(math.floor(x / cellSize) +
-				(math.floor(y / cellSize) * columns)) + 1
-	end
 	
 	local function addCollider(layer, x, y)
 		local tile = self._tiles[layer][y][x]
@@ -95,10 +89,10 @@ function _M:createColliders(buckets)
 					tx + boundary[3] + ts[1] / 2,
 					ty + boundary[4] + ts[2] / 2}									
 						
-				ids[hash(boundary[1], boundary[2])] = true
-				ids[hash(boundary[1], boundary[4])] = true
-				ids[hash(boundary[3], boundary[2])] = true
-				ids[hash(boundary[3], boundary[4])] = true
+				ids[b.hash(boundary[1], boundary[2])] = true
+				ids[b.hash(boundary[1], boundary[4])] = true
+				ids[b.hash(boundary[3], boundary[2])] = true
+				ids[b.hash(boundary[3], boundary[4])] = true
 												
 				table.insert(self._colliders,
 					{ _boundary = boundary, _ids = ids })
@@ -126,6 +120,30 @@ function _M:registerBuckets(buckets)
 	for _, v in pairs(self._colliders) do
 		for k, _ in pairs(v._ids) do	
 			table.insert(buckets[k], v)
+		end
+	end
+end
+
+--
+--  Returns a table with the ids that correspond to the
+--	visible tiles
+--
+function _M:visibleIds(buckets)
+	local cw = camera:window()
+	local cv = camera:viewport()
+	local ts = self._tileSet:size()
+	local zoomX = cv[3] / cw[3] 
+	local zoomY = cv[4] / cw[4]	
+	local ztx = ts[1] * zoomX
+	local zty = ts[2] * zoomY
+						
+	local stx = math.floor(cw[1] / ts[1])
+	local etx = stx + math.floor(cv[3] / ztx) + 2
+	local sty = math.floor(cw[2] / ts[2])
+	local ety = sty + math.floor(cv[4] / zty) + 2
+	
+	for y = sty, ety do
+		for x = stx, etx do		
 		end
 	end
 end

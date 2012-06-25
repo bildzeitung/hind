@@ -33,6 +33,7 @@ end
 --
 function _M:generate()
 	for y = 1, self._sizeInTiles[2] do
+		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		self._tiles.base[y] = {}
 		self._tiles.object[y] = {}
 		self._tiles.roof[y] = {}
@@ -66,6 +67,8 @@ function _M:generate()
 	addObject('tall_tree',70,72)
 	addObject('pine_tree',50,52)
 	addObject('pine_tree',68,58)
+	
+	print()
 end
 
 
@@ -101,6 +104,7 @@ function _M:createColliders(b)
 	end
 	
 	for y = 1, self._sizeInTiles[2] do
+		io.write('MAP COLLIDERS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		tx = 0
 		for x = 1, self._sizeInTiles[1] do
 			addCollider('base', x, y)
@@ -110,6 +114,8 @@ function _M:createColliders(b)
 		end
 		ty = ty + ts[2]
 	end	
+	
+	print()
 end
 
 --

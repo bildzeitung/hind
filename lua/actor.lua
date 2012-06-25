@@ -22,6 +22,7 @@ function _M:new(t)
 	t._velocity = { 0, 0 }
 	t._boundary = { 0, 0, 0, 0 }
 	t._lastPosUpdate = { 0, 0 }
+	t._bucketIds = {}
 	t._map = nil
 				
 	return t
@@ -130,6 +131,9 @@ function _M:collide(other)
 	end
 	
 	self._collidee = other
+	
+	-- calculate the bounding boxes
+	self:calculateBoundary()	
 end
 
 --
@@ -139,7 +143,7 @@ function _M:checkCollision(b)
 	self._collidee = nil
 	
 	for k, _ in pairs(self._bucketIds) do
-		for _, v in ipairs(b[k]) do
+		for _, v in pairs(b[k]) do
 			if v ~= self then
 				local hit = true		
 				if v._boundary[1] > self._boundary[3] or
@@ -179,11 +183,18 @@ end
 --  Registers the actor in the proper
 --	collision buckets
 --
-function _M:registerBuckets(buckets)
+function _M:registerBuckets(buckets)	
+	-- unregister the old bucket ids
+	for k, _ in pairs(self._bucketIds) do
+		buckets[k][self._id] = nil
+	end	
+	
 	-- calculates the spatial buckets
 	self._bucketIds = self:spatialBuckets(buckets)
+	
+	-- register the new buckets ids
 	for k, _ in pairs(self._bucketIds) do
-		table.insert(buckets[k], self)
+		buckets[k][self._id] = self
 	end	
 end
 
@@ -212,8 +223,19 @@ function _M:update(dt)
 	self._position[1] = self._position[1] + self._lastPosUpdate[1]		
 	self._position[2] = self._position[2] + self._lastPosUpdate[2]
 	
+	-- @TODO do we want to do bounds checking on position
+	-- or just let map boundaries handle that by
+	-- not letting the character go past a certain point
+	local x, y = 800, 600
+	local ms = self._map:size()
+	if self._position[1] < x then self._position[1] = x end
+	if self._position[1] > ms[1] - x then self._position[1] = ms[1] - x end
+	if self._position[2] < y then self._position[2] = y end
+	if self._position[2] > ms[2] - y then self._position[2] = ms[2] - y end	
+	
 	-- update the current animation
 	self._currentAnimation:update(dt)
 	
+	-- calculate the bounding boxes
 	self:calculateBoundary()
 end

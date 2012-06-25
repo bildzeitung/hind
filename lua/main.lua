@@ -6,8 +6,6 @@
 
 require 'factories'
 
-local numActors = 1000
-
 function love.load()
 	tileSets = {}
 	
@@ -19,7 +17,7 @@ function love.load()
 	-- the size of the world
 	local worldX = 500 * 32
 	local worldY = 500 * 32
-	buckets = createBuckets(250, worldX, worldY)
+	buckets = createBuckets(500, worldX, worldY)
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
@@ -28,8 +26,55 @@ function love.load()
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,800,600)
 	
-	actors = {}
+	createActors()
 	
+	zoom = 1
+	currentShader = nil
+	showCollisionBoundaries = false
+	
+	-- create the shader effects
+	loadEffects()
+	
+	visibleIds = {}
+	-- add the actors to the collision buckets
+	for k, v in pairs(actors) do
+		v:update(0.16)
+		v:registerBuckets(buckets)
+	end	
+	-- add the map collision items
+	daMap:registerBuckets(buckets)	
+end
+
+--
+--  Creates and returns the collision buckets
+--
+function createBuckets(cellSize, worldX, worldY)
+	local b = {}
+
+	b.cellSize = cellSize
+	b.columns = math.floor(worldX / b.cellSize)
+	b.rows = math.floor(worldY / b.cellSize)	
+	b.hash = function(x,y)
+		return math.floor(math.floor(x / b.cellSize) +
+				(math.floor(y / b.cellSize) * b.columns)) + 1
+	end		
+	
+	-- create new collision buckets
+	for i = 1, b.columns * b.rows do
+		b[i] = {}
+	end
+	
+	return b
+end
+
+--
+--  Creates the actors
+--
+function createActors()
+	local numActors = 2000
+	local size = daMap:size()
+	
+	actors = {}
 	hero = factories.createActor('princess.dat')
 	hero:animation('standright')
 	hero:position(2048,2016)
@@ -40,21 +85,15 @@ function love.load()
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
+		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
 		local a = factories.createActor('princess.dat')
 		a:animation('standright')
-		a:position(math.random() * 7000 + 1000, math.random() * 7000 + 1000)
+		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)
 		table.insert(actors, a)
-	end
+	end	
 	
-	zoom = 1
-
-	visibleIds = {}
-	currentShader = nil
-	showCollisionBoundaries = false
-	
-	-- create the shader effects
-	loadEffects()
+	print()
 end
 
 --
@@ -101,7 +140,7 @@ function love.draw()
 	daMap:draw(daCamera, drawTable)
 	-- draw only the visible items
 	for k, _ in pairs(visibleIds) do
-		for _, v in ipairs(buckets[k]) do
+		for _, v in pairs(buckets[k]) do
 			if v.draw then
 				v:draw(daCamera, drawTable)
 			end
@@ -121,17 +160,16 @@ function love.draw()
 	
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
-		for k, v in ipairs(actors) do
-			local b = v._boundary
-			love.graphics.rectangle(
-				'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+		-- draw only the visible items
+		for k, _ in pairs(visibleIds) do
+			for _, v in pairs(buckets[k]) do
+				if v._boundary then
+					local b = v._boundary
+					love.graphics.rectangle(
+						'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+				end
+			end
 		end	
-		
-		for k, v in ipairs(daMap._colliders) do
-			local b = v._boundary
-			love.graphics.rectangle(
-				'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
-		end
 	end
 	
 	love.graphics.setPixelEffect()
@@ -143,6 +181,10 @@ function love.draw()
 		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
 		y = y + 20
 	end
+	
+	love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
+		hero._position[2], 10, y)		
+	y=y+20
 	
 	love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
 		hero._boundary[2] .. ', ' .. 
@@ -156,31 +198,6 @@ function love.draw()
 		hero._collidee._boundary[3] .. ', ' .. 
 		hero._collidee._boundary[4], 10, y)		
 		y=y+20
-	end
-end
-
---
---  Creates and returns the collision buckets
---
-function createBuckets(cellSize, worldX, worldY)
-	local b = {}
-	b.cellSize = cellSize
-	b.columns = math.floor(worldX / b.cellSize)
-	b.rows = math.floor(worldY / b.cellSize)	
-	b.hash = function(x,y)
-		return math.floor(math.floor(x / b.cellSize) +
-				(math.floor(y / b.cellSize) * b.columns)) + 1
-	end		
-	return b
-end
-
---
---  Clears the collision buckets
---
-function clearBuckets(b)
-	-- create new collision buckets
-	for i = 1, b.columns*buckets.rows do
-		b[i] = {}
 	end
 end
 
@@ -239,7 +256,7 @@ function love.update(dt)
 
 	if love.keyboard.isDown('n') then
 		showCollisionBoundaries = false
-	end		
+	end
 	
 	if love.keyboard.isDown('l') then
 		spotLightEffect:send('pos', unpack({{400,300},{0,0}}))
@@ -261,6 +278,7 @@ function love.update(dt)
 		hero:animation(anim)
 	end
 	
+	--[[
 	for k, v in ipairs(actors) do
 		if not v.player then
 			if math.random() > 0.95 then
@@ -268,31 +286,41 @@ function love.update(dt)
 			end
 		end
 	end
-	
-	-- update the actors
-	for k, v in ipairs(actors) do
-		v:update(dt)
-	end	
-	
-	-- collision detection
-	clearBuckets(buckets)
-	-- add the actors to the collision buckets
-	for k, v in ipairs(actors) do
-		v:registerBuckets(buckets)
-	end	
-	-- add the map collision items
-	daMap:registerBuckets(buckets)
-	
-	-- test collistion between all actors
-	-- and close collidable objects
-	for k, v in pairs(actors) do
-		v:checkCollision(buckets)
+	]]
+
+	-- update only the visible actors
+	for k, _ in pairs(visibleIds) do
+		for _, v in pairs(buckets[k]) do
+			if v.update then
+				v:update(dt)
+			end
+		end
+	end
+
+	-- update the collision buckets
+	for k, _ in pairs(visibleIds) do
+		for _, v in pairs(buckets[k]) do
+			if v.registerBuckets then
+				v:registerBuckets(buckets)
+			end
+		end
 	end
 	
+	--	
+	-- test collistions for all visible actors
+	--
+	for k, _ in pairs(visibleIds) do
+		for _, v in pairs(buckets[k]) do
+			if v.checkCollision then
+				v:checkCollision(buckets)
+			end
+		end
+	end	
+		
 	-- zoom and center the map on the main character
 	daCamera:zoom(zoom)
 	daCamera:center(hero._position[1], hero._position[2])
 	
 	-- get the list of visible ids
-	visibleIds = daMap:nearIds(daCamera, buckets, 1)
+	visibleIds = daMap:nearIds(daCamera, buckets, 2)
 end

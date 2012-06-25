@@ -13,6 +13,8 @@ require 'camera'
 
 module (..., package.seeall)
 
+local actorID = 1000000
+
 --
 --  Reads in a lua table from a file
 --
@@ -82,6 +84,8 @@ function createActor(filename)
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
+	t._id = actorID
+	actorID = actorID + 1
 	local a = actor:new(t)	
 	return a
 end

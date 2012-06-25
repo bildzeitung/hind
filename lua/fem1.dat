@@ -1,0 +1,6 @@
+{
+	_image = 'fem1.png',
+	_size = { 64, 64 },
+	_name = 'fem1',
+	_boundaries = { default = {16,48,48,62} }	
+}

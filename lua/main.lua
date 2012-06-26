@@ -181,7 +181,17 @@ function love.draw()
 	local drawTable = {
 		base = {},
 		object = {},
-		roof = {} }
+		roof = {}
+	}
+	
+	-- pre calculate what we can
+	drawTable.cw = daCamera:window()
+	drawTable.cv = daCamera:viewport()	
+	drawTable.zoomX = drawTable.cv[3] / drawTable.cw[3] 
+	drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
+	drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
+	drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
+	
 	
 	-- draw the map tiles
 	daMap:drawTiles(daCamera, drawTable)

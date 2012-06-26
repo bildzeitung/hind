@@ -57,17 +57,17 @@ end
 --  Draw the actor
 --
 function _M:draw(camera, drawTable)
-	local cw = camera:window()
-	local cv = camera:viewport()
+	local cw, cv, zoomX, zoomY, cwzx, cwzy =
+		drawTable.cw, drawTable.cv, 
+		drawTable.zoomX, drawTable.zoomY,
+		drawTable.cwzx, drawTable.cwzy		
+
 	local of = self._currentAnimation:offset()
 	
-	local zoomX = cv[3] / cw[3] 
-	local zoomY = cv[4] / cw[4]
-	
 	self._screenPos[1] = math.floor((self._position[1] * zoomX) 
-		- (cw[1] * zoomX))
+		- cwzx)
 	self._screenPos[2] = math.floor((self._position[2] * zoomY)
-		- (cw[2] * zoomY))
+		- cwzy)
 	
 	local ts = self._currentAnimation:tileSet()
 	local tq = ts:quads()

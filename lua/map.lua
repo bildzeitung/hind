@@ -52,16 +52,13 @@ function _M:generate()
 		--  Draw the object
 		--
 		function o:draw(camera, drawTable)
-			local cw = camera:window()
-			local cv = camera:viewport()
-			
-			local zoomX = cv[3] / cw[3] 
-			local zoomY = cv[4] / cw[4]
-			
-			local sx = math.floor((self._position[1] * zoomX) 
-				- (cw[1] * zoomX))
-			local sy = math.floor((self._position[2] * zoomY)
-				- (cw[2] * zoomY))
+			local cw, cv, zoomX, zoomY, cwzx, cwzy =
+				drawTable.cw, drawTable.cv, 
+				drawTable.zoomX, drawTable.zoomY,
+				drawTable.cwzx, drawTable.cwzy	
+				
+			local sx = math.floor((self._position[1] * zoomX) - cwzx)
+			local sy = math.floor((self._position[2] * zoomY) - cwzy)
 			
 			table.insert(drawTable.object, 
 				{ self._position[2] + self._height + (self._position[1] * 0.0000001), 
@@ -204,13 +201,13 @@ end
 --  Draw the map
 --
 function _M:drawTiles(camera, drawTable)	
-	local cw = camera:window()
-	local cv = camera:viewport()
+	local cw, cv, zoomX, zoomY =
+		drawTable.cw, drawTable.cv, 
+		drawTable.zoomX, drawTable.zoomY
+
 	local tq = self._tileSet:quads()
 	local ts = self._tileSet:size()
 	local th = self._tileSet:heights()
-	local zoomX = cv[3] / cw[3] 
-	local zoomY = cv[4] / cw[4]	
 	local ztx = ts[1] * zoomX
 	local zty = ts[2] * zoomY
 	local htsx = ts[1] / 2
@@ -219,7 +216,7 @@ function _M:drawTiles(camera, drawTable)
 	local stx = math.floor(cw[1] / ts[1])
 	local etx = stx + math.floor(cv[3] / ztx) + 2
 	local ofx = math.floor(cw[1] - stx * ts[1]) * zoomX
-	local sty = math.floor(cw[2] / ts[2]) - 1
+	local sty = math.floor(cw[2] / ts[2])
 	local ety = sty + math.floor(cv[4] / zty) + 2
 	local ofy = math.floor(cw[2] - sty * ts[2]) * zoomY
 
@@ -243,8 +240,7 @@ function _M:drawTiles(camera, drawTable)
 				table.insert(drawTable.roof, 
 					{ y * ts[1] + th[tile] + xof, tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
-			end
-				
+			end			
 			cx = cx + ztx
 		end
 		cy = cy + zty

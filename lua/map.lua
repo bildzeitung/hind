@@ -32,6 +32,7 @@ end
 --  Generates a map
 --
 function _M:generate()
+	--[[
 	-- insert objet
 	local function addObject(name, x, y)		
 		local definition = self._tileSet._definitions[name]
@@ -52,6 +53,7 @@ function _M:generate()
 			cy = cy + 1
 		end
 	end
+	]]
 	
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
@@ -63,7 +65,7 @@ function _M:generate()
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then
-					addObject('pine_tree',x,y)
+					--addObject('pine_tree',x,y)
 			end
 		end
 	end	
@@ -173,7 +175,6 @@ end
 --  Draw the map
 --
 function _M:draw(camera, drawTable)	
-	local im = self._tileSet:image()
 	local cw = camera:window()
 	local cv = camera:viewport()
 	local tq = self._tileSet:quads()
@@ -204,14 +205,14 @@ function _M:draw(camera, drawTable)
 			-- draw the base layer
 			local tile = self._tiles.base[y][x]
 			table.insert(drawTable.base, 
-				{ y * ts[1] + th[tile], im, tq[tile], 
+				{ y * ts[1] + th[tile], tq[tile], 
 				cx, cy, zoomX, zoomY, htsx, htsy})
 				
 			-- draw the object layer if a tile exists
 			local tile = self._tiles.object[y][x]
 			if tile then
 				table.insert(drawTable.object, 
-					{ y * ts[1] + th[tile], im, tq[tile], 
+					{ y * ts[1] + th[tile], tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
 					
@@ -219,7 +220,7 @@ function _M:draw(camera, drawTable)
 			local tile = self._tiles.roof[y][x]
 			if tile then
 				table.insert(drawTable.roof, 
-					{ y * ts[1] + th[tile], im, tq[tile], 
+					{ y * ts[1] + th[tile], tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
 				

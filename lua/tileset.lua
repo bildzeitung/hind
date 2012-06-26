@@ -13,15 +13,34 @@ function _M:new(t)
 	self.__index = self    
 	setmetatable(t, self)
 	
-	t._quads = {}
-	for y = 0, t._image:getHeight() - 1, t._size[2] do
-		for x = 0, t._image:getWidth() - 1, t._size[1] do
-			-- create a quad for the tile
-			t._quads[#t._quads+1] = love.graphics.newQuad(
-				x, y, t._size[1], t._size[2], 
-				t._image:getWidth(), t._image:getHeight())
+	--
+	-- Mark all of the object tiles for exclusion from regular tile set
+	--
+	local excludeTiles = {}
+	for _, def in pairs(t._definitions) do
+		for _, layer in pairs(def._tiles) do
+			for k, v in pairs(layer) do
+				excludeTiles[v] = true
+			end
 		end
 	end
+	
+	-- build the regular tiles
+	t._quads = {}
+	local tile = 1
+	for y = 0, t._image:getHeight() - 1, t._size[2] do
+		for x = 0, t._image:getWidth() - 1, t._size[1] do			
+			if not excludeTiles[tile] then			
+				local im = love.image.newImageData(t._size[1], t._size[2])
+				im:paste(t._image,0,0,x,y,t._size[1],t._size[2])
+				t._quads[tile] = love.graphics.newImage(im)
+			end
+			tile = tile + 1
+		end
+	end
+	
+	-- build the objects
+	t._objects = {}		
 	
 	-- if there is a default boundary value provided then
 	-- fill the non specified boundaries

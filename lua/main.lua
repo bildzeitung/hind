@@ -7,6 +7,9 @@
 require 'factories'
 
 function love.load()
+	-- create the shader effects
+	loadEffects()
+	
 	tileSets = {}
 	
 	local ts = factories.createTileset('outdoor.dat')
@@ -26,17 +29,17 @@ function love.load()
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,800,600)
 	
-	--shadowTexture = love.graphics.newCanvas(800,600)
+	shadowCanvas = love.graphics.newCanvas(800,600)
 	
 	createActors()
+	
+	lightOrigin = { 0, 0.4 }
+	shadowSkew = -3
 	
 	angle = 0
 	zoom = 1
 	currentShader = nil
 	showCollisionBoundaries = false
-	
-	-- create the shader effects
-	loadEffects()
 	
 	visibleIds = {}
 	visibleActors = {}	
@@ -106,19 +109,24 @@ end
 --  Creates the custom shaders
 --
 function loadEffects()
-	spotLightEffect = love.graphics.newPixelEffect [[
+	outdoorLightEffect = love.graphics.newPixelEffect [[
 		extern vec2 pos[2];
 		extern vec2 size[2];
 		extern vec2 angle[2];
 		extern vec3 lightColor[2];
+				
+		extern vec2 origin;
+		extern float dFallOff;
+		extern float spotSize;
 		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 		{
 			float PI2 = 3.14159265358979323846264 * 2;
-			float d = 0;
-			vec3 l = vec3(0,0,0);
+			float d = 0;			
 			float a;
+			vec3 l = vec3(0,0,0);
 			int i;
-			for (i=0;i<2;i++) {				
+			for (i=0;i<2;i++) 
+			{
 				vec2 toObj = screen_coords - pos[i];
 				a = atan(toObj.y, toObj.x);
 				if ( a < 0 )
@@ -130,6 +138,9 @@ function loadEffects()
 				}
 			}
 			
+			d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),dFallOff);
+			l *= (1 - d);
+			
 			color = Texel( texture, texture_coords);
 			color.rgb *= l;
 			color = clamp(color, 0, 1);
@@ -137,14 +148,26 @@ function loadEffects()
 		}	
 	]]
 	
-	directionalLightEffect = love.graphics.newPixelEffect [[
+	shadowEffect = love.graphics.newPixelEffect [[
 		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 		{
-			vec2 hv = vec2(0,0);
-			hv = hv - texture_coords;
-			float d = 1 - length(hv);		
 			color = Texel( texture, texture_coords );
-			color.rgb *= d;
+			color.rgb *= 0;
+			color.a /= 2;
+			return color;
+		}	
+	]]
+	
+	directionalLightEffect = love.graphics.newPixelEffect [[
+		extern vec2 origin;
+		extern float dFallOff;
+		extern float spotSize;
+		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
+		{
+			vec2 hv = origin - texture_coords;
+			float d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),dFallOff);
+			color = Texel( texture, texture_coords );
+			color.rgb *= (1-d);
 			color = clamp(color, 0, 1);
 			return color;
 		}	
@@ -153,8 +176,6 @@ function loadEffects()
 end
 
 function love.draw()
-
-	
 	-- set up the draw table
 	local drawTable = {
 		base = {},
@@ -165,52 +186,60 @@ function love.draw()
 	daMap:draw(daCamera, drawTable)
 
 	-- draw only the visible items
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.draw then
-				v:draw(daCamera, drawTable)
-			end
+	for a, _ in pairs(visibleActors) do
+		if a.draw then
+			a:draw(daCamera, drawTable)
 		end
+	end	
+			
+	love.graphics.setPixelEffect(currentShader)			
+	if currentShader then
+		currentShader:send('origin', lightOrigin )
+		currentShader:send('spotSize', 2 )	
+	end	
+
+	for k, v in ipairs(drawTable.base) do
+		love.graphics.draw(v[2], 
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8])
 	end
 	
-	table.sort(drawTable.object, function(a,b)
+	table.sort(drawTable.object,function(a,b)
 		return a[1] < b[1] end)
 	
-	--[[
-	love.graphics.setCanvas(shadowTexture)
-	love.graphics.setBackgroundColor( 255, 255, 255, 0 )
-	love.graphics.clear()	
-	love.graphics.setPixelEffect(shadowEffect)
-		]]
-		
-	love.graphics.setPixelEffect(currentShader)	
-		
-	for k, v in ipairs(drawTable.base) do
-		love.graphics.drawq(v[2], v[3], 
-			v[4], v[5], 0, v[6], v[7], 
-			v[8], v[9])
-	end
+	if currentShader then
+		currentShader:send('origin', lightOrigin )
+		currentShader:send('spotSize', 0.25 )	
+	end		
 	
 	for k, v in ipairs(drawTable.object) do
-		love.graphics.drawq(v[2], v[3], 
-			v[4], v[5], 0, v[6], v[7], 
-			v[8], v[9])
+		love.graphics.setPixelEffect(shadowEffect)				
+			
+		love.graphics.draw(v[2],
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8], shadowSkew, 0)
+	
+		love.graphics.setPixelEffect(currentShader)			
+	
+		love.graphics.draw(v[2],
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8])
 	end	
 	
 	for k, v in ipairs(drawTable.roof) do
-		love.graphics.drawq(v[2], v[3], 
-			v[4], v[5], 0, v[6], v[7], 
-			v[8], v[9])
+		love.graphics.setPixelEffect(shadowEffect)			
+			
+		love.graphics.draw(v[2],
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8], shadowSkew, 0)
+			
+		love.graphics.setPixelEffect(currentShader)		
+	
+		love.graphics.draw(v[2], 
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8])
 	end		
-	
-	--[[
-	love.graphics.setCanvas()
-	love.graphics.setPixelEffect(shadowDistortionEffect)
-	angle = angle + 0.1
-	shadowDistortionEffect:send('angle', angle)
-	love.graphics.draw(shadowTexture, 0, 0)
-	]]
-	
+		
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
 		-- draw only the visible items
@@ -257,7 +286,19 @@ end
 
 function love.update(dt)
 	local vx, vy = 0, 0
-
+	
+	-- @TODO proper day / night cycles with changing colour
+	-- and direction of light
+	lightOrigin[1] = lightOrigin[1] + 0.001
+	if lightOrigin[1] > 1 then 
+		lightOrigin[1] = 0
+	end	
+	
+	shadowSkew = shadowSkew + 0.006
+	if shadowSkew > 3 then
+		shadowSkew = -3
+	end
+	
 	if love.keyboard.isDown('up') then
         hero:animation('walkup')		
 		vy = -125
@@ -311,19 +352,66 @@ function love.update(dt)
 	if love.keyboard.isDown('n') then
 		showCollisionBoundaries = false
 	end
+
+	--@TODO in a cave with a flashlight or similar
+	--[[
+	outdoorLightEffect:send('pos', {400,300}, {})
+	outdoorLightEffect:send('size', {300,225}, {})
+	outdoorLightEffect:send('angle', {0,6.3}, {})
+	outdoorLightEffect:send('lightColor', {2,2,2}, {})
+	]]
 	
-	if love.keyboard.isDown('l') then
-		spotLightEffect:send('pos', unpack({{400,300},{0,0}}))
-		spotLightEffect:send('size', unpack({{300,225},{0,0}}))
-		spotLightEffect:send('angle', unpack({{0,6.3},{0,0}}))
-		spotLightEffect:send('lightColor', unpack({{2,2,2},{0,0,0}}))
-		
-		currentShader = spotLightEffect
+	--@TODO coordinate the shadow and light position
+	-- with the light color for day / night effect
+	
+	if love.keyboard.isDown('1') then		
+		currentShader = outdoorLightEffect		
+		outdoorLightEffect:send('pos', {400,300}, {0,0})
+		outdoorLightEffect:send('size', {1600,1200}, {0,0})
+		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
+		outdoorLightEffect:send('origin', lightOrigin)
+		outdoorLightEffect:send('dFallOff', 0.8 )				
+		-- morning
+		outdoorLightEffect:send('lightColor', {2.0,2.0,1.7}, {0,0,0})
 	end
 	
-	if love.keyboard.isDown('m') then
+	if love.keyboard.isDown('2') then		
+		currentShader = outdoorLightEffect		
+		outdoorLightEffect:send('pos', {400,300}, {0,0})
+		outdoorLightEffect:send('size', {1600,1200}, {0,0})
+		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
+		outdoorLightEffect:send('origin', lightOrigin)
+		outdoorLightEffect:send('dFallOff', 0.8 )				
+		-- midday
+		outdoorLightEffect:send('lightColor', {2.5,2.5,2.5}, {0,0,0})
+	end
+	
+	if love.keyboard.isDown('3') then		
+		currentShader = outdoorLightEffect		
+		outdoorLightEffect:send('pos', {400,300}, {0,0})
+		outdoorLightEffect:send('size', {1600,1200}, {0,0})
+		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
+		outdoorLightEffect:send('origin', lightOrigin)
+		outdoorLightEffect:send('dFallOff', 0.8 )				
+		-- dusk
+		outdoorLightEffect:send('lightColor', {2.0,1.6,1.6}, {0,0,0})
+	end	
+	
+	if love.keyboard.isDown('4') then		
+		currentShader = outdoorLightEffect		
+		outdoorLightEffect:send('pos', {400,300}, {200,400})
+		outdoorLightEffect:send('size', {1600,1200}, {200,200})
+		outdoorLightEffect:send('angle', {0,6.3}, {0,6.3})		
+		outdoorLightEffect:send('origin', lightOrigin)
+		outdoorLightEffect:send('dFallOff', 0.8 )				
+		-- night
+		outdoorLightEffect:send('lightColor', {0.7,0.7,1.4}, {2,2,2})
+	end		
 		
+	if love.keyboard.isDown('m') then		
 		currentShader = directionalLightEffect
+		outdoorLightEffect:send('origin', lightOrigin)
+		currentShader:send('dFallOff', 0.9 )		
 	end
 	
 	if love.keyboard.isDown('o') then
@@ -375,7 +463,7 @@ function love.update(dt)
 	daCamera:center(hero._position[1], hero._position[2])
 	
 	-- get the list of visible ids
-	visibleIds = daMap:nearIds(daCamera, buckets, 2)
+	visibleIds = daMap:nearIds(daCamera, buckets, 1)
 	
 	-- generate a list of visible actors
 	for k, _ in pairs(visibleActors) do

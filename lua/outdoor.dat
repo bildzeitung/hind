@@ -20,55 +20,52 @@
 	},
 	_definitions = {
 		tall_tree = {
-			x = 2, y = 5, w = 3, h = 5,
-			o = { 	
-					nil, nil, nil,
+			_width = 3, _height = 5,
+			_offset = {},
+			_tiles = { 	
+				{ 	nil, nil, nil,
 					nil, nil, nil,
 					1, 2, 3,
 					13, 14, 15,
-					25, 26, 27					
-				},
-			r = { 
-					4, 5, 6,
+					25, 26, 27 },
+				{ 	4, 5, 6,
 					16, 17, 18,
 					28, 29, 30,
 					nil, nil, nil,
-					nil, nil, nil
+					nil, nil, nil }
 				}
 		},
 		short_tree = {
-			x = 2, y = 5, w = 3, h = 5,
-			o = { 	
-					nil, nil, nil,
+			_width = 3, _height = 5,
+			_offset = {},
+			_tiles = { 
+				{ 	nil, nil, nil,
 					nil, nil, nil,
 					1, 2, 3,
 					13, 14, 15,
-					25, 26, 27					
-				},
-			r = { 
-					7, 8, 9,
+					25, 26, 27 },
+				{ 	7, 8, 9,
 					19, 20, 21,
 					31, 32, 33,
 					nil, nil, nil,
-					nil, nil, nil
+					nil, nil, nil }
 				}
 		},
 		pine_tree = {
-			x = 2, y = 5, w = 3, h = 5,
-			o = { 	
-					nil, nil, nil,
+			_width = 3, _height = 5,
+			_offset = {},
+			_tiles = {
+				{	nil, nil, nil,
 					nil, nil, nil,
 					1, 2, 3,
 					13, 14, 15,
-					25, 26, 27					
-				},
-			r = { 
-					10, 11, 12,
+					25, 26, 27 },
+				{  	10, 11, 12,
 					22, 23, 24,
 					34, 35, 36,
 					nil, nil, nil,
-					nil, nil, nil
+					nil, nil, nil }
 				}
-		}	
+		}
 	}
 }

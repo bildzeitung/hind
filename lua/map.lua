@@ -61,7 +61,7 @@ function _M:generate()
 		self._tiles.object[y] = {}
 		self._tiles.roof[y] = {}
 		for x = 1, self._sizeInTiles[1] do
-			self._tiles.base[y][x] = math.floor(math.random()*3) + 37			
+			self._tiles.base[y][x] = math.floor(math.random()*18) + 1
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then

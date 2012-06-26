@@ -199,7 +199,7 @@ function love.draw()
 	end	
 
 	for k, v in ipairs(drawTable.base) do
-		love.graphics.draw(v[2], 
+		love.graphics.draw(v[2],
 			v[3], v[4], 0, v[5], v[6], 
 			v[7], v[8])
 	end

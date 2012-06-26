@@ -1,7 +1,10 @@
 {
-	_image = 'fem1.png',
-	_size = { 64, 64 },
 	_name = 'fem1',
-	_boundaries = { default = {20,48,44,62} },
-	_definitions = {}
+	_size = { 64, 64 },	
+	_images = {
+		{
+			_file = 'fem1.png', 
+			_boundaries = { default = {20,48,44,62} }
+		}
+	}
 }

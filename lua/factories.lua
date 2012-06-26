@@ -43,7 +43,9 @@ end
 function createTileset(filename)
 	local t = readTableFromFile(filename)	
 	
-	t._image = love.image.newImageData(t._image)
+	for k, v in ipairs(t._images) do
+		t._images[k]._image = love.image.newImageData(v._file)
+	end
 		
 	local ts = tileset:new(t)	
 	return ts	

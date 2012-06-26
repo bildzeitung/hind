@@ -74,7 +74,7 @@ function _M:draw(camera, drawTable)
 	local tq = ts:quads()
 	local frame = self._currentAnimation:frame()
 	
-	table.insert(drawTable, 
+	table.insert(drawTable.object, 
 		{ self._position[2] + of[2], im, tq[frame], 
 		self._screenPos[1], self._screenPos[2],
 		zoomX, zoomY, of[1], of[2] })

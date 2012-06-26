@@ -148,13 +148,13 @@ function _M:nearIds(camera, b, padding)
 	local zoomY = cv[4] / cw[4]	
 	local ztx = ts[1] * zoomX
 	local zty = ts[2] * zoomY
-	local tcx = math.floor(b.cellSize / ztx) * padding
-	local tcy = math.floor(b.cellSize / zty) * padding
+	local tcx = math.floor(b.cellSize / ztx * padding)
+	local tcy = math.floor(b.cellSize / zty * padding)
 						
 	local stx = math.floor(cw[1] / ts[1]) - tcx
-	local etx = stx + math.floor(cv[3] / ztx) + tcx
+	local etx = stx + math.floor(cv[3] / ztx) + (tcx * 2)
 	local sty = math.floor(cw[2] / ts[2]) - tcy
-	local ety = sty + math.floor(cv[4] / zty) + tcy
+	local ety = sty + math.floor(cv[4] / zty) + (tcy * 2)
 	
 	local ids = {}
 	
@@ -203,14 +203,14 @@ function _M:draw(camera, drawTable)
 		for x = stx, etx do		
 			-- draw the base layer
 			local tile = self._tiles.base[y][x]
-			table.insert(drawTable, 
+			table.insert(drawTable.base, 
 				{ y * ts[1] + th[tile], im, tq[tile], 
 				cx, cy, zoomX, zoomY, htsx, htsy})
 				
 			-- draw the object layer if a tile exists
 			local tile = self._tiles.object[y][x]
 			if tile then
-				table.insert(drawTable, 
+				table.insert(drawTable.object, 
 					{ y * ts[1] + th[tile], im, tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
@@ -218,7 +218,7 @@ function _M:draw(camera, drawTable)
 			-- draw the roof layer if a tile exists
 			local tile = self._tiles.roof[y][x]
 			if tile then
-				table.insert(drawTable, 
+				table.insert(drawTable.roof, 
 					{ y * ts[1] + th[tile], im, tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
 			end

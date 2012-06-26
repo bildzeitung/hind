@@ -15,8 +15,8 @@ function love.load()
 	tileSets[ts:name()] = ts
 	
 	-- the size of the world
-	local worldX = 1000 * 32
-	local worldY = 1000 * 32
+	local worldX = 500 * 32
+	local worldY = 500 * 32
 	buckets = createBuckets(500, worldX, worldY)
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
@@ -26,8 +26,11 @@ function love.load()
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,800,600)
 	
+	--shadowTexture = love.graphics.newCanvas(800,600)
+	
 	createActors()
 	
+	angle = 0
 	zoom = 1
 	currentShader = nil
 	showCollisionBoundaries = false
@@ -73,7 +76,7 @@ end
 --  Creates the actors
 --
 function createActors()
-	local numActors = 5000
+	local numActors = 1000
 	local size = daMap:size()
 	
 	actors = {}
@@ -122,7 +125,7 @@ function loadEffects()
 					a = a + PI2;
 				if (a > angle[i].x && a < angle[i].y) {
 					vec2 hv = toObj / size[i];
-					d = clamp((1 - sqrt(hv.x*hv.x + hv.y*hv.y)), 0, 1);
+					d = clamp(1 - length(hv), 0, 1);
 					l += (d * lightColor[i]) * 0.5;
 				}
 			}
@@ -133,14 +136,34 @@ function loadEffects()
 			return color;
 		}	
 	]]
+	
+	directionalLightEffect = love.graphics.newPixelEffect [[
+		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
+		{
+			vec2 hv = vec2(0,0);
+			hv = hv - texture_coords;
+			float d = 1 - length(hv);		
+			color = Texel( texture, texture_coords );
+			color.rgb *= d;
+			color = clamp(color, 0, 1);
+			return color;
+		}	
+	]]
+	
 end
 
 function love.draw()
+
+	
 	-- set up the draw table
-	local drawTable = {}
+	local drawTable = {
+		base = {},
+		object = {},
+		roof = {} }
 	
 	-- draw the map
 	daMap:draw(daCamera, drawTable)
+
 	-- draw only the visible items
 	for k, _ in pairs(visibleIds) do
 		for _, v in pairs(buckets[k]) do
@@ -150,16 +173,43 @@ function love.draw()
 		end
 	end
 	
-	table.sort(drawTable, function(a,b)
+	table.sort(drawTable.object, function(a,b)
 		return a[1] < b[1] end)
-
-	love.graphics.setPixelEffect(currentShader)
 	
-	for k, v in ipairs(drawTable) do
+	--[[
+	love.graphics.setCanvas(shadowTexture)
+	love.graphics.setBackgroundColor( 255, 255, 255, 0 )
+	love.graphics.clear()	
+	love.graphics.setPixelEffect(shadowEffect)
+		]]
+		
+	love.graphics.setPixelEffect(currentShader)	
+		
+	for k, v in ipairs(drawTable.base) do
 		love.graphics.drawq(v[2], v[3], 
 			v[4], v[5], 0, v[6], v[7], 
 			v[8], v[9])
 	end
+	
+	for k, v in ipairs(drawTable.object) do
+		love.graphics.drawq(v[2], v[3], 
+			v[4], v[5], 0, v[6], v[7], 
+			v[8], v[9])
+	end	
+	
+	for k, v in ipairs(drawTable.roof) do
+		love.graphics.drawq(v[2], v[3], 
+			v[4], v[5], 0, v[6], v[7], 
+			v[8], v[9])
+	end		
+	
+	--[[
+	love.graphics.setCanvas()
+	love.graphics.setPixelEffect(shadowDistortionEffect)
+	angle = angle + 0.1
+	shadowDistortionEffect:send('angle', angle)
+	love.graphics.draw(shadowTexture, 0, 0)
+	]]
 	
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
@@ -269,6 +319,11 @@ function love.update(dt)
 		spotLightEffect:send('lightColor', unpack({{2,2,2},{0,0,0}}))
 		
 		currentShader = spotLightEffect
+	end
+	
+	if love.keyboard.isDown('m') then
+		
+		currentShader = directionalLightEffect
 	end
 	
 	if love.keyboard.isDown('o') then

@@ -39,27 +39,26 @@ function love.load()
 	-- origin, spotsize, falloff are in
 	-- texture space? screen space?
 	--
+	maxLights = 6
+	
 	lighting = {
 		origin = { 0, 0.4 },
 		spotSize = { 0.25 },
 		fallOff = { 0.25 },		
 		shadowSkew = { -3, 0 },		
-		spotLights = {
-			pos = { 
-				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} 
-			},
-			size = { 
-				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} 
-			},
-			angle = { 
-				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}
-			},
-			lightColor = { 
-				{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0} 
-			},			
-			world = { false, false }
-		}
+		spotLights = { pos = {}, screenPos = {}, size = {}, screenSize = {}, 
+			angle = {}, lightColor = {}, world = {} }
 	}
+	
+	for i = 1, maxLights do
+		lighting.spotLights.pos[i] = {0,0}
+		lighting.spotLights.screenPos[i] = {0,0}
+		lighting.spotLights.size[i] = {0,0}
+		lighting.spotLights.screenSize[i] = {0,0}
+		lighting.spotLights.angle[i] = {0,0}
+		lighting.spotLights.lightColor[i] = {0,0,0}
+		lighting.spotLights.world[i] = false
+	end
 	
 	zoom = 1
 	currentShader = nil
@@ -79,10 +78,10 @@ function love.load()
 	
 	--@TODO in a cave with a flashlight or similar
 	--[[
-	setSpotLightParameter(1, { pos = {400,300} },
+	setSpotLight{ idx = 1, pos = {400,300} },
 								size = {300,225},
 								angle = {0,6.3},
-								color = {2,2,2} })
+								color = {2,2,2} }
 	]]
 end
 
@@ -98,7 +97,9 @@ end
 --
 --  Set the directional light parameters
 --
-function setSpotLight(idx, params)	
+function setSpotLight(params)	
+	local idx = params.idx
+	params.idx = nil
 	for k, v in pairs(params) do
 		lighting.spotLights[k][idx] = v
 	end
@@ -116,14 +117,16 @@ function updateLightEffect()
 	
 	local cw = daCamera:window()
 	local cv = daCamera:viewport()
-
+	local zoomX = cv[3] / cw[3]
+	
 	-- convert world position to screen position
 	for k, pos in ipairs(t.pos) do		
 		-- convert to screen space
 		if t.world[k] then
-			t.pos[k][1] = pos[1] - cw[1]
-			t.pos[k][2] = cv[4] - (pos[2] - cw[2])
+			t.pos[k][1] = (pos[1] - cw[1]) / cw[3] * cv[3]
+			t.pos[k][2] = cv[4] - ((pos[2] - cw[2]) / cw[4] * cv[4])		
 		end
+		lighting.spotLights.screenPos[k] = { t.pos[k][1], t.pos[k][2] }
 	end
 	
 	-- convert world size to screen size
@@ -131,13 +134,17 @@ function updateLightEffect()
 		-- convert to screen space
 		if t.world[k] then
 			t.size[k][1] = size[1] * (cv[3] / cw[3])
-			t.size[k][2] = size[2] * (cv[4] / cw[4])
+			t.size[k][2] = size[2] * (cv[4] / cw[4])			
 		end
+		lighting.spotLights.screenSize[k] = { t.size[k][1], t.size[k][2] }		
 	end
 
+	local paramsToSend = { pos = true, size = true, 
+		angle = true, lightColor = true }
+	
 	-- send all of the parameters
 	for k, v in pairs(t) do
-		if k ~= 'world' then
+		if paramsToSend[k] then
 			lightEffect:send(k, unpack(v))
 		end
 	end
@@ -296,6 +303,11 @@ function love.draw()
 	
 	setDirectionalLight( { spotSize = 0.25 } )
 	updateLightEffect()
+	
+	-- @TODO the shadow direction
+	-- should be calculated based on the position
+	-- and size of all of the current spot lights
+	-- in screen space
 
 	for k, v in ipairs(drawTable.object) do
 		love.graphics.setPixelEffect(shadowEffect)				
@@ -377,6 +389,20 @@ function love.draw()
 		hero._collidee._boundary[4], 10, y)		
 		y=y+20
 	end
+	
+	local cw = daCamera:window()
+	local cv = daCamera:viewport()
+	love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
+		cw[2] .. ', ' .. 
+		cw[3] .. ', ' .. 
+		cw[4], 10, y)		
+	y=y+20
+	
+	love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
+		cv[2] .. ', ' .. 
+		cv[3] .. ', ' .. 
+		cv[4], 10, y)		
+	y=y+20
 end
 
 function love.update(dt)
@@ -454,35 +480,41 @@ function love.update(dt)
 	-- redraw!!!!!!	
 	if love.keyboard.isDown('1') then		
 		currentShader = lightEffect		
-		lightEffect:send('pos', {400,300}, {0,0})
-		lightEffect:send('size', {1600,1200}, {0,0})
-		lightEffect:send('angle', {0,6.3}, {0,0})
-		lightEffect:send('origin', lighting.origin)
-		lightEffect:send('fallOff', 0.6 )				
+		
 		-- morning
-		lightEffect:send('lightColor', {2.0,2.0,1.7}, {0,0,0})
+		setDirectionalLight( { fallOff = 0.8 } )
+		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				angle = {-1, 7}, lightColor = {2.0,2.0,1.7}, world = false }		
+		for i = 2, maxLights do
+			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+		end				
 	end
 	
 	if love.keyboard.isDown('2') then		
 		currentShader = lightEffect		
-		lightEffect:send('pos', {400,300}, {0,0})
-		lightEffect:send('size', {1600,1200}, {0,0})
-		lightEffect:send('angle', {0,6.3}, {0,0})
-		lightEffect:send('origin', lighting.origin)
-		lightEffect:send('fallOff', 0.8 )				
+		
 		-- midday
-		lightEffect:send('lightColor', {2.5,2.5,2.5}, {0,0,0})
+		setDirectionalLight( { fallOff = 0.8 } )
+		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
+		for i = 2, maxLights do
+			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+		end			
 	end
 	
 	if love.keyboard.isDown('3') then		
 		currentShader = lightEffect		
-		lightEffect:send('pos', {400,300}, {0,0})
-		lightEffect:send('size', {1600,1200}, {0,0})
-		lightEffect:send('angle', {0,6.3}, {0,0})
-		lightEffect:send('origin', lighting.origin)
-		lightEffect:send('fallOff', 0.6 )				
+		
 		-- dusk
-		lightEffect:send('lightColor', {2.0,1.6,1.6}, {0,0,0})
+		setDirectionalLight( { fallOff = 0.8 } )
+		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				angle = {-1, 7}, lightColor = {2.0,1.6,1.6}, world = false }		
+		for i = 2, maxLights do
+			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+		end					
 	end	
 	
 	if love.keyboard.isDown('4') then		
@@ -490,13 +522,11 @@ function love.update(dt)
 		
 		-- night
 		setDirectionalLight( { fallOff = 0.8 } )
-		setSpotLight( 1, 
-			{ 	pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {0.6,0.6,1.2} })
+		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				angle = {-1, 7}, lightColor = {0.6,0.6,1.2}, world = false }
 		-- random spot lights
-		setSpotLight( 2, 
-			{ 	pos = {8000,8000}, size = {100,100}, 
-				angle = {-1, 7}, lightColor = {3,3,3}, world = true })				
+		setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
+				angle = {-1, 7}, lightColor = {3,3,3}, world = true }
 		updateLightEffect()
 	end		
 		

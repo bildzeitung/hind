@@ -61,7 +61,7 @@ function _M:generate()
 			local sy = math.floor((self._position[2] * zoomY) - cwzy)
 			
 			table.insert(drawTable.object, 
-				{ self._position[2] + self._height + (self._position[1] * 0.0000001), 
+				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
 				self._image, 
 				sx, sy, 
 				zoomX, zoomY, self._offset[1], self._offset[2] })

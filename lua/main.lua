@@ -7,6 +7,8 @@
 require 'factories'
 
 function love.load()
+	love.graphics.setColorMode('replace')
+
 	-- create the shader effects
 	loadEffects()
 	
@@ -33,10 +35,32 @@ function love.load()
 	
 	createActors()
 	
-	lightOrigin = { 0, 0.4 }
-	shadowSkew = -3
+	-- spot lights are in screen space coordinates
+	-- origin, spotsize, falloff are in
+	-- texture space? screen space?
+	--
+	lighting = {
+		origin = { 0, 0.4 },
+		spotSize = { 0.25 },
+		fallOff = { 0.25 },		
+		shadowSkew = { -3, 0 },		
+		spotLights = {
+			pos = { 
+				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} 
+			},
+			size = { 
+				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} 
+			},
+			angle = { 
+				{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}
+			},
+			lightColor = { 
+				{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0} 
+			},			
+			world = { false, false }
+		}
+	}
 	
-	angle = 0
 	zoom = 1
 	currentShader = nil
 	showCollisionBoundaries = false
@@ -52,6 +76,71 @@ function love.load()
 	end	
 	-- add the map collision items
 	daMap:registerBuckets(buckets)	
+	
+	--@TODO in a cave with a flashlight or similar
+	--[[
+	setSpotLightParameter(1, { pos = {400,300} },
+								size = {300,225},
+								angle = {0,6.3},
+								color = {2,2,2} })
+	]]
+end
+
+--
+--  Set the directional light parameters
+--
+function setDirectionalLight(params)	
+	for k, v in pairs(params) do
+		lighting[k] = v
+	end
+end
+	
+--
+--  Set the directional light parameters
+--
+function setSpotLight(idx, params)	
+	for k, v in pairs(params) do
+		lighting.spotLights[k][idx] = v
+	end
+end
+	
+--
+--  Update the light effect
+--
+function updateLightEffect()
+	lightEffect:send('origin', lighting.origin)
+	lightEffect:send('fallOff', lighting.fallOff)
+	lightEffect:send('spotSize', lighting.spotSize)
+	
+	local t = table.clone(lighting.spotLights,{deep = true})
+	
+	local cw = daCamera:window()
+	local cv = daCamera:viewport()
+
+	-- convert world position to screen position
+	for k, pos in ipairs(t.pos) do		
+		-- convert to screen space
+		if t.world[k] then
+			t.pos[k][1] = pos[1] - cw[1]
+			t.pos[k][2] = cv[4] - (pos[2] - cw[2])
+		end
+	end
+	
+	-- convert world size to screen size
+	for k, size in ipairs(t.size) do
+		-- convert to screen space
+		if t.world[k] then
+			t.size[k][1] = size[1] * (cv[3] / cw[3])
+			t.size[k][2] = size[2] * (cv[4] / cw[4])
+		end
+	end
+
+	-- send all of the parameters
+	for k, v in pairs(t) do
+		if k ~= 'world' then
+			lightEffect:send(k, unpack(v))
+		end
+	end
 end
 
 --
@@ -110,14 +199,14 @@ end
 --  Creates the custom shaders
 --
 function loadEffects()
-	outdoorLightEffect = love.graphics.newPixelEffect [[
-		extern vec2 pos[2];
-		extern vec2 size[2];
-		extern vec2 angle[2];
-		extern vec3 lightColor[2];
+	lightEffect = love.graphics.newPixelEffect [[
+		extern vec2 pos[6];
+		extern vec2 size[6];
+		extern vec2 angle[6];
+		extern vec3 lightColor[6];
 				
 		extern vec2 origin;
-		extern float dFallOff;
+		extern float fallOff;
 		extern float spotSize;
 		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
 		{
@@ -139,7 +228,7 @@ function loadEffects()
 				}
 			}
 			
-			d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),dFallOff);
+			d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),fallOff);
 			l *= (1 - d);
 			
 			color = Texel( texture, texture_coords);
@@ -157,23 +246,7 @@ function loadEffects()
 			color.a /= 2;
 			return color;
 		}	
-	]]
-	
-	directionalLightEffect = love.graphics.newPixelEffect [[
-		extern vec2 origin;
-		extern float dFallOff;
-		extern float spotSize;
-		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
-		{
-			vec2 hv = origin - texture_coords;
-			float d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),dFallOff);
-			color = Texel( texture, texture_coords );
-			color.rgb *= (1-d);
-			color = clamp(color, 0, 1);
-			return color;
-		}	
-	]]
-	
+	]]	
 end
 
 function love.draw()
@@ -191,8 +264,7 @@ function love.draw()
 	drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
 	drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
 	drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
-	
-	
+		
 	-- draw the map tiles
 	daMap:drawTiles(daCamera, drawTable)
 
@@ -209,10 +281,9 @@ function love.draw()
 	end		
 			
 	love.graphics.setPixelEffect(currentShader)			
-	if currentShader then
-		currentShader:send('origin', lightOrigin )
-		currentShader:send('spotSize', 2 )	
-	end	
+	
+	setDirectionalLight( { spotSize = 2 } )
+	updateLightEffect()
 
 	for k, v in ipairs(drawTable.base) do
 		love.graphics.draw(v[2],
@@ -223,17 +294,16 @@ function love.draw()
 	table.sort(drawTable.object,function(a,b)
 		return a[1] < b[1] end)
 	
-	if currentShader then
-		currentShader:send('origin', lightOrigin )
-		currentShader:send('spotSize', 0.25 )	
-	end		
-	
+	setDirectionalLight( { spotSize = 0.25 } )
+	updateLightEffect()
+
 	for k, v in ipairs(drawTable.object) do
 		love.graphics.setPixelEffect(shadowEffect)				
 			
 		love.graphics.draw(v[2],
 			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], shadowSkew, 0)
+			v[7], v[8], 
+			lighting.shadowSkew[1], lighting.shadowSkew[2])
 	
 		love.graphics.setPixelEffect(currentShader)			
 	
@@ -247,7 +317,8 @@ function love.draw()
 			
 		love.graphics.draw(v[2],
 			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], shadowSkew, 0)
+			v[7], v[8], 
+			lighting.shadowSkew[1], lighting.shadowSkew[2])
 			
 		love.graphics.setPixelEffect(currentShader)		
 	
@@ -313,14 +384,14 @@ function love.update(dt)
 	
 	-- @TODO proper day / night cycles with changing colour
 	-- and direction of light
-	lightOrigin[1] = lightOrigin[1] + 0.001
-	if lightOrigin[1] > 1 then 
-		lightOrigin[1] = 0
+	lighting.origin[1] = lighting.origin[1] + 0.001
+	if lighting.origin[1] > 1 then 
+		lighting.origin[1] = 0
 	end	
 	
-	shadowSkew = shadowSkew + 0.006
-	if shadowSkew > 3 then
-		shadowSkew = -3
+	 lighting.shadowSkew[1] =  lighting.shadowSkew[1] + 0.006
+	if  lighting.shadowSkew[1] > 3 then
+		 lighting.shadowSkew[1] = -3
 	end
 	
 	if love.keyboard.isDown('up') then
@@ -376,69 +447,59 @@ function love.update(dt)
 	if love.keyboard.isDown('n') then
 		showCollisionBoundaries = false
 	end
-
-	--@TODO in a cave with a flashlight or similar
-	--[[
-	outdoorLightEffect:send('pos', {400,300}, {})
-	outdoorLightEffect:send('size', {300,225}, {})
-	outdoorLightEffect:send('angle', {0,6.3}, {})
-	outdoorLightEffect:send('lightColor', {2,2,2}, {})
-	]]
 	
 	--@TODO coordinate the shadow and light position
 	-- with the light color for day / night effect
 	-- each light could also generate it's own shadow
 	-- redraw!!!!!!	
 	if love.keyboard.isDown('1') then		
-		currentShader = outdoorLightEffect		
-		outdoorLightEffect:send('pos', {400,300}, {0,0})
-		outdoorLightEffect:send('size', {1600,1200}, {0,0})
-		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
-		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.6 )				
+		currentShader = lightEffect		
+		lightEffect:send('pos', {400,300}, {0,0})
+		lightEffect:send('size', {1600,1200}, {0,0})
+		lightEffect:send('angle', {0,6.3}, {0,0})
+		lightEffect:send('origin', lighting.origin)
+		lightEffect:send('fallOff', 0.6 )				
 		-- morning
-		outdoorLightEffect:send('lightColor', {2.0,2.0,1.7}, {0,0,0})
+		lightEffect:send('lightColor', {2.0,2.0,1.7}, {0,0,0})
 	end
 	
 	if love.keyboard.isDown('2') then		
-		currentShader = outdoorLightEffect		
-		outdoorLightEffect:send('pos', {400,300}, {0,0})
-		outdoorLightEffect:send('size', {1600,1200}, {0,0})
-		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
-		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.8 )				
+		currentShader = lightEffect		
+		lightEffect:send('pos', {400,300}, {0,0})
+		lightEffect:send('size', {1600,1200}, {0,0})
+		lightEffect:send('angle', {0,6.3}, {0,0})
+		lightEffect:send('origin', lighting.origin)
+		lightEffect:send('fallOff', 0.8 )				
 		-- midday
-		outdoorLightEffect:send('lightColor', {2.5,2.5,2.5}, {0,0,0})
+		lightEffect:send('lightColor', {2.5,2.5,2.5}, {0,0,0})
 	end
 	
 	if love.keyboard.isDown('3') then		
-		currentShader = outdoorLightEffect		
-		outdoorLightEffect:send('pos', {400,300}, {0,0})
-		outdoorLightEffect:send('size', {1600,1200}, {0,0})
-		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
-		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.6 )				
+		currentShader = lightEffect		
+		lightEffect:send('pos', {400,300}, {0,0})
+		lightEffect:send('size', {1600,1200}, {0,0})
+		lightEffect:send('angle', {0,6.3}, {0,0})
+		lightEffect:send('origin', lighting.origin)
+		lightEffect:send('fallOff', 0.6 )				
 		-- dusk
-		outdoorLightEffect:send('lightColor', {2.0,1.6,1.6}, {0,0,0})
+		lightEffect:send('lightColor', {2.0,1.6,1.6}, {0,0,0})
 	end	
 	
 	if love.keyboard.isDown('4') then		
-		currentShader = outdoorLightEffect		
-		outdoorLightEffect:send('pos', {400,300}, {200,400})
-		outdoorLightEffect:send('size', {1600,1200}, {100,100})
-		outdoorLightEffect:send('angle', {0,6.3}, {0,6.3})		
-		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.8 )				
+		currentShader = lightEffect		
+		
 		-- night
-		outdoorLightEffect:send('lightColor', {0.6,0.6,1.3}, {2,2,2})
+		setDirectionalLight( { fallOff = 0.8 } )
+		setSpotLight( 1, 
+			{ 	pos = {400,300}, size = {1600,1200}, 
+				angle = {-1, 7}, lightColor = {0.6,0.6,1.2} })
+		-- random spot lights
+		setSpotLight( 2, 
+			{ 	pos = {8000,8000}, size = {100,100}, 
+				angle = {-1, 7}, lightColor = {3,3,3}, world = true })				
+		updateLightEffect()
 	end		
 		
-	if love.keyboard.isDown('m') then		
-		currentShader = directionalLightEffect
-		outdoorLightEffect:send('origin', lightOrigin)
-		currentShader:send('dFallOff', 0.9 )		
-	end
-	
 	if love.keyboard.isDown('o') then
 		currentShader = nil
 	end

@@ -6,6 +6,10 @@
 			_boundaries = { default = nil },
 			_heights = { default = 0 }
 		},
+		{	_file = 'dirt.png',
+			_boundaries = { default = nil },
+			_heights = { default = 0 }
+		},		
 		{	_file = 'outdoor.png',
 			_definitions = {
 				tall_tree = {

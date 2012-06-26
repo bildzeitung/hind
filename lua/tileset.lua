@@ -59,32 +59,29 @@ function _M:new(t)
 		end
 		
 		-- build the objects
-		for _, def in pairs(i._definitions or {}) do
+		for k, def in pairs(i._definitions or {}) do
 			-- create a new image for this object
 			local im = love.image.newImageData(
-				t._size[1] * def._width, 
-				t._size[2] * def._height)					
+				t._size[1] * def._tileWidth, 
+				t._size[2] * def._tileHeight)					
 					
 			for _, layer in pairs(def._tiles) do
-				for k, sourceIndex in pairs(layer) do
-					local tile = 1
-					for y = 1, def._height do
-						for x = 1, def._width do
-							if sourceIndex then
-								im:paste(i._image,x,y,
-									xPos[tile],xPos[tile],t._size[1],t._size[2])
-							end
-							tile = tile + 1
+				local tile = 1
+				for y = 0, def._tileHeight - 1 do
+					for x = 0, def._tileWidth - 1 do
+						local sourceIndex = layer[tile]
+						if sourceIndex then
+							im:paste(i._image,x * t._size[1],y * t._size[2],
+								xPos[sourceIndex],yPos[sourceIndex],t._size[1],t._size[2])
 						end
-					end				
-				end
+						tile = tile + 1
+					end
+				end				
 			end
 			
-			local o = {}
-			o._offset = def._offset
-			o._boundary = def._boundary
-			o._image = { love.graphics.newImage(im) }
-			t._objects[#t._objects + 1] = o					
+			def._tiles = nil
+			def._image = love.graphics.newImage(im)
+			t._objects[k] = def
 		end
 	end
 	

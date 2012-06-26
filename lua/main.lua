@@ -43,6 +43,7 @@ function love.load()
 	
 	visibleIds = {}
 	visibleActors = {}	
+	visibleObjects = {}
 
 	-- add the actors to the collision buckets
 	for k, v in pairs(actors) do
@@ -182,15 +183,20 @@ function love.draw()
 		object = {},
 		roof = {} }
 	
-	-- draw the map
-	daMap:draw(daCamera, drawTable)
+	-- draw the map tiles
+	daMap:drawTiles(daCamera, drawTable)
 
-	-- draw only the visible items
+	-- draw only the visible actors
 	for a, _ in pairs(visibleActors) do
 		if a.draw then
 			a:draw(daCamera, drawTable)
 		end
 	end	
+	
+	-- draw only the visible objects
+	for o, _ in pairs(visibleObjects) do
+		o:draw(daCamera, drawTable)
+	end		
 			
 	love.graphics.setPixelEffect(currentShader)			
 	if currentShader then
@@ -242,7 +248,7 @@ function love.draw()
 		
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
-		-- draw only the visible items
+		-- draw only the visible actors
 		for a, _ in pairs(visibleActors) do
 			if a._boundary then
 				local b = a._boundary
@@ -250,6 +256,14 @@ function love.draw()
 					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
 			end
 		end	
+		-- draw only the visible objects
+		for o, _ in pairs(visibleObjects) do
+			if o._boundary then
+				local b = o._boundary
+				love.graphics.rectangle(
+					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+			end
+		end			
 	end
 	
 	love.graphics.setPixelEffect()
@@ -400,12 +414,12 @@ function love.update(dt)
 	if love.keyboard.isDown('4') then		
 		currentShader = outdoorLightEffect		
 		outdoorLightEffect:send('pos', {400,300}, {200,400})
-		outdoorLightEffect:send('size', {1600,1200}, {200,200})
+		outdoorLightEffect:send('size', {1600,1200}, {100,100})
 		outdoorLightEffect:send('angle', {0,6.3}, {0,6.3})		
 		outdoorLightEffect:send('origin', lightOrigin)
 		outdoorLightEffect:send('dFallOff', 0.8 )				
 		-- night
-		outdoorLightEffect:send('lightColor', {0.7,0.7,1.4}, {2,2,2})
+		outdoorLightEffect:send('lightColor', {0.6,0.6,1.3}, {2,2,2})
 	end		
 		
 	if love.keyboard.isDown('m') then		
@@ -463,9 +477,12 @@ function love.update(dt)
 	daCamera:center(hero._position[1], hero._position[2])
 	
 	-- get the list of visible ids
-	visibleIds = daMap:nearIds(daCamera, buckets, 1)
+	visibleIds = daMap:nearIds(daCamera, buckets, 2)
 	
-	-- generate a list of visible actors
+	-- generate a list of visible actors and objects
+	for k, _ in pairs(visibleObjects) do
+		visibleObjects[k] = nil
+	end	
 	for k, _ in pairs(visibleActors) do
 		visibleActors[k] = nil
 	end	
@@ -474,6 +491,9 @@ function love.update(dt)
 			if v.checkCollision then
 				visibleActors[v] = true
 			end
+			if v._image then
+				visibleObjects[v] = true
+			end			
 		end
 	end	
 end

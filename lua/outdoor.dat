@@ -9,8 +9,9 @@
 		{	_file = 'outdoor.png',
 			_definitions = {
 				tall_tree = {
-					_width = 3, _height = 5,
-					_offset = {},
+					_tileWidth = 3, _tileHeight = 5,
+					_offset = { 48, 160 },
+					_height = 32,
 					_boundary = {},
 					_tiles = { 	
 						{ 	nil, nil, nil,
@@ -26,8 +27,9 @@
 						}
 				},
 				short_tree = {
-					_width = 3, _height = 5,
-					_offset = {},
+					_tileWidth = 3, _tileHeight = 5,
+					_offset = { 48, 160 },
+					_height = 32,
 					_boundary = {},
 					_tiles = { 
 						{ 	nil, nil, nil,
@@ -43,9 +45,10 @@
 						}
 				},
 				pine_tree = {
-					_width = 3, _height = 5,
-					_offset = {},
-					_boundary = {},
+					_tileWidth = 3, _tileHeight = 5,
+					_offset = { 48, 160 },
+					_height = 32,
+					_boundary = { 38, 112, 58, 128 },
 					_tiles = {
 						{	nil, nil, nil,
 							nil, nil, nil,

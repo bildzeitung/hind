@@ -60,12 +60,15 @@ function _M:new(t)
 		
 		-- build the objects
 		for k, def in pairs(i._definitions or {}) do
-			-- create a new image for this object
-			local im = love.image.newImageData(
+			local canvas = love.graphics.newCanvas(
 				t._size[1] * def._tileWidth, 
-				t._size[2] * def._tileHeight)					
+				t._size[2] * def._tileHeight)									
 					
 			for _, layer in pairs(def._tiles) do
+				-- create new image data for this layer
+				local im = love.image.newImageData(
+					t._size[1] * def._tileWidth, 
+					t._size[2] * def._tileHeight)	
 				local tile = 1
 				for y = 0, def._tileHeight - 1 do
 					for x = 0, def._tileWidth - 1 do
@@ -77,10 +80,16 @@ function _M:new(t)
 						tile = tile + 1
 					end
 				end				
+				
+				-- draw this layer to the canvas
+				local image = love.graphics.newImage(im)
+				love.graphics.setCanvas(canvas)
+				love.graphics.draw(image, 0, 0)
+				love.graphics.setCanvas()
 			end
 			
 			def._tiles = nil
-			def._image = love.graphics.newImage(im)
+			def._image = love.graphics.newImage(canvas:getImageData())
 			t._objects[k] = def
 		end
 	end

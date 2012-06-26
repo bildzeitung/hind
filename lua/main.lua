@@ -387,7 +387,8 @@ function love.update(dt)
 	
 	--@TODO coordinate the shadow and light position
 	-- with the light color for day / night effect
-	
+	-- each light could also generate it's own shadow
+	-- redraw!!!!!!	
 	if love.keyboard.isDown('1') then		
 		currentShader = outdoorLightEffect		
 		outdoorLightEffect:send('pos', {400,300}, {0,0})

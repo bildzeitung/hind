@@ -75,6 +75,9 @@ function _M:generate()
 		self._tiles.roof[y] = {}
 	end		
 	
+	local current = 1
+	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
+	
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do
@@ -82,7 +85,8 @@ function _M:generate()
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then
-					addObject('pine_tree',x,y)
+					addObject(tree_cycle[(current % 3) + 1],x,y)
+					current = current + 1
 			end
 		end
 	end	

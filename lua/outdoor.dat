@@ -10,9 +10,9 @@
 			_definitions = {
 				tall_tree = {
 					_tileWidth = 3, _tileHeight = 5,
-					_offset = { 48, 160 },
-					_height = 32,
-					_boundary = {},
+					_offset = { 48, 128 },
+					_height = 80,
+					_boundary = { 38, 112, 58, 128 },
 					_tiles = { 	
 						{ 	nil, nil, nil,
 							nil, nil, nil,
@@ -28,9 +28,9 @@
 				},
 				short_tree = {
 					_tileWidth = 3, _tileHeight = 5,
-					_offset = { 48, 160 },
-					_height = 32,
-					_boundary = {},
+					_offset = { 48, 128 },
+					_height = 80,
+					_boundary = { 38, 112, 58, 128 },
 					_tiles = { 
 						{ 	nil, nil, nil,
 							nil, nil, nil,
@@ -46,8 +46,8 @@
 				},
 				pine_tree = {
 					_tileWidth = 3, _tileHeight = 5,
-					_offset = { 48, 160 },
-					_height = 32,
+					_offset = { 48, 128 },
+					_height = 80,
 					_boundary = { 38, 112, 58, 128 },
 					_tiles = {
 						{	nil, nil, nil,

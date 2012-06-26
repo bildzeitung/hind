@@ -370,7 +370,7 @@ function love.update(dt)
 		outdoorLightEffect:send('size', {1600,1200}, {0,0})
 		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
 		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.8 )				
+		outdoorLightEffect:send('dFallOff', 0.6 )				
 		-- morning
 		outdoorLightEffect:send('lightColor', {2.0,2.0,1.7}, {0,0,0})
 	end
@@ -392,7 +392,7 @@ function love.update(dt)
 		outdoorLightEffect:send('size', {1600,1200}, {0,0})
 		outdoorLightEffect:send('angle', {0,6.3}, {0,0})
 		outdoorLightEffect:send('origin', lightOrigin)
-		outdoorLightEffect:send('dFallOff', 0.8 )				
+		outdoorLightEffect:send('dFallOff', 0.6 )				
 		-- dusk
 		outdoorLightEffect:send('lightColor', {2.0,1.6,1.6}, {0,0,0})
 	end	

@@ -10,18 +10,12 @@
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	},
-	_boundaries = { 
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, {10,16,22,32}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
-	},
+	_boundaries = {},
 	_definitions = {
 		tall_tree = {
 			_width = 3, _height = 5,
 			_offset = {},
+			_boundary = {},
 			_tiles = { 	
 				{ 	nil, nil, nil,
 					nil, nil, nil,
@@ -38,6 +32,7 @@
 		short_tree = {
 			_width = 3, _height = 5,
 			_offset = {},
+			_boundary = {},
 			_tiles = { 
 				{ 	nil, nil, nil,
 					nil, nil, nil,
@@ -54,6 +49,7 @@
 		pine_tree = {
 			_width = 3, _height = 5,
 			_offset = {},
+			_boundary = {},
 			_tiles = {
 				{	nil, nil, nil,
 					nil, nil, nil,

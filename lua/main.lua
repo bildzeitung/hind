@@ -309,6 +309,7 @@ function love.draw()
 	-- and size of all of the current spot lights
 	-- in screen space
 
+	-- draw the objects and their shadows
 	for k, v in ipairs(drawTable.object) do
 		love.graphics.setPixelEffect(shadowEffect)				
 			
@@ -324,16 +325,19 @@ function love.draw()
 			v[7], v[8])
 	end	
 	
-	for k, v in ipairs(drawTable.roof) do
-		love.graphics.setPixelEffect(shadowEffect)			
-			
+	-- draw the roof shadows
+	love.graphics.setPixelEffect(shadowEffect)				
+	for k, v in ipairs(drawTable.roof) do		
 		love.graphics.draw(v[2],
 			v[3], v[4], 0, v[5], v[6], 
 			v[7], v[8], 
 			lighting.shadowSkew[1], lighting.shadowSkew[2])
-			
-		love.graphics.setPixelEffect(currentShader)		
+	end
 	
+	-- draw the roof objects
+			
+	love.graphics.setPixelEffect(currentShader)		
+	for k, v in ipairs(drawTable.roof) do	
 		love.graphics.draw(v[2], 
 			v[3], v[4], 0, v[5], v[6], 
 			v[7], v[8])

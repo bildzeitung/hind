@@ -62,9 +62,16 @@ function _M:generate()
 			
 			table.insert(drawTable.object, 
 				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
-				self._image, 
+				self._image[1], 
 				sx, sy, 
 				zoomX, zoomY, self._offset[1], self._offset[2] })
+				
+			table.insert(drawTable.roof, 
+				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
+				self._image[2], 
+				sx, sy, 
+				zoomX, zoomY, self._offset[1], self._offset[2] })
+				
 		end
 		
 		table.insert(self._objects, o)
@@ -81,7 +88,7 @@ function _M:generate()
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do
-			self._tiles.base[y][x] = math.floor(math.random()*18) + 1
+			self._tiles.base[y][x] = math.floor(math.random()*36) + 1
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then

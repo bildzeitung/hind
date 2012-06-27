@@ -262,6 +262,7 @@ function love.draw()
 	-- set up the draw table
 	local drawTable = {
 		base = {},
+		overlay = {},
 		object = {},
 		roof = {}
 	}
@@ -300,9 +301,18 @@ function love.draw()
 			v[7], v[8])
 	end
 	
+	for k, v in ipairs(drawTable.overlay) do
+		love.graphics.draw(v[2],
+			v[3], v[4], 0, v[5], v[6], 
+			v[7], v[8])
+	end
+	
 	table.sort(drawTable.object,function(a,b)
 		return a[1] < b[1] end)
-	
+
+	table.sort(drawTable.roof,function(a,b)
+		return a[1] < b[1] end)
+		
 	setDirectionalLight( { spotSize = 0.3 } )
 	updateLightEffect()
 	

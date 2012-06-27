@@ -17,6 +17,7 @@ function _M:new(t)
 	
 	t._tiles = {
 		base = {},
+		overlay = {},
 		roof = {}	
 	}
 	t._objects = {}
@@ -77,8 +78,9 @@ function _M:generate()
 		table.insert(self._objects, o)
 	end
 	
-	for y = 1, self._sizeInTiles[2] do
+	for y = 1, self._sizeInTiles[2] do		
 		self._tiles.base[y] = {}
+		self._tiles.overlay[y] = {}
 		self._tiles.roof[y] = {}
 	end		
 	
@@ -244,6 +246,14 @@ function _M:drawTiles(camera, drawTable)
 			table.insert(drawTable.base, 
 				{ y * ts[1] + th[tile], tq[tile], 
 				cx, cy, zoomX, zoomY, htsx, htsy})
+			
+			-- draw the overlay layer
+			local tile = self._tiles.overlay[y][x]
+			if tile then
+				table.insert(drawTable.overlay, 
+					{ y * ts[1] + th[tile], tq[tile], 
+					cx, cy, zoomX, zoomY, htsx, htsy})
+			end
 				
 			-- draw the roof layer if a tile exists
 			local tile = self._tiles.roof[y][x]

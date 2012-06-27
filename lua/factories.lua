@@ -42,11 +42,11 @@ end
 --
 function createTileset(filename)
 	local t = readTableFromFile(filename)	
-	t._image = love.graphics.newImage(t._image)
-		
-	t._image:setWrap('repeat', 'repeat')
-	t._image:setFilter('nearest', 'nearest')
 	
+	for k, v in ipairs(t._images) do
+		t._images[k]._image = love.image.newImageData(v._file)
+	end
+		
 	local ts = tileset:new(t)	
 	return ts	
 end

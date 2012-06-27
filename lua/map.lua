@@ -4,6 +4,8 @@
 	Created JUN-21-2012
 ]]
 
+require 'table_ext'
+
 module(..., package.seeall)
 
 --
@@ -15,9 +17,10 @@ function _M:new(t)
 	
 	t._tiles = {
 		base = {},
-		object = {},
+		overlay = {},
 		roof = {}	
 	}
+	t._objects = {}
 	t._colliders = {}
 	
 	-- center the map by default
@@ -32,38 +35,88 @@ end
 --  Generates a map
 --
 function _M:generate()
-	-- insert objet
-	local function addObject(name, x, y)		
-		local definition = self._tileSet._definitions[name]
-
-		local sx = x - definition.x
-		local sy = y - definition.y		
-		local cx, cy = sx, sy
+	local ts = self._tileSet:size()
 		
-		local counter = 1
-		for yy = 1, definition.h do
-			cx = sx
-			for xx = 1, definition.w do
-				self._tiles.object[cy][cx] = definition.o[counter]
-				self._tiles.roof[cy][cx] = definition.r[counter]
-				counter = counter + 1
-				cx = cx + 1
-			end
-			cy = cy + 1
+	-- insert objet
+	local function addObject(name, x, y)			
+		local o = table.clone(self._tileSet._objects[name], { deep = true })
+
+		o._position = { x * ts[1], y * ts[2] }
+		local b = { }
+		b[1] = o._position[1] + o._boundary[1] - o._offset[1]
+		b[2] = o._position[2] + o._boundary[2] - o._offset[2]
+		b[3] = o._position[1] + o._boundary[3] - o._offset[1]
+		b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
+		o._boundary = b
+		
+		--
+		--  Draw the object
+		--
+		function o:draw(camera, drawTable)
+			local cw, cv, zoomX, zoomY, cwzx, cwzy =
+				drawTable.cw, drawTable.cv, 
+				drawTable.zoomX, drawTable.zoomY,
+				drawTable.cwzx, drawTable.cwzy	
+				
+			local sx = math.floor((self._position[1] * zoomX) - cwzx)
+			local sy = math.floor((self._position[2] * zoomY) - cwzy)
+			
+			table.insert(drawTable.object, 
+				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
+				self._image[1], 
+				sx, sy, 
+				zoomX, zoomY, self._offset[1], self._offset[2] })
+				
+			table.insert(drawTable.roof, 
+				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
+				self._image[2], 
+				sx, sy, 
+				zoomX, zoomY, self._offset[1], self._offset[2] })
+				
 		end
+		
+		table.insert(self._objects, o)
 	end
+	
+	for y = 1, self._sizeInTiles[2] do		
+		self._tiles.base[y] = {}
+		self._tiles.overlay[y] = {}
+		self._tiles.roof[y] = {}
+	end		
+	
+	local current = 1
+	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
 	
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		self._tiles.base[y] = {}
-		self._tiles.object[y] = {}
-		self._tiles.roof[y] = {}
 		for x = 1, self._sizeInTiles[1] do
-			self._tiles.base[y][x] = math.floor(math.random()*3) + 37			
+			-- select a base tile
+			local found = false
+			local tile
+			while not found do
+				 tile = math.floor(math.random()*36) + 1
+				if self._tileSet._heights[tile] == 0 then
+					found = true
+				end
+			end
+			self._tiles.base[y][x] = tile
+			
+			-- select an overlay tile
+			local found = false
+			local tile
+			while not found do
+				 tile = math.floor(math.random()*36) + 1
+				if self._tileSet._heights[tile] ~= 0 then
+					found = true
+				end
+			end
+			self._tiles.overlay[y][x] = tile
+			
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then
-					addObject('pine_tree',x,y)
+					addObject(tree_cycle[(current % 3) + 1],x,y)
+					current = current + 1
 			end
 		end
 	end	
@@ -76,16 +129,16 @@ end
 --  Create colliders
 --
 function _M:createColliders(b)
-	self._colliders = {}
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
-	local tx, ty = 0 ,0 
 	
 	local function addCollider(layer, x, y)
 		local tile = self._tiles[layer][y][x]
 		if tile then
 			local boundary = bs[tile]
 			if boundary then
+				local tx = x * ts[1]
+				local ty = y * ts[2]
 				local ids = {}
 				local boundary = { tx + boundary[1] + ts[1] / 2, 
 					ty + boundary[2] + ts[2] / 2,
@@ -103,17 +156,26 @@ function _M:createColliders(b)
 		end
 	end
 	
+	-- add colliders for base and roof tiles
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP COLLIDERS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		tx = 0
 		for x = 1, self._sizeInTiles[1] do
 			addCollider('base', x, y)
-			addCollider('object', x, y)
 			addCollider('roof', x, y)
-			tx = tx + ts[1]
 		end
-		ty = ty + ts[2]
 	end	
+	
+	-- add colliders for objects
+	for k, v in ipairs(self._objects) do
+		v._ids = {}
+		v._ids[b.hash(v._boundary[1], v._boundary[2])] = true
+		v._ids[b.hash(v._boundary[1], v._boundary[4])] = true
+		v._ids[b.hash(v._boundary[3], v._boundary[2])] = true
+		v._ids[b.hash(v._boundary[3], v._boundary[4])] = true
+				
+		table.insert(self._colliders, v)
+	end
 	
 	print()
 end
@@ -148,13 +210,13 @@ function _M:nearIds(camera, b, padding)
 	local zoomY = cv[4] / cw[4]	
 	local ztx = ts[1] * zoomX
 	local zty = ts[2] * zoomY
-	local tcx = math.floor(b.cellSize / ztx) * padding
-	local tcy = math.floor(b.cellSize / zty) * padding
+	local tcx = math.floor(b.cellSize / ztx * padding)
+	local tcy = math.floor(b.cellSize / zty * padding)
 						
 	local stx = math.floor(cw[1] / ts[1]) - tcx
-	local etx = stx + math.floor(cv[3] / ztx) + tcx
+	local etx = stx + math.floor(cv[3] / ztx) + (tcx * 2)
 	local sty = math.floor(cw[2] / ts[2]) - tcy
-	local ety = sty + math.floor(cv[4] / zty) + tcy
+	local ety = sty + math.floor(cv[4] / zty) + (tcy * 2)
 	
 	local ids = {}
 	
@@ -172,15 +234,14 @@ end
 --
 --  Draw the map
 --
-function _M:draw(camera, drawTable)	
-	local im = self._tileSet:image()
-	local cw = camera:window()
-	local cv = camera:viewport()
+function _M:drawTiles(camera, drawTable)	
+	local cw, cv, zoomX, zoomY =
+		drawTable.cw, drawTable.cv, 
+		drawTable.zoomX, drawTable.zoomY
+
 	local tq = self._tileSet:quads()
 	local ts = self._tileSet:size()
 	local th = self._tileSet:heights()
-	local zoomX = cv[3] / cw[3] 
-	local zoomY = cv[4] / cw[4]	
 	local ztx = ts[1] * zoomX
 	local zty = ts[2] * zoomY
 	local htsx = ts[1] / 2
@@ -203,26 +264,25 @@ function _M:draw(camera, drawTable)
 		for x = stx, etx do		
 			-- draw the base layer
 			local tile = self._tiles.base[y][x]
-			table.insert(drawTable, 
-				{ y * ts[1] + th[tile], im, tq[tile], 
+			table.insert(drawTable.base, 
+				{ y * ts[1] + th[tile], tq[tile], 
 				cx, cy, zoomX, zoomY, htsx, htsy})
-				
-			-- draw the object layer if a tile exists
-			local tile = self._tiles.object[y][x]
+			
+			-- draw the overlay layer
+			local tile = self._tiles.overlay[y][x]
 			if tile then
-				table.insert(drawTable, 
-					{ y * ts[1] + th[tile], im, tq[tile], 
+				table.insert(drawTable.overlay, 
+					{ y * ts[1] + th[tile], tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
 			end
-					
+				
 			-- draw the roof layer if a tile exists
 			local tile = self._tiles.roof[y][x]
 			if tile then
-				table.insert(drawTable, 
-					{ y * ts[1] + th[tile], im, tq[tile], 
+				table.insert(drawTable.roof, 
+					{ y * ts[1] + th[tile] + xof, tq[tile], 
 					cx, cy, zoomX, zoomY, htsx, htsy})
-			end
-				
+			end			
 			cx = cx + ztx
 		end
 		cy = cy + zty

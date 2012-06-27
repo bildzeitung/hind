@@ -224,7 +224,7 @@ function loadEffects()
 			float a;
 			vec3 l = vec3(0,0,0);
 			int i;
-			for (i=0;i<2;i++) 
+			for (i=0;i<6;i++) 
 			{
 				vec2 toObj = screen_coords - pos[i];
 				a = atan(toObj.y, toObj.x);
@@ -541,7 +541,14 @@ function love.update(dt)
 				angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
 		-- random spot lights
 		setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
-				angle = {-1, 7}, lightColor = {3,3,3}, world = true }
+				angle = {-1, 7}, lightColor = {3,3,3}, world = true }				
+		setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75}, 
+				angle = {-1, 7}, lightColor = {3,1,1}, world = true }
+		setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
+				angle = {1, 3}, lightColor = {0.5,0.5,2}, world = true }
+		setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
+				angle = {4,4.5}, lightColor = {2,2,2}, world = true }
+				
 		updateLightEffect()
 	end		
 		

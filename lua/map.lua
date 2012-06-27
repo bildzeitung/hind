@@ -90,7 +90,28 @@ function _M:generate()
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do
-			self._tiles.base[y][x] = math.floor(math.random()*36) + 1
+			-- select a base tile
+			local found = false
+			local tile
+			while not found do
+				 tile = math.floor(math.random()*36) + 1
+				if self._tileSet._heights[tile] == 0 then
+					found = true
+				end
+			end
+			self._tiles.base[y][x] = tile
+			
+			-- select an overlay tile
+			local found = false
+			local tile
+			while not found do
+				 tile = math.floor(math.random()*36) + 1
+				if self._tileSet._heights[tile] ~= 0 then
+					found = true
+				end
+			end
+			self._tiles.overlay[y][x] = tile
+			
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then

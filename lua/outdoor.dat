@@ -4,11 +4,23 @@
 	_images = {
 		{	_file = 'grass.png',
 			_boundaries = { default = nil },
-			_heights = { default = 0 }
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
 		},
 		{	_file = 'dirt.png',
 			_boundaries = { default = nil },
-			_heights = { default = 0 }
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
 		},		
 		{	_file = 'outdoor.png',
 			_definitions = {

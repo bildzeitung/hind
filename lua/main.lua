@@ -42,9 +42,11 @@ function love.load()
 	maxLights = 6
 	
 	lighting = {
-		origin = { 0, 0.4 },
+		originMinMax = { 0.2, 0.8 },
+		origin = { 0.2, 0.4 },
 		spotSize = { 0.25 },
 		fallOff = { 0.25 },		
+		shadowSkewMinMax = { -3, 3 },
 		shadowSkew = { -3, 0 },		
 		spotLights = { pos = {}, screenPos = {}, size = {}, screenSize = {}, 
 			angle = {}, lightColor = {}, world = {} }
@@ -301,7 +303,7 @@ function love.draw()
 	table.sort(drawTable.object,function(a,b)
 		return a[1] < b[1] end)
 	
-	setDirectionalLight( { spotSize = 0.25 } )
+	setDirectionalLight( { spotSize = 0.3 } )
 	updateLightEffect()
 	
 	-- @TODO the shadow direction
@@ -414,15 +416,15 @@ function love.update(dt)
 	
 	-- @TODO proper day / night cycles with changing colour
 	-- and direction of light
-	lighting.origin[1] = lighting.origin[1] + 0.001
-	if lighting.origin[1] > 1 then 
-		lighting.origin[1] = 0
+	lighting.origin[1] = lighting.origin[1] + 0.0001
+	if lighting.origin[1] > lighting.originMinMax[2] then 
+		lighting.origin[1] = lighting.originMinMax[1]
 	end	
-	
-	 lighting.shadowSkew[1] =  lighting.shadowSkew[1] + 0.006
-	if  lighting.shadowSkew[1] > 3 then
-		 lighting.shadowSkew[1] = -3
-	end
+		
+    local orange = lighting.originMinMax[2] - lighting.originMinMax[1]
+	local srange = lighting.shadowSkewMinMax[2] - lighting.shadowSkewMinMax[1]
+    local scaled = (lighting.origin[1]  - lighting.originMinMax[1]) / orange
+    lighting.shadowSkew[1] = lighting.shadowSkewMinMax[1] + (scaled * srange)
 	
 	if love.keyboard.isDown('up') then
         hero:animation('walkup')		
@@ -486,7 +488,7 @@ function love.update(dt)
 		currentShader = lightEffect		
 		
 		-- morning
-		setDirectionalLight( { fallOff = 0.8 } )
+		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 				angle = {-1, 7}, lightColor = {2.0,2.0,1.7}, world = false }		
 		for i = 2, maxLights do
@@ -499,7 +501,7 @@ function love.update(dt)
 		currentShader = lightEffect		
 		
 		-- midday
-		setDirectionalLight( { fallOff = 0.8 } )
+		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 				angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
 		for i = 2, maxLights do
@@ -512,7 +514,7 @@ function love.update(dt)
 		currentShader = lightEffect		
 		
 		-- dusk
-		setDirectionalLight( { fallOff = 0.8 } )
+		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 				angle = {-1, 7}, lightColor = {2.0,1.6,1.6}, world = false }		
 		for i = 2, maxLights do
@@ -525,7 +527,7 @@ function love.update(dt)
 		currentShader = lightEffect		
 		
 		-- night
-		setDirectionalLight( { fallOff = 0.8 } )
+		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 				angle = {-1, 7}, lightColor = {0.6,0.6,1.2}, world = false }
 		-- random spot lights

@@ -46,8 +46,8 @@ function love.load()
 		origin = { 0.2, 0.4 },
 		spotSize = { 0.25 },
 		fallOff = { 0.25 },		
-		shadowSkewMinMax = { -3, 3 },
-		shadowSkew = { -3, 0 },		
+		shadowSkewMinMax = { -2, 2 },
+		shadowSkew = { -2, 0 },		
 		spotLights = { pos = {}, screenPos = {}, size = {}, screenSize = {}, 
 			angle = {}, lightColor = {}, world = {} }
 	}
@@ -346,8 +346,7 @@ function love.draw()
 			lighting.shadowSkew[1], lighting.shadowSkew[2])
 	end
 	
-	-- draw the roof objects
-			
+	-- draw the roof objects			
 	love.graphics.setPixelEffect(currentShader)		
 	for k, v in ipairs(drawTable.roof) do	
 		love.graphics.draw(v[2], 
@@ -500,7 +499,7 @@ function love.update(dt)
 		-- morning
 		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.0,2.0,1.7}, world = false }		
+				angle = {-1, 7}, lightColor = {1.0,1.0,0.8}, world = false }		
 		for i = 2, maxLights do
 			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
@@ -539,7 +538,7 @@ function love.update(dt)
 		-- night
 		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {0.6,0.6,1.2}, world = false }
+				angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
 		-- random spot lights
 		setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
 				angle = {-1, 7}, lightColor = {3,3,3}, world = true }

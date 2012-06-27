@@ -63,10 +63,6 @@ function _M:new(t)
 			def._image = {}
 			
 			for layerNumber, layer in ipairs(def._tiles) do
-				local canvas = love.graphics.newCanvas(
-					t._size[1] * def._tileWidth, 
-					t._size[2] * def._tileHeight)														
-
 				-- create new image data for this layer
 				local im = love.image.newImageData(
 					t._size[1] * def._tileWidth, 
@@ -82,14 +78,7 @@ function _M:new(t)
 						tile = tile + 1
 					end
 				end				
-				
-				-- draw this layer to the canvas
-				local image = love.graphics.newImage(im)
-				love.graphics.setCanvas(canvas)
-				love.graphics.draw(image, 0, 0)
-				love.graphics.setCanvas()
-				
-				def._image[layerNumber] = love.graphics.newImage(canvas:getImageData())
+				def._image[layerNumber] = love.graphics.newImage(im)
 			end
 			
 			def._tiles = nil

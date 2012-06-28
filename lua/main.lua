@@ -14,10 +14,14 @@ function love.load()
 	
 	tileSets = {}
 	
-	local ts = factories.createTileset('outdoor.dat')
-	tileSets[ts:name()] = ts
-	local ts = factories.createTileset('fem1.dat')
-	tileSets[ts:name()] = ts
+	local load = {
+		'outdoor', 'fem1', 'monster' 
+	}
+		
+	for _, v in ipairs(load) do
+		local ts = factories.createTileset(v .. '.dat')
+		tileSets[ts:name()] = ts
+	end
 	
 	-- the size of the world
 	local worldX = 500 * 32
@@ -194,7 +198,7 @@ function createActors()
 	local sy = 0
 	for i = 1, numActors do		
 		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
-		local a = factories.createActor('princess.dat')
+		local a = factories.createActor('slime.dat')
 		a:animation('standright')
 		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)
@@ -421,8 +425,6 @@ function love.draw()
 end
 
 function love.update(dt)
-	local vx, vy = 0, 0
-	
 	-- @TODO proper day / night cycles with changing colour
 	-- and direction of light
 	lighting.origin[1] = lighting.origin[1] + 0.0001
@@ -435,22 +437,37 @@ function love.update(dt)
     local scaled = (lighting.origin[1]  - lighting.originMinMax[1]) / orange
     lighting.shadowSkew[1] = lighting.shadowSkewMinMax[1] + (scaled * srange)
 	
-	if love.keyboard.isDown('up') then
-        hero:animation('walkup')		
-		vy = -125
-    elseif
-		love.keyboard.isDown('down') then
-        hero:animation('walkdown')		
-		vy = 125
-	end
+	if not hero._isAttacking then
+		local vx, vy = 0, 0
 	
-	if love.keyboard.isDown('left') then
-        hero:animation('walkleft')		
-		vx = -125
-    elseif
-		love.keyboard.isDown('right') then
-        hero:animation('walkright')		
-		vx = 125
+		if love.keyboard.isDown('up') then
+			hero:animation('walkup')		
+			vy = -125
+		elseif
+			love.keyboard.isDown('down') then
+			hero:animation('walkdown')		
+			vy = 125
+		end
+		
+		if love.keyboard.isDown('left') then
+			hero:animation('walkleft')		
+			vx = -125
+		elseif
+			love.keyboard.isDown('right') then
+			hero:animation('walkright')		
+			vx = 125
+		end
+		
+		hero:velocity(vx, vy)
+		
+		if vx == 0 and vy == 0 then
+			local anim = hero:animation():name():gsub('walk','stand')
+			hero:animation(anim)
+		end
+	end
+		
+	if love.keyboard.isDown(' ') then
+		hero:attack()
 	end
 	
 	if love.keyboard.isDown('q') then
@@ -499,7 +516,7 @@ function love.update(dt)
 		-- morning
 		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {1.0,1.0,0.8}, world = false }		
+				angle = {-1, 7}, lightColor = {1.7,1.4,1.1}, world = false }		
 		for i = 2, maxLights do
 			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
@@ -525,7 +542,7 @@ function love.update(dt)
 		-- dusk
 		setDirectionalLight( { fallOff = 0.35 } )
 		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.0,1.6,1.6}, world = false }		
+				angle = {-1, 7}, lightColor = {2.0,1.6,1.4}, world = false }		
 		for i = 2, maxLights do
 			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
@@ -556,20 +573,31 @@ function love.update(dt)
 		currentShader = nil
 	end
 	
-	hero:velocity(vx, vy)
-	
-	if vx == 0 and vy == 0 then
-		local anim = hero:animation():name():gsub('walk','stand')
-		hero:animation(anim)
-	end
-		
 	-- @TODO AI!!! (DOH!)
 	-- update the visible npcs with some crappy "AI"
 	for a, _ in pairs(visibleActors) do
 		if a.velocity and not a.player then
 			if math.random() > 0.95 then
-				a:velocity(math.random()*200-100,math.random()*200-100)
-			end
+				local xv = math.random()*200-100
+				local yv = math.random()*200-100
+				
+				if math.abs(xv) < 50 then xv = 0 end
+				if math.abs(yv) < 50 then yv = 0 end
+				
+				a:velocity(xv, yv)				
+			
+				if yv > 0 then
+					a:animation('walkdown')
+				elseif yv < 0 then
+					a:animation('walkup')
+				end
+				
+				if xv > 0 then 
+					a:animation('walkright')
+				elseif xv < 0 then
+					a:animation('walkleft')
+				end
+			end						
 		end	
 	end	
 

@@ -122,11 +122,25 @@ end
 --
 function _M:collide(other)
 	if self._lastPosUpdate[1] ~= 0 or 
-		self._lastPosUpdate[2] ~= 0 then
-			self._position[1] = self._position[1] - self._lastPosUpdate[1]		
-			self._position[2] = self._position[2] - self._lastPosUpdate[2]
-			self._lastPosUpdate[1] = 0
-			self._lastPosUpdate[2] = 0
+		self._lastPosUpdate[2] ~= 0 then		
+			-- check if reversing the last update moves the
+			-- actor farther away from the other object
+			local xdiff = other._position[1] - self._position[1]
+			local ydiff = other._position[2] - self._position[2]			
+			local currentDist = xdiff * xdiff + ydiff * ydiff
+
+			local xdiff = other._position[1] - 
+				(self._position[1] - self._lastPosUpdate[1])
+			local ydiff = other._position[2] - 
+				(self._position[2] - self._lastPosUpdate[2])
+			local possibleDist = xdiff * xdiff + ydiff * ydiff
+
+			if currentDist < possibleDist then
+				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
+				self._position[2] = self._position[2] - self._lastPosUpdate[2]
+				self._lastPosUpdate[1] = 0
+				self._lastPosUpdate[2] = 0
+			end
 	end
 	
 	self._collidee = other
@@ -239,4 +253,25 @@ function _M:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
+end
+
+function _M:attack()
+	-- can only attack once
+	if self._isAttacking then
+		return 
+	end
+	
+	self._isAttacking = true
+	
+	self:velocity(0,0)
+	
+	local currentAnim = self:animation():name()
+	local attackAnim = currentAnim:gsub('walk','attack')
+	attackAnim = attackAnim:gsub('stand','attack')
+	self:animation(attackAnim, true)
+	self._currentAnimation.done_cb = function()
+		self:animation(currentAnim)
+		self._currentAnimation.done_cb = nil			
+		self._isAttacking = false
+	end
 end

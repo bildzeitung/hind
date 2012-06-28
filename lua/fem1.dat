@@ -5,6 +5,10 @@
 		{
 			_file = 'fem1.png', 
 			_boundaries = { default = {20,48,44,62} }
+		},
+		{
+			_file = 'female_slash.png', 
+			_boundaries = { default = {20,48,44,62} }
 		}
 	}
 }

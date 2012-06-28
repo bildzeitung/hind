@@ -33,14 +33,26 @@ function _M:update(dt)
 		self._frameCounter = 0
 		
 		self._currentFrame = self._currentFrame + self._frameDir
-		if self._currentFrame > self._frameEnd or self._currentFrame < 1 then
+		if self._currentFrame > self._frameEnd or 
+			self._currentFrame < self._frameStart then
 			if self._looping == 'pingpong' then
 				self._currentFrame = self._currentFrame 
 					- (self._frameDir * 2)
 				self._frameDir = -self._frameDir				
 			elseif self._looping == 'loop' then
 				self._currentFrame = self._frameStart
-			elseif self._looping == 'once' then
+			elseif self._looping == 'onceboth' then
+				if self._currentFrame < self._frameStart then
+					-- end the animation
+					if self.done_cb then
+						self.done_cb(self)
+					end
+					self._frameDir = 0
+				else
+					self._currentFrame = self._currentFrame 
+						- (self._frameDir * 2)
+					self._frameDir = -self._frameDir
+				end
 			end
 		end		
 	end
@@ -51,6 +63,7 @@ end
 --
 function _M:reset()
 	self._frameCounter = 0
+	self._frameDir = 1
 	self._currentFrame = self._frameStart
 end
 

@@ -1,0 +1,85 @@
+{
+	_animations = 
+	{
+		standup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		walkup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 3,
+			_looping = 'loop'
+		},
+		standleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standleft',
+			_frameDuration = 0.10,
+			_frameStart = 10,
+			_frameEnd = 10,
+			_looping = 'loop'
+		},		
+		walkleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkleft',
+			_frameDuration = 0.10,
+			_frameStart = 10,
+			_frameEnd = 12,
+			_looping = 'loop'
+		},
+		standdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standdown',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 7,
+			_looping = 'loop'
+		},		
+		walkdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkdown',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 9,
+			_looping = 'loop'
+		},
+		standright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standright',
+			_frameDuration = 0.10,
+			_frameStart = 4,
+			_frameEnd = 4,
+			_looping = 'loop'
+		},	
+		walkright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkright',
+			_frameDuration = 0.10,
+			_frameStart = 4,
+			_frameEnd = 6,
+			_looping = 'loop'
+		}		
+	}
+}

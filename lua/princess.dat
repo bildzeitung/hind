@@ -80,6 +80,46 @@
 			_frameStart = 29,
 			_frameEnd = 36,
 			_looping = 'loop'
-		}		
+		},
+		attackup = 
+		{
+			_tileSet = 'fem1',
+			_offset = { 32, 64 },
+			_name = 'attackup',
+			_frameDuration = 0.04,
+			_frameStart = 37,
+			_frameEnd = 42,
+			_looping = 'onceboth'		
+		},
+		attackleft = 
+		{
+			_tileSet = 'fem1',
+			_offset = { 32, 64 },
+			_name = 'attackleft',
+			_frameDuration = 0.04,
+			_frameStart = 43,
+			_frameEnd = 48,
+			_looping = 'onceboth'		
+		},
+		attackdown = 
+		{
+			_tileSet = 'fem1',
+			_offset = { 32, 64 },
+			_name = 'attackdown',
+			_frameDuration = 0.04,
+			_frameStart = 49,
+			_frameEnd = 54,
+			_looping = 'onceboth'		
+		},
+		attackright = 
+		{
+			_tileSet = 'fem1',
+			_offset = { 32, 64 },
+			_name = 'attackright',
+			_frameDuration = 0.04,
+			_frameStart = 55,
+			_frameEnd = 60,
+			_looping = 'onceboth'		
+		}					
 	}
 }

@@ -4,7 +4,7 @@
 -- This is diamond-square algorithm, a kind of twisty red-black with noise
 --
 
-local base = 8
+local base = 32 -- power of two
 local h    = base+1
 local w    = base+1
 
@@ -41,14 +41,10 @@ function pterrain()
 	print()
 end
 
--- ok, badly named: this fn modifies the value by [-hrange,hrange], and then
+-- ok, badly named: this fn modifies the value by [-step/2,step/2], and then
 -- clamps the values to the range [0,64]
 function clamp(x,y)
-	terrain[y][x] = terrain[y][x] + math.random(-hrange,hrange)
-	
-	if terrain[y][x] < 0 then terrain[y][x] = 0 end
-	if terrain[y][x] > 64 then terrain[y][x] = 64 end
-	
+	terrain[y][x] = terrain[y][x] + math.random(-step/2,step/2)
 	terrain[y][x] = math.floor(terrain[y][x])
 end
 
@@ -64,7 +60,7 @@ while mid > 1 do
 		end
 	end
 
-	pterrain()
+	--pterrain()
 	
 	function diamond( x, y )
 	  local avg = 0
@@ -104,11 +100,36 @@ while mid > 1 do
 		end
 	end
 
-	pterrain()
-	
-	print(';;;')
+	--pterrain()	
+	--print(';;;')
 
-	step = step / 2
-	mid  = math.ceil(mid/2)
+	step   = step / 2
+	mid    = math.ceil(mid/2)
 	hrange = hrange / 2
 end
+
+-- @TODO: this must become a running average
+sum = 0
+avg = 0
+for i=1,base+1 do
+	for j=1,base+1 do
+		sum = sum + terrain[i][j]
+	end
+end
+sum = sum / ((base+1)*(base+1))
+print('avg: ',sum)
+
+for i=1,base+1 do
+  local str = ''
+  for j=1,base+1 do
+	local val = terrain[i][j]
+	if val < sum then 
+		val = ' '
+	else
+		val = '.'
+	end
+    str = str .. val .. ' '
+  end
+  print(str)
+end
+print()

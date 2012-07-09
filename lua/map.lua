@@ -32,6 +32,79 @@ function _M:new(t)
 end
 
 --
+--  Adds transition (overlay tiles)
+--  between base terrain types
+--
+--  This function assumes that each base tile type 
+--	consists of 18 tiles with the following and that the base tile 
+--	types start at index 1 and are contiguous in 
+--	a tileset
+--  
+function _M:transitions()
+	--  a table that maps the edge number
+	--  to a tile index in the tileset
+	--  n.b. this table describes some assumptions about the
+	--  layout of the tiles in the tileset as follows:
+	--	indices of tiles
+	--	1 - fully enclosed - type 1
+	--	2 - bottom right corner contains other tile type
+	--	3 - botom left corner contains other tile type
+	--	4 - fully enclosed - type 2
+	--	5 - top right corner contains other tile type
+	--	6 - top left corner contains other tile type
+	--	7 - left and top edges contains other tile type
+	--	8 - top edge contains other tile type
+	--	9 - top and right edges contains other tile type
+	--  10 - left edge contains other tile type
+	--  11 - no other tile type adjacent
+	--  12 - right edge contains other tile type
+	--  13 - bottom and left edges contains other tile type
+	--  14 - bottom edge contains other tile type
+	--  15 - bottom and right edges contains other tile type
+	--  16 - no other tile type adjacent
+	--  17 - no other tile type adjacent
+	--  18 - no other tile type adjacent	
+	local edgeToTileIndex =
+	{
+		
+	}
+	
+	for y = 1, self._sizeInTiles[2] do
+		io.write('MAP TILE TRANSITIONS ARE BEING CALCULATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
+		for x = 1, self._sizeInTiles[1] do			
+			local tile = self._tiles.base[y][x]
+			local thisType = math.floor((tile - 1)/18)
+			
+			local edges = 0			
+			local count = 0
+			-- considsr all neighbouring tiles
+			for yy = y - 1, y + 1 do
+				for xx = x - 1, x + 1 do
+					-- only work to edge of map
+					if yy >= 1 and yy <= self._sizeInTiles[2] and
+						xx >= 1 and xx <= self._sizeInTiles[1] and
+						not (y == yy and x == xx) then
+							local neighbourTile = self._tiles.base[yy][xx]
+							local neighbourType = math.floor((neighbourTile-1)/18)
+							
+							if neighbourType ~= thisType then
+								edges = edges + 2 ^ count
+							end
+							count = count + 1
+					end					
+				end
+			end		
+
+			if edges > 0 then
+				self._tiles.overlay[y][x] = (thisType * 18) + 2
+			end
+		end
+	end
+	
+	print()
+end
+
+--
 --  Generates a map
 --
 function _M:generate()
@@ -94,23 +167,13 @@ function _M:generate()
 			local found = false
 			local tile
 			while not found do
+				 --tile = math.floor(math.random()*3) + 16
 				 tile = math.floor(math.random()*36) + 1
 				if self._tileSet._heights[tile] == 0 then
 					found = true
 				end
 			end
-			self._tiles.base[y][x] = tile
-			
-			-- select an overlay tile
-			local found = false
-			local tile
-			while not found do
-				 tile = math.floor(math.random()*36) + 1
-				if self._tileSet._heights[tile] ~= 0 then
-					found = true
-				end
-			end
-			self._tiles.overlay[y][x] = tile
+			self._tiles.base[y][x] = tile		
 			
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 

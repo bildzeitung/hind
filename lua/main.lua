@@ -30,6 +30,7 @@ function love.load()
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
+	daMap:transitions()
 	daMap:createColliders(buckets)
 	
 	daCamera = factories.createCamera()

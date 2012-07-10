@@ -285,10 +285,11 @@ function _M:nearIds(camera, b, padding)
 	
 	for y = sty, ety do
 		local ty = y * ts[2]
-		for x = stx, etx do	
-			local tx = x * ts[1]			
-			ids[b.hash(tx, ty)] = true
-		end
+		local startHash = b.hash(stx * ts[1], ty)
+		local endHash = b.hash(etx * ts[1], ty)
+		for h = startHash, endHash do
+			ids[h] = true
+		end			
 	end
 	
 	return ids
@@ -322,29 +323,33 @@ function _M:drawTiles(camera, drawTable)
 	local cx = sx
 	local cy = sy
 	
+	local base = drawTable.base
+	local overlay = drawTable.overlay
+	local roof = drawTable.roof
+	
 	for y = sty, ety do
 		cx = sx
 		for x = stx, etx do		
 			-- draw the base layer
 			local tile = self._tiles.base[y][x]
-			table.insert(drawTable.base, 
+			base[#base+1] = 
 				{ y * ts[1] + th[tile], tq[tile], 
-				cx, cy, zoomX, zoomY, htsx, htsy})
+				cx, cy, zoomX, zoomY, htsx, htsy}
 			
 			-- draw the overlay layer
 			local tile = self._tiles.overlay[y][x]
 			if tile then
-				table.insert(drawTable.overlay, 
+				overlay[#overlay + 1] = 
 					{ y * ts[1] + th[tile], tq[tile], 
-					cx, cy, zoomX, zoomY, htsx, htsy})
+					cx, cy, zoomX, zoomY, htsx, htsy}
 			end
 				
 			-- draw the roof layer if a tile exists
 			local tile = self._tiles.roof[y][x]
 			if tile then
-				table.insert(drawTable.roof, 
+				roof[#roof + 1] = 
 					{ y * ts[1] + th[tile] + xof, tq[tile], 
-					cx, cy, zoomX, zoomY, htsx, htsy})
+					cx, cy, zoomX, zoomY, htsx, htsy}
 			end			
 			cx = cx + ztx
 		end

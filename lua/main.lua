@@ -6,6 +6,19 @@
 
 require 'factories'
 
+local profiles = {}
+local function profile(p, fn)
+	-- profile the function
+	local s = os.clock()
+	fn()
+	local d = os.clock() - s
+	-- track running average of this item
+	local prof = profiles[p] or { sum = 0, count = 0 }
+	prof.count = prof.count + 1
+	prof.sum = prof.sum + d
+	profiles[p] = prof
+end
+
 function love.load()
 	screenWidth = 800
 	screenHeight = 600
@@ -286,45 +299,68 @@ function love.draw()
 	drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
 		
 	-- draw the map tiles
-	daMap:drawTiles(daCamera, drawTable)
+	profile('pre-drawing map tiles', 
+		function()	
+			daMap:drawTiles(daCamera, drawTable)
+		end)
 
 	-- draw only the visible actors
-	for a, _ in pairs(visibleActors) do
-		if a.draw then
-			a:draw(daCamera, drawTable)
-		end
-	end	
+	profile('pre-drawing visible actors', 
+		function()					
+			for a, _ in pairs(visibleActors) do
+				if a.draw then
+					a:draw(daCamera, drawTable)
+				end
+			end
+		end)
 	
 	-- draw only the visible objects
-	for o, _ in pairs(visibleObjects) do
-		o:draw(daCamera, drawTable)
-	end		
+	profile('pre-drawing visible objects', 
+		function()						
+			for o, _ in pairs(visibleObjects) do
+				o:draw(daCamera, drawTable)
+			end	
+		end)	
 			
-	love.graphics.setPixelEffect(currentShader)			
-	
-	setDirectionalLight( { spotSize = 2 } )
-	updateLightEffect()
+	--[[profile('updating lighting effect', 
+		function()]]
+			love.graphics.setPixelEffect(currentShader)				
+			setDirectionalLight( { spotSize = 2 } )
+			updateLightEffect()
+		--[[end)]]
 
-	for k, v in ipairs(drawTable.base) do
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end
+	profile('drawing base tiles', 
+		function()						
+			for k, v in ipairs(drawTable.base) do
+				love.graphics.draw(v[2],
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8])
+			end
+		end)
 	
-	for k, v in ipairs(drawTable.overlay) do
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end
+	profile('drawing overlay tiles', 
+		function()		
+			for k, v in ipairs(drawTable.overlay) do
+				love.graphics.draw(v[2],
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8])
+			end
+		end)
 	
-	table.sort(drawTable.object,function(a,b)
-		return a[1] < b[1] end)
+	profile('z-sorting', 
+		function()	
+			table.sort(drawTable.object,function(a,b)
+				return a[1] < b[1] end)
 
-	table.sort(drawTable.roof,function(a,b)
-		return a[1] < b[1] end)
+			table.sort(drawTable.roof,function(a,b)
+				return a[1] < b[1] end)
+		end)
 		
-	setDirectionalLight( { spotSize = 0.3 } )
-	updateLightEffect()
+	profile('updating ligthing for objects', 		
+		function()
+			setDirectionalLight( { spotSize = 0.3 } )
+			updateLightEffect()
+		end)
 	
 	-- @TODO the shadow direction
 	-- should be calculated based on the position
@@ -332,37 +368,46 @@ function love.draw()
 	-- in screen space
 
 	-- draw the objects and their shadows
-	for k, v in ipairs(drawTable.object) do
-		love.graphics.setPixelEffect(shadowEffect)				
+	profile('drawing objects and actors and shadows', 		
+		function()
+			for k, v in ipairs(drawTable.object) do
+				love.graphics.setPixelEffect(shadowEffect)				
+					
+				love.graphics.draw(v[2],
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8], 
+					lighting.shadowSkew[1], lighting.shadowSkew[2])
 			
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], 
-			lighting.shadowSkew[1], lighting.shadowSkew[2])
-	
-		love.graphics.setPixelEffect(currentShader)			
-	
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end	
+				love.graphics.setPixelEffect(currentShader)			
+			
+				love.graphics.draw(v[2],
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8])
+			end	
+	end)
 	
 	-- draw the roof shadows
-	love.graphics.setPixelEffect(shadowEffect)				
-	for k, v in ipairs(drawTable.roof) do		
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], 
-			lighting.shadowSkew[1], lighting.shadowSkew[2])
-	end
+	profile('drawing roof shadows', 		
+		function()	
+			love.graphics.setPixelEffect(shadowEffect)				
+			for k, v in ipairs(drawTable.roof) do		
+				love.graphics.draw(v[2],
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8], 
+					lighting.shadowSkew[1], lighting.shadowSkew[2])
+			end
+		end)
 	
-	-- draw the roof objects			
-	love.graphics.setPixelEffect(currentShader)		
-	for k, v in ipairs(drawTable.roof) do	
-		love.graphics.draw(v[2], 
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end		
+	-- draw the roof objects	
+	profile('drawing roof tiles', 		
+		function()	
+			love.graphics.setPixelEffect(currentShader)		
+			for k, v in ipairs(drawTable.roof) do	
+				love.graphics.draw(v[2], 
+					v[3], v[4], 0, v[5], v[6], 
+					v[7], v[8])
+			end		
+		end)
 		
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
@@ -384,50 +429,74 @@ function love.draw()
 		end			
 	end
 	
-	love.graphics.setPixelEffect()
+	profile('drawing info text', 	
+		function()
+			love.graphics.setPixelEffect()
+			
+			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
+			
+			local y = 30
+			for k, v in pairs(hero._bucketIds) do
+				love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
+				y = y + 20
+			end
+			
+			love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
+			y=y+20		
+			
+			love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
+				hero._position[2], 10, y)		
+			y=y+20
+			
+			love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
+				hero._boundary[2] .. ', ' .. 
+				hero._boundary[3] .. ', ' .. 
+				hero._boundary[4], 10, y)		
+			y=y+20
+			
+			if hero._collidee then
+				love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
+				hero._collidee._boundary[2] .. ', ' .. 
+				hero._collidee._boundary[3] .. ', ' .. 
+				hero._collidee._boundary[4], 10, y)		
+				y=y+20
+			end
+			
+			local cw = daCamera:window()
+			local cv = daCamera:viewport()
+			love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
+				cw[2] .. ', ' .. 
+				cw[3] .. ', ' .. 
+				cw[4], 10, y)		
+			y=y+20
+			
+			love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
+				cv[2] .. ', ' .. 
+				cv[3] .. ', ' .. 
+				cv[4], 10, y)		
+			y=y+20
 	
-	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
-	
-	local y = 30
-	for k, v in pairs(hero._bucketIds) do
-		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
-		y = y + 20
-	end
-	
-	love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
-	y=y+20		
-	
-	love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
-		hero._position[2], 10, y)		
-	y=y+20
-	
-	love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
-		hero._boundary[2] .. ', ' .. 
-		hero._boundary[3] .. ', ' .. 
-		hero._boundary[4], 10, y)		
-	y=y+20
-	
-	if hero._collidee then
-		love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
-		hero._collidee._boundary[2] .. ', ' .. 
-		hero._collidee._boundary[3] .. ', ' .. 
-		hero._collidee._boundary[4], 10, y)		
-		y=y+20
-	end
-	
-	local cw = daCamera:window()
-	local cv = daCamera:viewport()
-	love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
-		cw[2] .. ', ' .. 
-		cw[3] .. ', ' .. 
-		cw[4], 10, y)		
-	y=y+20
-	
-	love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
-		cv[2] .. ', ' .. 
-		cv[3] .. ', ' .. 
-		cv[4], 10, y)		
-	y=y+20
+			local total = 0	
+			y = 200
+			love.graphics.print('=== PROFILES ===', 10, y)
+			y = y + 20
+			for k, v in pairs(profiles) do
+				love.graphics.print(k,10, y)
+				love.graphics.print(v.count, 280, y)
+				love.graphics.print(string.format('%.5f', v.sum / v.count),
+					310, y)		
+				total = total + v.sum / v.count
+				y=y+15		
+			end	
+			
+			love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
+			y=y+15
+			love.graphics.print(string.format('%.5f', total), 10, y)
+			y=y+15
+			love.graphics.print('=== EXPECTED FPS ===', 10, y)
+			y=y+15
+			love.graphics.print(string.format('%.5f', 1/total), 10, y)
+		end)
 end
 
 function love.update(dt)
@@ -579,79 +648,108 @@ function love.update(dt)
 		currentShader = nil
 	end
 	
+	if love.keyboard.isDown(',') then		
+		for k, _ in pairs(profiles) do
+			profiles[k] = { sum = 0, count = 0 }
+		end
+	end		
+	
 	-- @TODO AI!!! (DOH!)
 	-- update the visible npcs with some crappy "AI"
-	for a, _ in pairs(visibleActors) do
-		if a.velocity and not a.player then
-			if math.random() > 0.95 then
-				local xv = math.random()*200-100
-				local yv = math.random()*200-100
-				
-				if math.abs(xv) < 50 then xv = 0 end
-				if math.abs(yv) < 50 then yv = 0 end
-				
-				a:velocity(xv, yv)				
-			
-				if yv > 0 then
-					a:animation('walkdown')
-				elseif yv < 0 then
-					a:animation('walkup')
-				end
-				
-				if xv > 0 then 
-					a:animation('walkright')
-				elseif xv < 0 then
-					a:animation('walkleft')
-				end
-			end						
-		end	
-	end	
+	profile('updating AI', 
+		function()
+			for a, _ in pairs(visibleActors) do
+				if a.velocity and not a.player then
+					if math.random() > 0.95 then
+						local xv = math.random()*200-100
+						local yv = math.random()*200-100
+						
+						if math.abs(xv) < 50 then xv = 0 end
+						if math.abs(yv) < 50 then yv = 0 end
+						
+						a:velocity(xv, yv)				
+					
+						if yv > 0 then
+							a:animation('walkdown')
+						elseif yv < 0 then
+							a:animation('walkup')
+						end
+						
+						if xv > 0 then 
+							a:animation('walkright')
+						elseif xv < 0 then
+							a:animation('walkleft')
+						end
+					end						
+				end	
+			end	
+		end)
 
 	-- update only the visible actors
-	for a, _ in pairs(visibleActors) do
-		if a.update then
-			a:update(dt)
-		end
-	end
+	profile('updating actors', 
+		function()		
+			for a, _ in pairs(visibleActors) do
+				if a.update then
+					a:update(dt)
+				end
+			end
+		end)
 
 	-- update the collision buckets
-	for a, _ in pairs(visibleActors) do
-		if a.registerBuckets then
-			a:registerBuckets(buckets)
-		end
-	end
+	profile('updating collision buckets', 
+		function()			
+			for a, _ in pairs(visibleActors) do
+				if a.registerBuckets then
+					a:registerBuckets(buckets)
+				end
+			end
+	end)
 	
-	--	
 	-- test collistions for all visible actors
-	--
-	for a, _ in pairs(visibleActors) do
-		if a.checkCollision then
-			a:checkCollision(buckets)
-		end
-	end	
+	profile('testing collisions', 
+		function()				
+			for a, _ in pairs(visibleActors) do
+				if a.checkCollision then
+					a:checkCollision(buckets)
+				end
+			end	
+		end)
 		
 	-- zoom and center the map on the main character
-	daCamera:zoom(zoom)
-	daCamera:center(hero._position[1], hero._position[2])
+	profile('updating camera', 
+		function()
+			daCamera:zoom(zoom)
+			daCamera:center(hero._position[1], hero._position[2])
+		end)
 	
 	-- get the list of visible ids
-	visibleIds = daMap:nearIds(daCamera, buckets, 2)
+	profile('getting list of ids near map centre', 
+		function()
+			visibleIds = daMap:nearIds(daCamera, buckets, 2)
+		end)
 	
 	-- generate a list of visible actors and objects
-	for k, _ in pairs(visibleObjects) do
-		visibleObjects[k] = nil
-	end	
-	for k, _ in pairs(visibleActors) do
-		visibleActors[k] = nil
-	end	
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.checkCollision then
-				visibleActors[v] = true
-			end
-			if v._image then
-				visibleObjects[v] = true
-			end			
-		end
-	end	
+	profile('wiping out old visible items',
+		function()
+			for k, _ in pairs(visibleObjects) do
+				visibleObjects[k] = nil
+			end	
+			for k, _ in pairs(visibleActors) do
+				visibleActors[k] = nil
+			end	
+		end)
+		
+	profile('generating list of visible items',
+		function()				
+			for k, _ in pairs(visibleIds) do
+				for _, v in pairs(buckets[k]) do
+					if v.checkCollision then
+						visibleActors[v] = true
+					end
+					if v._image then
+						visibleObjects[v] = true
+					end			
+				end
+			end	
+		end)
 end

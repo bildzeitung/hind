@@ -7,6 +7,10 @@
 require 'factories'
 
 function love.load()
+	screenWidth = 800
+	screenHeight = 600
+	local success = love.graphics.setMode( 
+		screenWidth,screenHeight, false, false, 0 )		
 	love.graphics.setColorMode('replace')
 
 	-- create the shader effects
@@ -34,9 +38,10 @@ function love.load()
 	daMap:createColliders(buckets)
 	
 	daCamera = factories.createCamera()
-	daCamera:window(2000,2000,800,600)
+	daCamera:window(2000,2000,screenWidth,screenHeight)
+	daCamera:viewport(0,0,screenWidth,screenHeight)
 	
-	shadowCanvas = love.graphics.newCanvas(800,600)
+	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
 	
 	createActors()
 	

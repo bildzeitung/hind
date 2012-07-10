@@ -282,7 +282,6 @@ function loadEffects()
 end
 
 function love.draw()
-	-- set up the draw table
 	local drawTable = {
 		base = {},
 		overlay = {},
@@ -290,13 +289,17 @@ function love.draw()
 		roof = {}
 	}
 	
-	-- pre calculate what we can
-	drawTable.cw = daCamera:window()
-	drawTable.cv = daCamera:viewport()	
-	drawTable.zoomX = drawTable.cv[3] / drawTable.cw[3] 
-	drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
-	drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
-	drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
+	-- set up the draw table
+	profile('pre-calculating draw stuff', 
+		function()
+			-- pre calculate what we can
+			drawTable.cw = daCamera:window()
+			drawTable.cv = daCamera:viewport()	
+			drawTable.zoomX = drawTable.cv[3] / drawTable.cw[3] 
+			drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
+			drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
+			drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
+		end)
 		
 	-- draw the map tiles
 	profile('pre-drawing map tiles', 
@@ -322,12 +325,12 @@ function love.draw()
 			end	
 		end)	
 			
-	--[[profile('updating lighting effect', 
-		function()]]
+	profile('updating lighting effect', 
+		function()
 			love.graphics.setPixelEffect(currentShader)				
 			setDirectionalLight( { spotSize = 2 } )
 			updateLightEffect()
-		--[[end)]]
+		end)
 
 	profile('drawing base tiles', 
 		function()						
@@ -480,13 +483,17 @@ function love.draw()
 			y = 200
 			love.graphics.print('=== PROFILES ===', 10, y)
 			y = y + 20
+			
 			for k, v in pairs(profiles) do
-				love.graphics.print(k,10, y)
-				love.graphics.print(v.count, 280, y)
-				love.graphics.print(string.format('%.5f', v.sum / v.count),
-					310, y)		
-				total = total + v.sum / v.count
-				y=y+15		
+				local avg = v.sum / v.count
+				if avg > 0.0009 then
+					love.graphics.print(k,10, y)				
+					love.graphics.print(v.count, 280, y)				
+					love.graphics.print(string.format('%.5f', v.sum / v.count),
+						330, y)		
+					y=y+15		
+				end
+				total = total + avg
 			end	
 			
 			love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
@@ -500,159 +507,165 @@ function love.draw()
 end
 
 function love.update(dt)
-	-- @TODO proper day / night cycles with changing colour
-	-- and direction of light
-	lighting.origin[1] = lighting.origin[1] + 0.0001
-	if lighting.origin[1] > lighting.originMinMax[2] then 
-		lighting.origin[1] = lighting.originMinMax[1]
-	end	
-		
-    local orange = lighting.originMinMax[2] - lighting.originMinMax[1]
-	local srange = lighting.shadowSkewMinMax[2] - lighting.shadowSkewMinMax[1]
-    local scaled = (lighting.origin[1]  - lighting.originMinMax[1]) / orange
-    lighting.shadowSkew[1] = lighting.shadowSkewMinMax[1] + (scaled * srange)
-	
-	if not hero._isAttacking then
-		local vx, vy = 0, 0
-	
-		if love.keyboard.isDown('up') then
-			hero:animation('walkup')		
-			vy = -125
-		elseif
-			love.keyboard.isDown('down') then
-			hero:animation('walkdown')		
-			vy = 125
-		end
-		
-		if love.keyboard.isDown('left') then
-			hero:animation('walkleft')		
-			vx = -125
-		elseif
-			love.keyboard.isDown('right') then
-			hero:animation('walkright')		
-			vx = 125
-		end
-		
-		hero:velocity(vx, vy)
-		
-		if vx == 0 and vy == 0 then
-			local anim = hero:animation():name():gsub('walk','stand')
-			hero:animation(anim)
-		end
-	end
-		
-	if love.keyboard.isDown(' ') then
-		hero:attack()
-	end
-	
-	if love.keyboard.isDown('q') then
-		zoom = 1
-	end
-	
-	if love.keyboard.isDown('w') then
-		zoom = 2
-	end
-	
-	if love.keyboard.isDown('e') then
-		zoom = 3
-	end	
-	
-	if love.keyboard.isDown('r') then
-		zoom = 4
-	end		
-
-	if love.keyboard.isDown('t') then
-		zoom = 0.5
-	end		
-	
-	if love.keyboard.isDown('a') then
-		zoom = zoom + 0.01
-	end
-	
-	if love.keyboard.isDown('z') then
-		zoom = zoom - 0.01
-	end	
-	
-	if love.keyboard.isDown('h') then
-		showCollisionBoundaries = true
-	end		
-
-	if love.keyboard.isDown('n') then
-		showCollisionBoundaries = false
-	end
-	
-	--@TODO coordinate the shadow and light position
-	-- with the light color for day / night effect
-	-- each light could also generate it's own shadow
-	-- redraw!!!!!!	
-	if love.keyboard.isDown('1') then		
-		currentShader = lightEffect		
-		
-		-- morning
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {1.7,1.4,1.1}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end				
-	end
-	
-	if love.keyboard.isDown('2') then		
-		currentShader = lightEffect		
-		
-		-- midday
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end			
-	end
-	
-	if love.keyboard.isDown('3') then		
-		currentShader = lightEffect		
-		
-		-- dusk
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.0,1.6,1.4}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end					
-	end	
-	
-	if love.keyboard.isDown('4') then		
-		currentShader = lightEffect		
-		
-		-- night
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
-		-- random spot lights
-		setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
-				angle = {-1, 7}, lightColor = {3,3,3}, world = true }				
-		setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75}, 
-				angle = {-1, 7}, lightColor = {3,1,1}, world = true }
-		setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
-				angle = {1, 3}, lightColor = {0.5,0.5,2}, world = true }
-		setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
-				angle = {4,4.5}, lightColor = {2,2,2}, world = true }
+	profile('updating lighting', 
+		function()
+			-- @TODO proper day / night cycles with changing colour
+			-- and direction of light
+			lighting.origin[1] = lighting.origin[1] + 0.0001
+			if lighting.origin[1] > lighting.originMinMax[2] then 
+				lighting.origin[1] = lighting.originMinMax[1]
+			end	
 				
-		updateLightEffect()
-	end		
-		
-	if love.keyboard.isDown('o') then
-		currentShader = nil
-	end
+			local orange = lighting.originMinMax[2] - lighting.originMinMax[1]
+			local srange = lighting.shadowSkewMinMax[2] - lighting.shadowSkewMinMax[1]
+			local scaled = (lighting.origin[1]  - lighting.originMinMax[1]) / orange
+			lighting.shadowSkew[1] = lighting.shadowSkewMinMax[1] + (scaled * srange)
+		end)
 	
-	if love.keyboard.isDown(',') then		
-		for k, _ in pairs(profiles) do
-			profiles[k] = { sum = 0, count = 0 }
-		end
-	end		
+	profile('handling keyboard input', 
+		function()
+			if not hero._isAttacking then
+				local vx, vy = 0, 0
+			
+				if love.keyboard.isDown('up') then
+					hero:animation('walkup')		
+					vy = -125
+				elseif
+					love.keyboard.isDown('down') then
+					hero:animation('walkdown')		
+					vy = 125
+				end
+				
+				if love.keyboard.isDown('left') then
+					hero:animation('walkleft')		
+					vx = -125
+				elseif
+					love.keyboard.isDown('right') then
+					hero:animation('walkright')		
+					vx = 125
+				end
+				
+				hero:velocity(vx, vy)
+				
+				if vx == 0 and vy == 0 then
+					local anim = hero:animation():name():gsub('walk','stand')
+					hero:animation(anim)
+				end
+			end
+				
+			if love.keyboard.isDown(' ') then
+				hero:attack()
+			end
+			
+			if love.keyboard.isDown('q') then
+				zoom = 1
+			end
+			
+			if love.keyboard.isDown('w') then
+				zoom = 2
+			end
+			
+			if love.keyboard.isDown('e') then
+				zoom = 3
+			end	
+			
+			if love.keyboard.isDown('r') then
+				zoom = 4
+			end		
+
+			if love.keyboard.isDown('t') then
+				zoom = 0.5
+			end		
+			
+			if love.keyboard.isDown('a') then
+				zoom = zoom + 0.01
+			end
+			
+			if love.keyboard.isDown('z') then
+				zoom = zoom - 0.01
+			end	
+			
+			if love.keyboard.isDown('h') then
+				showCollisionBoundaries = true
+			end		
+
+			if love.keyboard.isDown('n') then
+				showCollisionBoundaries = false
+			end
+	
+			--@TODO coordinate the shadow and light position
+			-- with the light color for day / night effect
+			-- each light could also generate it's own shadow
+			-- redraw!!!!!!	
+			if love.keyboard.isDown('1') then		
+				currentShader = lightEffect		
+				
+				-- morning
+				setDirectionalLight( { fallOff = 0.35 } )
+				setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {1.7,1.4,1.1}, world = false }		
+				for i = 2, maxLights do
+					setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end				
+			end
+			
+			if love.keyboard.isDown('2') then		
+				currentShader = lightEffect		
+				
+				-- midday
+				setDirectionalLight( { fallOff = 0.35 } )
+				setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
+				for i = 2, maxLights do
+					setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end			
+			end
+			
+			if love.keyboard.isDown('3') then		
+				currentShader = lightEffect		
+				
+				-- dusk
+				setDirectionalLight( { fallOff = 0.35 } )
+				setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {2.0,1.6,1.4}, world = false }		
+				for i = 2, maxLights do
+					setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end					
+			end	
+			
+			if love.keyboard.isDown('4') then		
+				currentShader = lightEffect		
+				
+				-- night
+				setDirectionalLight( { fallOff = 0.35 } )
+				setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
+				-- random spot lights
+				setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
+						angle = {-1, 7}, lightColor = {3,3,3}, world = true }				
+				setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75}, 
+						angle = {-1, 7}, lightColor = {3,1,1}, world = true }
+				setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
+						angle = {1, 3}, lightColor = {0.5,0.5,2}, world = true }
+				setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
+						angle = {4,4.5}, lightColor = {2,2,2}, world = true }
+						
+				updateLightEffect()
+			end		
+				
+			if love.keyboard.isDown('o') then
+				currentShader = nil
+			end
+			
+			if love.keyboard.isDown(',') then		
+				for k, _ in pairs(profiles) do
+					profiles[k] = { sum = 0, count = 0 }
+				end
+			end		
+		end)
 	
 	-- @TODO AI!!! (DOH!)
 	-- update the visible npcs with some crappy "AI"

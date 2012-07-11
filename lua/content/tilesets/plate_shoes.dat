@@ -1,0 +1,30 @@
+{
+	_name = 'plate_shoes',
+	_size = { 64, 64 },	
+	_images = {
+		{
+			_file = '/content/images/walkcycle/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/slash/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/hurt/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/spellcast/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/thrust/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/bow/FEET_plate_armor_shoes.png', 
+			_boundaries = { default = {18,12,46,30} }
+		}	
+	}
+}

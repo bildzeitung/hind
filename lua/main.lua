@@ -32,7 +32,9 @@ function love.load()
 	tileSets = {}
 	
 	local load = {
-		'outdoor', 'male_human', 'chain_armour', 'chain_helmet', 'monster' 
+		'outdoor', 'male_human', 
+		'chain_armour', 'chain_helmet', 'plate_shoes', 
+		'plate_pants', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do
@@ -211,9 +213,13 @@ function createActors()
 	hero = factories.createActor('content/actors/male_human.dat')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
 	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
-	
+	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
+	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
+		
+	hero:equipItem('legs',platePants)	
 	hero:equipItem('head',chainHelmet)	
 	hero:equipItem('torso',chainArmour)	
+	hero:equipItem('feet',plateShoes)	
 	hero:animation('standright')	
 	
 	-- put the hero in the middle of the map for fun

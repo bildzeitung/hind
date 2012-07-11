@@ -4,27 +4,27 @@
 	_images = {
 		{
 			_file = '/content/images/walkcycle/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52} }
+			_boundaries = { default = {18,12,46,30} }
 		},
 		{
 			_file = '/content/images/slash/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52}  }
+			_boundaries = { default = {18,12,46,30} }
 		},
 		{
 			_file = '/content/images/hurt/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52}  }
+			_boundaries = { default = {18,12,46,30} }
 		},
 		{
 			_file = '/content/images/spellcast/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52}  }
+			_boundaries = { default = {18,12,46,30} }
 		},
 		{
 			_file = '/content/images/thrust/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52}  }
+			_boundaries = { default = {18,12,46,30} }
 		},
 		{
 			_file = '/content/images/bow/HEAD_chain_armor_helmet.png', 
-			_boundaries = { default = {20,32,44,52}  }
+			_boundaries = { default = {18,12,46,30} }
 		}	
 	}
 }

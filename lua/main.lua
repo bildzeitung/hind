@@ -48,6 +48,7 @@ function love.load()
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
 	daMap:transitions()
+
 	daMap:createColliders(buckets)
 	
 	daCamera = factories.createCamera()
@@ -414,22 +415,14 @@ function love.draw()
 		
 	local cw = daCamera:window()
 	if showCollisionBoundaries then
-		-- draw only the visible actors
-		for a, _ in pairs(visibleActors) do
-			if a._boundary then
-				local b = a._boundary
-				love.graphics.rectangle(
-					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+		for k, _ in pairs(visibleIds) do
+			for _, v in pairs(buckets[k]) do
+				if v._boundary then
+					local b = v._boundary
+					love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])							
+				end			
 			end
-		end	
-		-- draw only the visible objects
-		for o, _ in pairs(visibleObjects) do
-			if o._boundary then
-				local b = o._boundary
-				love.graphics.rectangle(
-					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
-			end
-		end			
+		end		
 	end
 	
 	profile('drawing info text', 	

@@ -41,42 +41,128 @@ end
 --	a tileset
 --  
 function _M:transitions()
+	local tilesPerType = 18
+	
 	--  a table that maps the edge number
 	--  to a tile index in the tileset
 	--  n.b. this table describes some assumptions about the
-	--  layout of the tiles in the tileset as follows:
-	--	indices of tiles
-	--	1 - fully enclosed - type 1
-	--	2 - bottom right corner contains other tile type
-	--	3 - botom left corner contains other tile type
-	--	4 - fully enclosed - type 2
-	--	5 - top right corner contains other tile type
-	--	6 - top left corner contains other tile type
-	--	7 - left and top edges contains other tile type
-	--	8 - top edge contains other tile type
-	--	9 - top and right edges contains other tile type
-	--  10 - left edge contains other tile type
-	--  11 - no other tile type adjacent
-	--  12 - right edge contains other tile type
-	--  13 - bottom and left edges contains other tile type
-	--  14 - bottom edge contains other tile type
-	--  15 - bottom and right edges contains other tile type
-	--  16 - no other tile type adjacent
-	--  17 - no other tile type adjacent
-	--  18 - no other tile type adjacent	
-	local edgeToTileIndex =
-	{
-		
-	}
+	--  layout of the tiles 
+	local edgeToTileIndex = {}
 	
+	-- top edge
+	edgeToTileIndex[4] = 14
+	edgeToTileIndex[6] = 14
+	edgeToTileIndex[12] = 14
+	edgeToTileIndex[14] = 14
+	
+	-- bottom edge
+	edgeToTileIndex[128] = 8
+	edgeToTileIndex[192] = 8
+	edgeToTileIndex[384] = 8
+	edgeToTileIndex[448] = 8	
+		
+	-- left edge	
+	edgeToTileIndex[16] = 12
+	edgeToTileIndex[18] = 12
+	edgeToTileIndex[80] = 12
+	edgeToTileIndex[82] = 12
+	
+	-- right edge
+	edgeToTileIndex[32] = 10
+	edgeToTileIndex[40] = 10
+	edgeToTileIndex[288] = 10
+	edgeToTileIndex[296] = 10
+	
+	-- top left edge	
+	edgeToTileIndex[20] = 2
+	edgeToTileIndex[22] = 2
+	edgeToTileIndex[24] = 2
+	edgeToTileIndex[28] = 2
+	edgeToTileIndex[30] = 2
+	edgeToTileIndex[68] = 2
+	edgeToTileIndex[72] = 2
+	edgeToTileIndex[76] = 2
+	edgeToTileIndex[84] = 2
+	edgeToTileIndex[86] = 2
+	edgeToTileIndex[88] = 2
+	edgeToTileIndex[92] = 2
+	edgeToTileIndex[94] = 2
+	edgeToTileIndex[126] = 2	
+	
+	-- top right edge
+	edgeToTileIndex[34] = 3
+	edgeToTileIndex[36] = 3
+	edgeToTileIndex[38] = 3
+	edgeToTileIndex[44] = 3
+	edgeToTileIndex[46] = 3
+	edgeToTileIndex[258] = 3	
+	edgeToTileIndex[260] = 3
+	edgeToTileIndex[262] = 3
+	edgeToTileIndex[290] = 3
+	edgeToTileIndex[292] = 3
+	edgeToTileIndex[294] = 3
+	edgeToTileIndex[298] = 3		
+	edgeToTileIndex[300] = 3
+	edgeToTileIndex[302] = 3	
+	edgeToTileIndex[318] = 3
+	
+	-- bottom left edge
+	edgeToTileIndex[130] = 5
+	edgeToTileIndex[144] = 5
+	edgeToTileIndex[146] = 5
+	edgeToTileIndex[208] = 5
+	edgeToTileIndex[210] = 5
+	edgeToTileIndex[218] = 5
+	edgeToTileIndex[272] = 5	
+	edgeToTileIndex[274] = 5	
+	edgeToTileIndex[386] = 5
+	edgeToTileIndex[400] = 5
+	edgeToTileIndex[402] = 5	
+	edgeToTileIndex[464] = 5
+	edgeToTileIndex[466] = 5		
+		
+	-- bottom right edge
+	edgeToTileIndex[96] = 6
+	edgeToTileIndex[104] = 6	
+	edgeToTileIndex[136] = 6	
+	edgeToTileIndex[160] = 6	
+	edgeToTileIndex[168] = 6	
+	edgeToTileIndex[200] = 6
+	edgeToTileIndex[224] = 6
+	edgeToTileIndex[232] = 6
+	edgeToTileIndex[416] = 6	
+	edgeToTileIndex[424] = 6
+	edgeToTileIndex[480] = 6
+	edgeToTileIndex[488] = 6	
+	
+	-- bottom right inner edge
+	edgeToTileIndex[2] = 15	
+		
+	-- bottom left inner edge
+	edgeToTileIndex[8] = 13
+	
+	-- top right inner edge
+	edgeToTileIndex[64] = 9
+	
+	-- top left inner edge
+	edgeToTileIndex[256] = 7
+	
+	self._tiles.edges = {}
+	for y = 1, self._sizeInTiles[2] do
+		self._tiles.edges[y] = {}
+		for x = 1, self._sizeInTiles[1] do	
+			self._tiles.edges[y][x]	= {}
+		end
+	end
+			
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP TILE TRANSITIONS ARE BEING CALCULATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do			
 			local tile = self._tiles.base[y][x]
-			local thisType = math.floor((tile - 1)/18)
-			
+			local thisType = math.floor((tile - 1)/tilesPerType)
+
 			local edges = 0			
-			local count = 0
+			local count = 8
 			-- considsr all neighbouring tiles
 			for yy = y - 1, y + 1 do
 				for xx = x - 1, x + 1 do
@@ -85,105 +171,172 @@ function _M:transitions()
 						xx >= 1 and xx <= self._sizeInTiles[1] and
 						not (y == yy and x == xx) then
 							local neighbourTile = self._tiles.base[yy][xx]
-							local neighbourType = math.floor((neighbourTile-1)/18)
-							
-							if neighbourType ~= thisType then
-								edges = edges + 2 ^ count
+							local neighbourType = math.floor((neighbourTile-1)/tilesPerType)							
+							if neighbourType > thisType then
+								local edgeType = self._tiles.edges[yy][xx][2 ^ count]
+								if (not edgeType) or (edgeType < thisType) then
+									self._tiles.edges[yy][xx][2 ^ count] = thisType
+								end
 							end
-							count = count + 1
-					end					
+							count = count - 1
+					end										
 				end
 			end		
-
-			if edges > 0 then
-				self._tiles.overlay[y][x] = (thisType * 18) + 2
-			end
-		end
+		end	
 	end
+	
+	for y = 1, self._sizeInTiles[2] do
+		for x = 1, self._sizeInTiles[1] do	
+			local edges = self._tiles.edges[y][x]	
+			local sum = 0
+			local edgeType = 0
+			for k, v in pairs(edges) do
+				sum = sum + k
+				edgeType = v
+			end
+			
+			if sum > 0 then
+				local idx = edgeToTileIndex[sum] or 4
+				self._tiles.overlay[y][x] = (edgeType * tilesPerType) + idx
+			end
+		end	
+	end	
+	
+	for y = 1, self._sizeInTiles[2] do
+		for x = 1, self._sizeInTiles[1] do	
+			self._tiles.edges[y][x] = nil
+		end
+		self._tiles.edges[y] = nil
+	end
+	self._tiles.edges = nil
 	
 	print()
 end
+
+function _M:createObject(name, x, y)
+	local ts = self._tileSet:size()
+		
+	-- insert objet
+	local o = table.clone(self._tileSet._objects[name], { deep = true })
+
+	o._position = { x * ts[1], y * ts[2] }
+	local b = { }
+	b[1] = o._position[1] + o._boundary[1] - o._offset[1]
+	b[2] = o._position[2] + o._boundary[2] - o._offset[2]
+	b[3] = o._position[1] + o._boundary[3] - o._offset[1]
+	b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
+	o._boundary = b
+	
+	--
+	--  Draw the object
+	--
+	function o:draw(camera, drawTable)
+		local cw, cv, zoomX, zoomY, cwzx, cwzy =
+			drawTable.cw, drawTable.cv, 
+			drawTable.zoomX, drawTable.zoomY,
+			drawTable.cwzx, drawTable.cwzy	
+			
+		local sx = math.floor((self._position[1] * zoomX) - cwzx)
+		local sy = math.floor((self._position[2] * zoomY) - cwzy)
+		local z = self._position[2] + 
+			self._height - (self._position[1] * 0.0000000001)
+		
+		table.insert(drawTable.object, 
+			{ z, self._image[1], 
+			sx, sy, 
+			zoomX, zoomY, self._offset[1], self._offset[2] })
+			
+		table.insert(drawTable.roof, 
+			{ z, self._image[2], 
+			sx, sy, 
+			zoomX, zoomY, self._offset[1], self._offset[2] })			
+	end
+	
+	return o
+end	
 
 --
 --  Generates a map
 --
 function _M:generate()
-	local ts = self._tileSet:size()
 		
-	-- insert objet
-	local function addObject(name, x, y)			
-		local o = table.clone(self._tileSet._objects[name], { deep = true })
-
-		o._position = { x * ts[1], y * ts[2] }
-		local b = { }
-		b[1] = o._position[1] + o._boundary[1] - o._offset[1]
-		b[2] = o._position[2] + o._boundary[2] - o._offset[2]
-		b[3] = o._position[1] + o._boundary[3] - o._offset[1]
-		b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
-		o._boundary = b
-		
-		--
-		--  Draw the object
-		--
-		function o:draw(camera, drawTable)
-			local cw, cv, zoomX, zoomY, cwzx, cwzy =
-				drawTable.cw, drawTable.cv, 
-				drawTable.zoomX, drawTable.zoomY,
-				drawTable.cwzx, drawTable.cwzy	
-				
-			local sx = math.floor((self._position[1] * zoomX) - cwzx)
-			local sy = math.floor((self._position[2] * zoomY) - cwzy)
-			
-			table.insert(drawTable.object, 
-				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
-				self._image[1], 
-				sx, sy, 
-				zoomX, zoomY, self._offset[1], self._offset[2] })
-				
-			table.insert(drawTable.roof, 
-				{ self._position[2] + self._height - (self._position[1] * 0.0000000001), 
-				self._image[2], 
-				sx, sy, 
-				zoomX, zoomY, self._offset[1], self._offset[2] })
-				
-		end
-		
-		table.insert(self._objects, o)
-	end
-	
 	for y = 1, self._sizeInTiles[2] do		
 		self._tiles.base[y] = {}
 		self._tiles.overlay[y] = {}
 		self._tiles.roof[y] = {}
 	end		
+
+	-- start with all water	
+	for y = 1, self._sizeInTiles[2] do
+		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
+		for x = 1, self._sizeInTiles[1] do		
+			self._tiles.base[y][x] = 11
+			if math.random() > 0.5 then
+				self._tiles.base[y][x] = math.floor(math.random() * 3) + 16
+			end
+		end
+	end		
+	print()
 	
+	-- generate land
+	local maxRadius = 10
+	local minRadius = 1
+	local numPatches = 4000
+	for i = 1, numPatches do
+		io.write('MAP LAND PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
+		local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
+		local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
+		local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+		local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+		for yy = y - h, y + h do 
+			for xx = x - w, x + w do
+				self._tiles.base[yy][xx] = 29
+				if math.random() > 0.5 then
+					self._tiles.base[yy][xx] = math.floor(math.random() * 3) + 34
+				end
+			end
+		end
+	end
+	print()
+	
+	
+	-- add dirt patches
+	local maxRadius = 6
+	local minRadius = 1
+	local numPatches = 1500
+	for i = 1, numPatches do
+		io.write('MAP DIRT PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
+		local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
+		local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
+		local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+		local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+		for yy = y - h, y + h do 
+			for xx = x - w, x + w do
+				self._tiles.base[yy][xx] = 47
+				if math.random() > 0.5 then
+					self._tiles.base[yy][xx] = math.floor(math.random() * 3) + 52
+				end
+			end
+		end
+	end
+	print()
+	
+	-- add random objects
 	local current = 1
 	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
 	
 	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
+		io.write('MAP OBJECTS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do
-			-- select a base tile
-			local found = false
-			local tile
-			while not found do
-				 --tile = math.floor(math.random()*3) + 16
-				 tile = math.floor(math.random()*36) + 1
-				if self._tileSet._heights[tile] == 0 then
-					found = true
-				end
-			end
-			self._tiles.base[y][x] = tile		
-			
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
 				math.random() > 0.98 then
-					addObject(tree_cycle[(current % 3) + 1],x,y)
+					local o = self:createObject(tree_cycle[(current % 3) + 1],x,y)
+					table.insert(self._objects, o)
 					current = current + 1
 			end
 		end
-	end	
-	
+	end		
 	print()
 end
 
@@ -199,22 +352,25 @@ function _M:createColliders(b)
 		local tile = self._tiles[layer][y][x]
 		if tile then
 			local boundary = bs[tile]
-			if boundary then
+			if boundary and (boundary[3] > 0 or boundary[4] > 0) then
 				local tx = x * ts[1]
 				local ty = y * ts[2]
-				local ids = {}
-				local boundary = { tx + boundary[1] + ts[1] / 2, 
-					ty + boundary[2] + ts[2] / 2,
-					tx + boundary[3] + ts[1] / 2,
-					ty + boundary[4] + ts[2] / 2}									
-						
-				ids[b.hash(boundary[1], boundary[2])] = true
-				ids[b.hash(boundary[1], boundary[4])] = true
-				ids[b.hash(boundary[3], boundary[2])] = true
-				ids[b.hash(boundary[3], boundary[4])] = true
+				local o = {}				
+				o._position = { x * ts[1], y * ts[2] }
+				
+				o._boundary = {}
+				o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
+				o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
+				o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
+				o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)
+				
+				o._ids = {}				
+				o._ids[b.hash(o._boundary[1], o._boundary[2])] = true
+				o._ids[b.hash(o._boundary[1], o._boundary[4])] = true
+				o._ids[b.hash(o._boundary[3], o._boundary[2])] = true
+				o._ids[b.hash(o._boundary[3], o._boundary[4])] = true
 												
-				table.insert(self._colliders,
-					{ _boundary = boundary, _ids = ids })
+				table.insert(self._colliders, o)
 			end	
 		end
 	end
@@ -222,10 +378,9 @@ function _M:createColliders(b)
 	-- add colliders for base and roof tiles
 	for y = 1, self._sizeInTiles[2] do
 		io.write('MAP COLLIDERS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		tx = 0
 		for x = 1, self._sizeInTiles[1] do
 			addCollider('base', x, y)
-			addCollider('roof', x, y)
+			addCollider('overlay', x, y)
 		end
 	end	
 	
@@ -250,7 +405,9 @@ end
 function _M:registerBuckets(buckets)
 	for _, v in pairs(self._colliders) do
 		for k, _ in pairs(v._ids) do	
-			table.insert(buckets[k], v)
+			if buckets[k] then				
+				table.insert(buckets[k], v)
+			end
 		end
 	end
 end
@@ -282,6 +439,11 @@ function _M:nearIds(camera, b, padding)
 	local ety = sty + math.floor(cv[4] / zty) + (tcy * 2)
 	
 	local ids = {}
+		
+	local stx = math.max(1,stx)
+	local etx = math.min(self._sizeInTiles[1] - 1,etx)	
+	local sty = math.max(1,sty)
+	local ety = math.min(self._sizeInTiles[2] - 1,ety)
 	
 	for y = sty, ety do
 		local ty = y * ts[2]
@@ -317,7 +479,7 @@ function _M:drawTiles(camera, drawTable)
 	local sty = math.floor(cw[2] / ts[2])
 	local ety = sty + math.floor(cv[4] / zty) + 2
 	local ofy = math.floor(cw[2] - sty * ts[2]) * zoomY
-
+	
 	local sx = (cv[1] - ofx)
 	local sy = (cv[2] - ofy)
 	local cx = sx

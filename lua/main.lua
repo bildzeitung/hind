@@ -32,7 +32,7 @@ function love.load()
 	tileSets = {}
 	
 	local load = {
-		'outdoor', 'male_human', 'chain_armour', 'monster' 
+		'outdoor', 'male_human', 'chain_armour', 'chain_helmet', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do
@@ -209,7 +209,13 @@ function createActors()
 	
 	actors = {}
 	hero = factories.createActor('content/actors/male_human.dat')
-	hero:animation('standright')
+	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
+	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
+	
+	hero:equipItem('head',chainHelmet)	
+	hero:equipItem('torso',chainArmour)	
+	hero:animation('standright')	
+	
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
@@ -421,7 +427,14 @@ function love.draw()
 			for _, v in pairs(buckets[k]) do
 				if v._boundary then
 					local b = v._boundary
-					love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])							
+					love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
+
+					if v._equipped then
+						for _, item in pairs(v._equipped) do
+							local b = item._boundary
+							love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
+						end						
+					end
 				end			
 			end
 		end		

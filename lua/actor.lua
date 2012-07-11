@@ -9,8 +9,8 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
-local pairs, table
-	= pairs, table
+local table, pairs, ipairs
+	= table, pairs, ipairs
 	
 module('objects')
 
@@ -27,6 +27,10 @@ function Actor:_clone(values)
 			Object._clone(self,values)
 		))
 			
+	o._itemDrawOrder = { 'weapon', 'hands', 'head', 'belt', 
+		'torso', 'legs', 'feet', 'body', 'behind' }
+  
+	o._equipped = {}
 	o._inventory = {}
 	o._velocity = { 0, 0 }
 	o._map = nil
@@ -80,6 +84,10 @@ function Actor:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
+	
+	for _, v in pairs(self._equipped) do
+		v:update(dt)
+	end
 end
 
 function Actor:attack()
@@ -100,5 +108,66 @@ function Actor:attack()
 		self:animation(currentAnim)
 		self._currentAnimation.done_cb = nil			
 		self._isAttacking = false
+	end
+end
+
+--
+--  Equips an item
+--
+function Actor:equipItem(slot, item)
+	self._equipped[slot] = item
+	item._actor = self
+	
+	if self._currentAnimation then
+		item:animation(self._currentAnimation:name())
+	end
+end
+
+--
+--  Sets or gets the current animation
+--
+--  Inputs:
+--		a - an animation index or nil
+--		r - true if the animation should be reset
+--
+local base_animation = Drawable.animation
+function Actor:animation(a, r)	
+	local ret = base_animation(self, a, r)
+	
+	if a then
+		-- set the animations for the equipped items
+		for _, v in pairs(self._equipped) do
+			v:animation(a, r)
+		end
+	end
+	
+	return ret
+end
+
+--
+--  Draw the actor
+--
+local base_draw = Drawable.draw
+function Actor:draw(camera, drawTable)
+	base_draw(self, camera, drawTable)
+	
+	for _, v in ipairs(self._itemDrawOrder) do
+		if self._equipped[v] then
+			self._equipped[v]:draw(camera, drawTable)
+		end
+	end
+end
+
+--
+--  Handle collisions
+--
+local base_collide = Collidable.collide
+function Actor:collide(other)
+	base_collide(self,other)
+	
+	for _, v in pairs(self._equipped) do
+		v._position[1] = self._position[1]
+		v._position[2] = self._position[2]
+		v:calculateBoundary()
 	end
 end

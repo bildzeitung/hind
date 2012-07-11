@@ -31,7 +31,7 @@
 				2, 2, 2,
 				0, 0, 0}
 		},	
-		{	_file = 'grass.png',
+		{	_file = 'dirt.png',
 			_boundaries = { default = nil },
 			_heights = { 
 				2, 2, 2,
@@ -41,7 +41,7 @@
 				2, 2, 2,
 				0, 0, 0}
 		},	
-		{	_file = 'dirt.png',
+		{	_file = 'grass.png',
 			_boundaries = { default = nil },
 			_heights = { 
 				2, 2, 2,

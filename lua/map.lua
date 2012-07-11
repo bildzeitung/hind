@@ -283,9 +283,9 @@ function _M:generate()
 	print()
 	
 	-- generate land
-	local maxRadius = 10
-	local minRadius = 1
-	local numPatches = 4000
+	local maxRadius = 6
+	local minRadius = 3
+	local numPatches = 750
 	for i = 1, numPatches do
 		io.write('MAP LAND PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
 		local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
@@ -305,8 +305,8 @@ function _M:generate()
 	
 	
 	-- add dirt patches
-	local maxRadius = 6
-	local minRadius = 1
+	local maxRadius = 10
+	local minRadius = 3
 	local numPatches = 1500
 	for i = 1, numPatches do
 		io.write('MAP DIRT PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')

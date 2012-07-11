@@ -1,0 +1,14 @@
+{
+	_name = 'male_human',
+	_size = { 64, 64 },	
+	_images = {
+		{
+			_file = '/content/images/walkcycle/BODY_male.png', 
+			_boundaries = { default = {20,48,44,62} }
+		},
+		{
+			_file = '/content/images/slash/BODY_human.png', 
+			_boundaries = { default = {20,48,44,62} }
+		}
+	}
+}

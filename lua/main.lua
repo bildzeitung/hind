@@ -32,7 +32,7 @@ function love.load()
 	tileSets = {}
 	
 	local load = {
-		'outdoor', 'fem1', 'monster' 
+		'outdoor', 'male_human_tile', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do
@@ -43,7 +43,7 @@ function love.load()
 	-- the size of the world
 	local worldX = 500 * 32
 	local worldY = 500 * 32
-	buckets = createBuckets(500, worldX, worldY)
+	buckets = createBuckets(250, worldX, worldY)
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
@@ -208,7 +208,7 @@ function createActors()
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createActor('princess.dat')
+	hero = factories.createActor('male_human.dat')
 	hero:animation('standright')
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)

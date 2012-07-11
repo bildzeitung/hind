@@ -3,7 +3,7 @@
 	_size = { 32, 32 },	
 	_images = {
 		{
-			_file = 'slime.png', 
+			_file = '/content/images/walkcycle/slime.png', 
 			_boundaries = { default = {0,0,32,32} }
 		}
 	}

@@ -10,7 +10,6 @@ require 'actor'
 require 'animation'
 require 'camera'
 
-
 module (..., package.seeall)
 
 local actorID = 1000000
@@ -86,7 +85,10 @@ function createActor(filename)
 	end
 	t._id = actorID
 	actorID = actorID + 1
-	local a = actor:new(t)	
+	
+	--local a = actor:new(t)	
+	
+	local a = objects.Actor(t)
 	return a
 end
 

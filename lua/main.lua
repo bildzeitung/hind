@@ -32,7 +32,7 @@ function love.load()
 	tileSets = {}
 	
 	local load = {
-		'outdoor', 'male_human', 'monster' 
+		'outdoor', 'male_human', 'chain_armour', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do

@@ -109,6 +109,8 @@ function love.load()
 								angle = {0,6.3},
 								color = {2,2,2} }
 	]]
+	
+	drawInfoText = true
 end
 
 --
@@ -431,71 +433,73 @@ function love.draw()
 			
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
 			
-			local y = 30
-			for k, v in pairs(hero._bucketIds) do
-				love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
-				y = y + 20
-			end
-			
-			love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
-			y=y+20		
-			
-			love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
-				hero._position[2], 10, y)		
-			y=y+20
-			
-			love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
-				hero._boundary[2] .. ', ' .. 
-				hero._boundary[3] .. ', ' .. 
-				hero._boundary[4], 10, y)		
-			y=y+20
-			
-			if hero._collidee then
-				love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
-				hero._collidee._boundary[2] .. ', ' .. 
-				hero._collidee._boundary[3] .. ', ' .. 
-				hero._collidee._boundary[4], 10, y)		
-				y=y+20
-			end
-			
-			local cw = daCamera:window()
-			local cv = daCamera:viewport()
-			love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
-				cw[2] .. ', ' .. 
-				cw[3] .. ', ' .. 
-				cw[4], 10, y)		
-			y=y+20
-			
-			love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
-				cv[2] .. ', ' .. 
-				cv[3] .. ', ' .. 
-				cv[4], 10, y)		
-			y=y+20
-	
-			local total = 0	
-			y = 200
-			love.graphics.print('=== PROFILES ===', 10, y)
-			y = y + 20
-			
-			for k, v in pairs(profiles) do
-				local avg = v.sum / v.count
-				if avg > 0.0009 then
-					love.graphics.print(k,10, y)				
-					love.graphics.print(v.count, 280, y)				
-					love.graphics.print(string.format('%.5f', v.sum / v.count),
-						330, y)		
-					y=y+15		
+			if drawInfoText then
+				local y = 30
+				for k, v in pairs(hero._bucketIds) do
+					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
+					y = y + 20
 				end
-				total = total + avg
-			end	
-			
-			love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
-			y=y+15
-			love.graphics.print(string.format('%.5f', total), 10, y)
-			y=y+15
-			love.graphics.print('=== EXPECTED FPS ===', 10, y)
-			y=y+15
-			love.graphics.print(string.format('%.5f', 1/total), 10, y)
+				
+				love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
+				y=y+20		
+				
+				love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
+					hero._position[2], 10, y)		
+				y=y+20
+				
+				love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
+					hero._boundary[2] .. ', ' .. 
+					hero._boundary[3] .. ', ' .. 
+					hero._boundary[4], 10, y)		
+				y=y+20
+				
+				if hero._collidee then
+					love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
+					hero._collidee._boundary[2] .. ', ' .. 
+					hero._collidee._boundary[3] .. ', ' .. 
+					hero._collidee._boundary[4], 10, y)		
+					y=y+20
+				end
+				
+				local cw = daCamera:window()
+				local cv = daCamera:viewport()
+				love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
+					cw[2] .. ', ' .. 
+					cw[3] .. ', ' .. 
+					cw[4], 10, y)		
+				y=y+20
+				
+				love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
+					cv[2] .. ', ' .. 
+					cv[3] .. ', ' .. 
+					cv[4], 10, y)		
+				y=y+20
+		
+				local total = 0	
+				y = 200
+				love.graphics.print('=== PROFILES ===', 10, y)
+				y = y + 20
+				
+				for k, v in pairs(profiles) do
+					local avg = v.sum / v.count
+					if avg > 0.0009 then
+						love.graphics.print(k,10, y)				
+						love.graphics.print(v.count, 280, y)				
+						love.graphics.print(string.format('%.5f', v.sum / v.count),
+							330, y)		
+						y=y+15		
+					end
+					total = total + avg
+				end	
+				
+				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
+				y=y+15
+				love.graphics.print(string.format('%.5f', total), 10, y)
+				y=y+15
+				love.graphics.print('=== EXPECTED FPS ===', 10, y)
+				y=y+15
+				love.graphics.print(string.format('%.5f', 1/total), 10, y)
+			end
 		end)
 end
 
@@ -658,6 +662,14 @@ function love.update(dt)
 					profiles[k] = { sum = 0, count = 0 }
 				end
 			end		
+
+			if love.keyboard.isDown('[') then		
+				drawInfoText = true
+			end		
+			
+			if love.keyboard.isDown(']') then		
+				drawInfoText = false
+			end				
 		end)
 	
 	-- @TODO AI!!! (DOH!)

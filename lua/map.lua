@@ -172,9 +172,9 @@ function _M:transitions()
 						not (y == yy and x == xx) then
 							local neighbourTile = self._tiles.base[yy][xx]
 							local neighbourType = math.floor((neighbourTile-1)/tilesPerType)							
-							if neighbourType > thisType then
+							if neighbourType > thisType then								
 								local edgeType = self._tiles.edges[yy][xx][2 ^ count]
-								if (not edgeType) or (edgeType < thisType) then
+								if (not edgeType) or (edgeType > thisType) then
 									self._tiles.edges[yy][xx][2 ^ count] = thisType
 								end
 							end
@@ -190,9 +190,13 @@ function _M:transitions()
 			local edges = self._tiles.edges[y][x]	
 			local sum = 0
 			local edgeType = 0
+			local minEdgeType = 99
 			for k, v in pairs(edges) do
 				sum = sum + k
-				edgeType = v
+				if v < minEdgeType then
+					edgeType = v
+					minEdgeType = v
+				end
 			end
 			
 			if sum > 0 then

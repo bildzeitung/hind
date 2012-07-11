@@ -32,11 +32,11 @@ function love.load()
 	tileSets = {}
 	
 	local load = {
-		'outdoor', 'male_human_tile', 'monster' 
+		'outdoor', 'male_human', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do
-		local ts = factories.createTileset(v .. '.dat')
+		local ts = factories.createTileset('content/tilesets/' .. v .. '.dat')
 		tileSets[ts:name()] = ts
 	end
 	
@@ -208,7 +208,7 @@ function createActors()
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createActor('male_human.dat')
+	hero = factories.createActor('content/actors/male_human.dat')
 	hero:animation('standright')
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)
@@ -220,7 +220,7 @@ function createActors()
 	local sy = 0
 	for i = 1, numActors do		
 		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
-		local a = factories.createActor('slime.dat')
+		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
 		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)

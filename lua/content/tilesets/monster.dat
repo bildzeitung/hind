@@ -1,0 +1,10 @@
+{
+	_name = 'monsters',
+	_size = { 32, 32 },	
+	_images = {
+		{
+			_file = 'slime.png', 
+			_boundaries = { default = {0,0,32,32} }
+		}
+	}
+}

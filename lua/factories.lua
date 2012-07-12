@@ -130,3 +130,12 @@ function createCamera()
 	local c = camera:new{}
 	return c
 end
+
+--
+--  Returns a floating text
+--  
+function createFloatingText(text, font, color, position, velocity, aliveTime)
+	local ft = objects.FloatingText
+		{ text, font, color, position, velocity, aliveTime}
+	return ft
+end

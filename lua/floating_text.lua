@@ -8,12 +8,17 @@ local Object = (require 'object').Object
 
 require 'drawable'
 
-local table, pairs, ipairs, print
-	= table, pairs, ipairs, print
+local table, math 
+	= table, math
 	
 module('objects')
 
-FloatingText = Object{ _init = { '_text', '_color', '_position', '_velocity', '_timeToLive' } }
+FloatingText = Object{ _init = { '_text', '_font', '_color', '_position', '_velocity', '_timeToLive' } }
+
+--
+--  FloatingTexts support the following Events:
+--		on_expired - will be called when the floating alive time has expired
+--
 
 --
 --  FloatingText constructor
@@ -36,9 +41,12 @@ function FloatingText:update(dt)
 	self._position[1] = self._position[1] + (dt * self._velocity[1])
 	self._position[2] = self._position[2] + (dt * self._velocity[2])
 
-    o._currentTime = o._currentTime + dt
-	if o._currentTime >= o._timeToLive then
-		--@TODO something when the floating text is past its lifespan
+    self._currentTime = self._currentTime + dt
+	
+	if self._currentTime >= self._timeToLive then
+		if self.on_expired then
+			self:on_expired()
+		end
 	end
 end
 
@@ -59,6 +67,6 @@ function FloatingText:draw(camera, drawTable)
 	local text = drawTable.text
 	
 	text[#text+1] = { 
-		self._text, self._color, self._screenPos[1], self._screenPos[2]
+		self._text, self._font, self._color, self._screenPos[1], self._screenPos[2]
 	}
 end

@@ -7,6 +7,7 @@
 require 'profiler'
 require 'factories'
 require 'renderer'
+require 'floating_text'
 
 function love.load()	
 	profiler = objects.Profiler{}	
@@ -78,6 +79,8 @@ function love.load()
 
 	floatingTexts = {}	
 	
+	removals = {}
+	
 	renderer = objects.Renderer{}
 end
 
@@ -140,7 +143,38 @@ function createActors()
 		a:animation('standright')
 		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)
-		table.insert(actors, a)
+		
+		-- when an actor takes damage create 
+		-- a floating text that shows the damage
+		a.on_take_damage = function(self, damage)
+			local ft = factories.createFloatingText( damage, largeFont,
+				{ 255, 0, 0, 255 }, { self._position[1], self._position[2] },
+				{ 0, -120 }, 1 )
+			ft.on_expired = function(self)
+				floatingTexts[self] = nil
+			end
+			floatingTexts[ft] = true
+		end
+		
+		-- when an actor dies
+		-- take him out of the game
+		-- and credit the actor that
+		-- defeated him
+		a.on_die = function(self, other)			
+			removals[a._id] = a
+						
+			other:rewardExperience(100)
+			
+			local ft = factories.createFloatingText( 100, largeFont,
+				{ 0, 255, 255, 255 }, { other._position[1], other._position[2] },
+				{ 0, -120 }, 1 )
+			ft.on_expired = function(self)
+				floatingTexts[self] = nil
+			end
+			floatingTexts[ft] = true			
+		end
+		
+		actors[a._id] = a
 	end	
 	
 	print()
@@ -417,6 +451,18 @@ function love.update(dt)
 				drawInfoText = false
 			end				
 		end)
+	
+	-- remove all entities that were schedule for removal
+	for k, v in pairs(removals) do		
+		-- unregister the actor from the buckets
+		for b, _ in pairs(v._bucketIds) do
+			buckets[b][v._id] = nil
+		end				
+		-- remove actor from actor list
+		actors[k] = nil
+		-- remove actor from list of visible actors
+		visibleActors[v] = nil
+	end	
 	
 	-- @TODO AI!!! (DOH!)
 	-- update the visible npcs with some crappy "AI"

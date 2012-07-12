@@ -17,6 +17,13 @@ module('objects')
 Actor = Object{}
 
 --
+--  Actors support the following Events:
+--		on_take_damage(damage) - will be called when the actor takes damage
+--		on_die(other) - will be called when the actor's health falls below 0
+--						other is the actor that caused the health to fall below 0
+--
+
+--
 --  Actor constructor
 --
 function Actor:_clone(values)
@@ -38,6 +45,7 @@ function Actor:_clone(values)
 	o.ACTOR = true
 	o._isAttacking = false
 	
+	o._experience = 0
 	o._health = 20
 	
 	return o
@@ -232,11 +240,26 @@ end
 --
 --  Takes damage
 --
-function Actor:takeDamage(damage)
-	self._health = self._health - damage		
-	
+function Actor:takeDamage(damage, other)
+	print('==============================')
 	print('HIT!')
-	print(self._health)	
+	print('Health before: ' .. self._health)	
+
+	self._health = self._health - damage	
+
+	print('Health after: ' .. self._health)	
+	print('------------------------------')
+
+	if self.on_take_damage then
+		self:on_take_damage(damage)
+	end
+	
+	if self._health <= 0 then
+		self._health = 0
+		if self.on_die then
+			self:on_die(other)
+		end
+	end
 end
 
 --
@@ -245,6 +268,13 @@ end
 function Actor:doDamage(other)
 	local weapon = self._equipped['weapon']
 	if weapon then
-		other:takeDamage(weapon._damage)
+		other:takeDamage(weapon._damage, self)
 	end
+end
+
+--
+--  Rewards experience
+--
+function Actor:rewardExperience(experience)
+	self._experience = self._experience + experience
 end

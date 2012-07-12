@@ -303,10 +303,17 @@ function Renderer:draw(camera, drawables, profiler)
 	-- render all of the text objects
 	profiler:profile('drawing text objects', 	
 		function()		
+			local f = love.graphics.getFont()
+			local cm = love.graphics.getColorMode()
+			love.graphics.setColorMode('modulate')
 			for k, v in pairs(drawTable.text) do
-				love.graphics.setColor(v[2])
-				love.graphics.print(v[1], v[3], v[4])	
+				love.graphics.setFont(v[2])
+				love.graphics.setColor(unpack(v[3]))
+				love.graphics.print(v[1], v[4], v[5], 0, 
+					drawTable.zoomX, drawTable.zoomY)	
 			end
+			if f then love.graphics.setFont(f) end
+			love.graphics.setColorMode(cm)
 		end)
 end
 

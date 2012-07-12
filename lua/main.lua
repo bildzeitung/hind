@@ -216,6 +216,7 @@ function createActors()
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
 	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
 	local longSword = factories.createActorItem('content/actors/longsword.dat')
+	longSword._damage = 10
 
 	hero:equipItem('weapon',longSword)		
 	hero:equipItem('legs',platePants)	

@@ -23,6 +23,7 @@ function Collidable:_clone(values)
 	o._boundary = { 0, 0, 0, 0 }
 	o._bucketIds = {}	
 	o._ignores = {}
+	o._collidees = {}
 	o:ignoreCollision(o)
 	
 	return o
@@ -45,7 +46,6 @@ end
 --  another object
 --
 function Collidable:collide(other)
-	print('Collidable:collide')
 end
 
 --
@@ -114,6 +114,13 @@ end
 --
 function Collidable:ignoreCollision(item)
 	self._ignores[item._id] = true
+end
+
+--
+--  Resets collision status
+--
+function Collidable:resetCollisions()
+	self._collidees = {}
 end
 
 --

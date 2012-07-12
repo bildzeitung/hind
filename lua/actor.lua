@@ -36,6 +36,9 @@ function Actor:_clone(values)
 	o._velocity = { 0, 0 }
 	o._map = nil
 	o.ACTOR = true
+	o._isAttacking = false
+	
+	o._health = 20
 	
 	return o
 end
@@ -110,6 +113,12 @@ function Actor:attack()
 		self:animation(currentAnim, true)
 		self._currentAnimation.done_cb = nil			
 		self._isAttacking = false
+		
+		local weapon = self._equipped['weapon']
+		if weapon then
+			weapon:resetCollisions()
+		end
+		
 	end
 end
 
@@ -175,13 +184,6 @@ end
 local base_checkCollision = Collidable.checkCollision
 function Actor:checkCollision(b)
 	base_checkCollision(self,b)
-	
-	if self._isAttacking then
-		local weapon = self._equipped['weapon']
-		if weapon then
-			weapon:checkCollision(b)
-		end
-	end
 end
 
 --
@@ -233,4 +235,14 @@ function Actor:collide(other)
 	for _, item in pairs(self._equipped) do
 		item:update(0)
 	end	
+end
+
+--
+--  Takes damage
+--
+function Actor:hurt(damage)
+	self._health = self._health - damage		
+	
+	print('HIT!')
+	print(self._health)	
 end

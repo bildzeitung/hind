@@ -50,4 +50,10 @@ end
 --  with another object
 --
 function ActorItem:collide(other)
+	if self._actor._isAttacking and other._id and self._damage and other.hurt then
+		if not self._collidees[other._id] then
+			self._collidees[other._id] = true
+			other:hurt(self._damage)			
+		end
+	end
 end

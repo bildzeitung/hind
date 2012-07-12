@@ -1,4 +1,6 @@
 {
+	_ignoresHits = true,
+	_damage = 10,
 	_animations = 
 	{
 		standup = 

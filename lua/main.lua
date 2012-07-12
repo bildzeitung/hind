@@ -136,7 +136,6 @@ function createActors()
 	local longSword = factories.createActorItem('content/actors/longsword.dat')
 
 	-- add a collide event to the sword
-	longSword._damage = 10
 	longSword.on_collide = function(self, other)
 		if self._actor._isAttacking and other._id then		
 			if not self._collidees[other._id] then				
@@ -199,7 +198,10 @@ function createActors()
 		end
 			
 		a.on_collide = function(self, other)
-			if other._actor then
+			-- if we are colliding with an actoritem
+			-- then actually collide with the actor
+			-- if this item doesn't ignore hits
+			if other._actor and not other._ignoresHits then
 				other = other._actor
 			end
 			if other._id and other.HERO then

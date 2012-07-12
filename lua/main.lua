@@ -783,7 +783,7 @@ function love.update(dt)
 		function()				
 			for k, _ in pairs(visibleIds) do
 				for _, v in pairs(buckets[k]) do
-					if v.checkCollision then
+					if v.attack then
 						visibleActors[v] = true
 					end
 					if v._image then

@@ -119,7 +119,7 @@ end
 --
 function createAnimation(t)
 	t._tileSet = tileSets[t._tileSet]
-	local a = animation:new(t)	
+	local a = objects.Animation(t)
 	return a
 end
 

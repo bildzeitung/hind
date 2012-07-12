@@ -459,7 +459,8 @@ function love.draw()
 			if drawInfoText then
 				local y = 30
 				for k, v in pairs(hero._bucketIds) do
-					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
+					local count = table.count(buckets[k])
+					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
 					y = y + 20
 				end
 				
@@ -557,7 +558,7 @@ function love.update(dt)
 				end
 				
 				if love.keyboard.isDown('left') then
-					hero:animation('walkleft')		
+					hero:animation('walkleft')
 					vx = -125
 				elseif
 					love.keyboard.isDown('right') then
@@ -569,7 +570,7 @@ function love.update(dt)
 				
 				if vx == 0 and vy == 0 then
 					local anim = hero:animation():name():gsub('walk','stand')
-					hero:animation(anim)
+					hero:animation(anim, true)
 				end
 			end
 				

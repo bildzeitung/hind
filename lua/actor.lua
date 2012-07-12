@@ -106,7 +106,7 @@ function Actor:attack()
 	attackAnim = attackAnim:gsub('stand','attack')
 	self:animation(attackAnim, true)
 	self._currentAnimation.done_cb = function()
-		self:animation(currentAnim)
+		self:animation(currentAnim, true)
 		self._currentAnimation.done_cb = nil			
 		self._isAttacking = false
 	end
@@ -191,12 +191,10 @@ local base_registerBuckets = Collidable.registerBuckets
 function Actor:registerBuckets(buckets)	
 	base_registerBuckets(self, buckets)
 	
-	--[[
 	-- register items in the buckets too
 	for k, item in pairs(self._equipped) do
 		item:registerBuckets(buckets)
 	end
-	]]
 end
 
 --

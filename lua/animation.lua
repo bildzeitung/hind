@@ -4,20 +4,21 @@
 	Created JUN-21-2012
 ]]
 
-module(..., package.seeall)
+local Object = (require 'object').Object
+
+module('objects')
+
+Animation = Object{}
 
 --
---  Creates a new animation from a table of values
+--  Animation constructor
 --
-function _M:new(t)
-	self.__index = self    
-	setmetatable(t, self)
-		
-	t._currentFrame = t._frameStart
-	t._frameCounter = 0
-	t._frameDir = 1
+function Animation:_clone(values)
+	local o = Object._clone(self,values)
 	
-	return t
+	o:reset()
+	
+	return o
 end
 
 
@@ -27,7 +28,7 @@ end
 --  Outputs:
 --		the new frame number if the frame should change
 --
-function _M:update(dt)
+function Animation:update(dt)
 	self._frameCounter = self._frameCounter + dt
 	if self._frameCounter >= self._frameDuration then		
 		self._frameCounter = 0
@@ -61,7 +62,7 @@ end
 --
 --  Resets the animation
 --
-function _M:reset()
+function Animation:reset()
 	self._frameCounter = 0
 	self._frameDir = 1
 	self._currentFrame = self._frameStart
@@ -70,27 +71,27 @@ end
 --
 --  Returns the name of this animation
 --
-function _M:name()
+function Animation:name()
 	return self._name
 end
 
 --
 --  Returns the current frame of the animation
 --
-function _M:frame()
+function Animation:frame()
 	return self._currentFrame
 end
 
 --
 --  Returns the tile set for this animation
 --
-function _M:tileSet()
+function Animation:tileSet()
 	return self._tileSet
 end
 
 --
 --  Returns the offset of the animation
 --
-function _M:offset()
+function Animation:offset()
 	return self._offset
 end

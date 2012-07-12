@@ -17,6 +17,11 @@ module('objects')
 ActorItem = Object{ }
 
 --
+--  ActorItemss support the following Events:
+--		on_collide(other) - will be called when the actoritem collides with another item
+--
+
+--
 --  Actor constructor
 --
 function ActorItem:_clone(values)
@@ -50,11 +55,9 @@ end
 --  with another object
 --
 function ActorItem:collide(other)
-	if self._actor._isAttacking and other._id 
-		and self._damage then
-		if not self._collidees[other._id] then
-			self._collidees[other._id] = true
-			self._actor:doDamage(other)
-		end
+	if self.on_collide then
+		self:on_collide(other)
 	end
+	
+	self._collidees[other._id] = true
 end

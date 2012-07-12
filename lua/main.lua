@@ -120,7 +120,16 @@ function createActors()
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
 	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
 	local longSword = factories.createActorItem('content/actors/longsword.dat')
+
+	-- add a collide event to the sword
 	longSword._damage = 10
+	longSword.on_collide = function(self, other)
+		if self._actor._isAttacking and other._id then			
+			if not self._collidees[other._id] then				
+				self._actor:doDamage(other)
+			end
+		end
+	end	
 
 	hero:equipItem('weapon',longSword)		
 	hero:equipItem('legs',platePants)	

@@ -35,6 +35,7 @@ function Actor:_clone(values)
   	o._lastPosUpdate = { 0, 0 }	
 	o._velocity = { 0, 0 }
 	o._map = nil
+	o.ACTOR = true
 	
 	return o
 end
@@ -202,12 +203,6 @@ end
 --  another object
 --
 function Actor:collide(other)
-	print('Actor collide')
-	print('self._id')
-	print(self._id)
-	print('other._id')
-	print(other._id)
-
 	if self._lastPosUpdate[1] ~= 0 or 
 		self._lastPosUpdate[2] ~= 0 then		
 			-- check if reversing the last update moves the

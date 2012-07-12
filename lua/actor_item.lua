@@ -50,9 +50,4 @@ end
 --  with another object
 --
 function ActorItem:collide(other)
-	print('ActorItem collide')	
-	print('self._id')
-	print(self._id)
-	print('other._id')						
-	print(other._id)
 end

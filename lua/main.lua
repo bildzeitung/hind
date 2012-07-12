@@ -230,7 +230,6 @@ function createActors()
 	table.insert(actors, hero)
 	hero.player = true
 	
-	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
@@ -243,7 +242,6 @@ function createActors()
 	end	
 	
 	print()
-	]]
 end
 
 --
@@ -783,7 +781,7 @@ function love.update(dt)
 		function()				
 			for k, _ in pairs(visibleIds) do
 				for _, v in pairs(buckets[k]) do
-					if v.attack then
+					if v.ACTOR then
 						visibleActors[v] = true
 					end
 					if v._image then

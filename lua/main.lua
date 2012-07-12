@@ -154,7 +154,7 @@ function love.draw()
 	profiler:profile('drawing collision boundaries',
 		function()
 			if showCollisionBoundaries then
-				local cw = drawTable.cw
+				local cw = daCamera:window()
 				for k, _ in pairs(visibleIds) do
 					for _, v in pairs(buckets[k]) do
 						if v._boundary then

@@ -58,6 +58,4 @@ function ActorItem:collide(other)
 	if self.on_collide then
 		self:on_collide(other)
 	end
-	
-	self._collidees[other._id] = true
 end

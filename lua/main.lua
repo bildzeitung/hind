@@ -124,9 +124,10 @@ function createActors()
 	-- add a collide event to the sword
 	longSword._damage = 10
 	longSword.on_collide = function(self, other)
-		if self._actor._isAttacking and other._id then			
+		if self._actor._isAttacking and other._id then		
 			if not self._collidees[other._id] then				
-				self._actor:doDamage(other)
+				self._actor:doDamage(other)				
+				self._collidees[other._id] = true
 			end
 		end
 	end	

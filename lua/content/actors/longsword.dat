@@ -1,0 +1,125 @@
+{
+	_animations = 
+	{
+		standup = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'standup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		walkup = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'walkup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		standleft = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'standleft',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 7,
+			_looping = 'loop'
+		},		
+		walkleft = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'walkleft',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 7,
+			_looping = 'loop'
+		},
+		standdown = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'standdown',
+			_frameDuration = 0.10,
+			_frameStart = 13,
+			_frameEnd = 13,
+			_looping = 'loop'
+		},		
+		walkdown = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'walkdown',
+			_frameDuration = 0.10,
+			_frameStart = 13,
+			_frameEnd = 13,
+			_looping = 'loop'
+		},
+		standright = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'standright',
+			_frameDuration = 0.10,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'loop'
+		},	
+		walkright = 
+		{	
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'walkright',
+			_frameDuration = 0.10,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'loop'
+		},
+		attackup = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'attackup',
+			_frameDuration = 0.04,
+			_frameStart = 1,
+			_frameEnd = 6,
+			_looping = 'onceboth'		
+		},
+		attackleft = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'attackleft',
+			_frameDuration = 0.04,
+			_frameStart = 7,
+			_frameEnd = 12,
+			_looping = 'onceboth'		
+		},
+		attackdown = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'attackdown',
+			_frameDuration = 0.04,
+			_frameStart = 13,
+			_frameEnd = 18,
+			_looping = 'onceboth'		
+		},
+		attackright = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'attackright',
+			_frameDuration = 0.04,
+			_frameStart = 19,
+			_frameEnd = 24,
+			_looping = 'onceboth'		
+		}					
+	}
+}

@@ -325,6 +325,7 @@ function _M:generate()
 	end
 	print()
 	
+	--[[
 	-- add random objects
 	local current = 1
 	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
@@ -342,6 +343,7 @@ function _M:generate()
 		end
 	end		
 	print()
+	]]
 end
 
 

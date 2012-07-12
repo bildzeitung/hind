@@ -6,8 +6,8 @@
 
 local Object = (require 'object').Object
 
-local pairs
-	= pairs
+local pairs, table, print
+	= pairs, table, print
 	
 module('objects')
 
@@ -19,11 +19,11 @@ Collidable = Object{}
 function Collidable:_clone(values)
 	local o = Object._clone(self,values)
 	
-	o._position = { 0, 0 }
-	
+	o._position = { 0, 0 }	
 	o._boundary = { 0, 0, 0, 0 }
-	o._lastPosUpdate = { 0, 0 }
 	o._bucketIds = {}	
+	o._ignores = {}
+	o:ignoreCollision(o)
 	
 	return o
 end
@@ -41,36 +41,11 @@ function Collidable:position(x, y)
 end
 
 --
---  Called when the actor collides 
---  with another object
+--  Called when a collidable collides with
+--  another object
 --
 function Collidable:collide(other)
-	if self._lastPosUpdate[1] ~= 0 or 
-		self._lastPosUpdate[2] ~= 0 then		
-			-- check if reversing the last update moves the
-			-- actor farther away from the other object
-			local xdiff = other._position[1] - self._position[1]
-			local ydiff = other._position[2] - self._position[2]			
-			local currentDist = xdiff * xdiff + ydiff * ydiff
-
-			local xdiff = other._position[1] - 
-				(self._position[1] - self._lastPosUpdate[1])
-			local ydiff = other._position[2] - 
-				(self._position[2] - self._lastPosUpdate[2])
-			local possibleDist = xdiff * xdiff + ydiff * ydiff
-
-			if currentDist < possibleDist then
-				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
-				self._position[2] = self._position[2] - self._lastPosUpdate[2]
-				self._lastPosUpdate[1] = 0
-				self._lastPosUpdate[2] = 0
-			end
-	end
-	
-	self._collidee = other
-	
-	-- calculate the bounding boxes
-	self:calculateBoundary()	
+	print('Collidable:collide')
 end
 
 --
@@ -78,10 +53,10 @@ end
 --
 function Collidable:checkCollision(b)
 	self._collidee = nil
-	
+
 	for k, _ in pairs(self._bucketIds) do
 		for _, v in pairs(b[k]) do
-			if v ~= self then
+			if not self._ignores[v._id] then
 				local hit = true		
 				if v._boundary[1] > self._boundary[3] or
 					v._boundary[3] < self._boundary[1] or
@@ -99,7 +74,6 @@ function Collidable:checkCollision(b)
 		end
 	end
 end
-
 
 --
 --  Returns the spatial buckets 
@@ -133,6 +107,13 @@ function Collidable:registerBuckets(buckets)
 	for k, _ in pairs(self._bucketIds) do
 		buckets[k][self._id] = self
 	end	
+end
+
+--
+--  Adds an item to the collision ignore list
+--
+function Collidable:ignoreCollision(item)
+	self._ignores[item._id] = true
 end
 
 --

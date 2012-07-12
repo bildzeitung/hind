@@ -9,8 +9,8 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
-local table, pairs, ipairs
-	= table, pairs, ipairs
+local table, pairs, ipairs, print
+	= table, pairs, ipairs, print
 	
 module('objects')
 
@@ -32,6 +32,7 @@ function Actor:_clone(values)
   
 	o._equipped = {}
 	o._inventory = {}
+  	o._lastPosUpdate = { 0, 0 }	
 	o._velocity = { 0, 0 }
 	o._map = nil
 	
@@ -118,6 +119,15 @@ function Actor:equipItem(slot, item)
 	self._equipped[slot] = item
 	item._actor = self
 	
+	-- ignore collisions between the items and the actor
+	self:ignoreCollision(item)	
+	item:ignoreCollision(self)	
+	-- ignore collisions between the items themselves
+	for _, i in pairs(self._equipped) do
+		i:ignoreCollision(item)
+		item:ignoreCollision(i)
+	end
+	
 	if self._currentAnimation then
 		item:animation(self._currentAnimation:name())
 	end
@@ -136,8 +146,8 @@ function Actor:animation(a, r)
 	
 	if a then
 		-- set the animations for the equipped items
-		for _, v in pairs(self._equipped) do
-			v:animation(a, r)
+		for _, item in pairs(self._equipped) do
+			item:animation(a, r)
 		end
 	end
 	
@@ -159,15 +169,75 @@ function Actor:draw(camera, drawTable)
 end
 
 --
---  Handle collisions
+--  Checks for collision with nearby objects
 --
-local base_collide = Collidable.collide
-function Actor:collide(other)
-	base_collide(self,other)
+local base_checkCollision = Collidable.checkCollision
+function Actor:checkCollision(b)
+	base_checkCollision(self,b)
 	
-	for _, v in pairs(self._equipped) do
-		v._position[1] = self._position[1]
-		v._position[2] = self._position[2]
-		v:calculateBoundary()
+	if self._isAttacking then
+		local weapon = self._equipped['weapon']
+		if weapon then
+			weapon:checkCollision(b)
+		end
 	end
+end
+
+--
+--  Registers the actor in the proper
+--	collision buckets
+--
+local base_registerBuckets = Collidable.registerBuckets
+function Actor:registerBuckets(buckets)	
+	base_registerBuckets(self, buckets)
+	
+	--[[
+	-- register items in the buckets too
+	for k, item in pairs(self._equipped) do
+		item:registerBuckets(buckets)
+	end
+	]]
+end
+
+--
+--  Called when the actor collides with
+--  another object
+--
+function Actor:collide(other)
+	print('Actor collide')
+	print('self._id')
+	print(self._id)
+	print('other._id')
+	print(other._id)
+
+	if self._lastPosUpdate[1] ~= 0 or 
+		self._lastPosUpdate[2] ~= 0 then		
+			-- check if reversing the last update moves the
+			-- actor farther away from the other object
+			local xdiff = other._position[1] - self._position[1]
+			local ydiff = other._position[2] - self._position[2]			
+			local currentDist = xdiff * xdiff + ydiff * ydiff
+
+			local xdiff = other._position[1] - 
+				(self._position[1] - self._lastPosUpdate[1])
+			local ydiff = other._position[2] - 
+				(self._position[2] - self._lastPosUpdate[2])
+			local possibleDist = xdiff * xdiff + ydiff * ydiff
+
+			if currentDist < possibleDist then
+				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
+				self._position[2] = self._position[2] - self._lastPosUpdate[2]
+				self._lastPosUpdate[1] = 0
+				self._lastPosUpdate[2] = 0
+			end
+	end
+	
+	self._collidee = other
+	
+	-- calculate the bounding boxes
+	self:calculateBoundary()	
+	
+	for _, item in pairs(self._equipped) do
+		item:update(0)
+	end	
 end

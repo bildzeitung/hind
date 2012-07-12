@@ -9,8 +9,8 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
-local pairs, table
-	= pairs, table
+local pairs, table, print
+	= pairs, table, print
 	
 module('objects')
 
@@ -43,4 +43,16 @@ function ActorItem:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
+end
+
+--
+--  Called when the actor collides 
+--  with another object
+--
+function ActorItem:collide(other)
+	print('ActorItem collide')	
+	print('self._id')
+	print(self._id)
+	print('other._id')						
+	print(other._id)
 end

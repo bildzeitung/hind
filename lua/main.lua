@@ -34,7 +34,7 @@ function love.load()
 	local load = {
 		'outdoor', 'male_human', 
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
-		'plate_pants', 'monster' 
+		'plate_pants', 'longsword', 'monster' 
 	}
 		
 	for _, v in ipairs(load) do
@@ -215,19 +215,22 @@ function createActors()
 	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
 	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
-		
+	local longSword = factories.createActorItem('content/actors/longsword.dat')
+
+	hero:equipItem('weapon',longSword)		
 	hero:equipItem('legs',platePants)	
 	hero:equipItem('head',chainHelmet)	
 	hero:equipItem('torso',chainArmour)	
 	hero:equipItem('feet',plateShoes)	
-	hero:animation('standright')	
+	hero:animation('standright')		
 	
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
 	table.insert(actors, hero)
 	hero.player = true
-		
+	
+	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
@@ -240,6 +243,7 @@ function createActors()
 	end	
 	
 	print()
+	]]
 end
 
 --
@@ -736,10 +740,8 @@ function love.update(dt)
 	profile('updating collision buckets', 
 		function()			
 			for a, _ in pairs(visibleActors) do
-				if a.registerBuckets then
-					a:registerBuckets(buckets)
-				end
-			end
+				a:registerBuckets(buckets)
+			end	
 	end)
 	
 	-- test collistions for all visible actors
@@ -785,7 +787,7 @@ function love.update(dt)
 					end
 					if v._image then
 						visibleObjects[v] = true
-					end			
+					end	
 				end
 			end	
 		end)

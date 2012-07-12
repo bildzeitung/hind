@@ -104,6 +104,8 @@ function createActorItem(filename)
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
+	t._id = actorID
+	actorID = actorID + 1		
 	local ai = objects.ActorItem(t)
 	return ai
 end

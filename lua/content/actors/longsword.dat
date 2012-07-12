@@ -122,6 +122,16 @@
 			_frameStart = 19,
 			_frameEnd = 24,
 			_looping = 'onceboth'		
-		}					
+		},
+		die = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'die',
+			_frameDuration = 0.30,
+			_frameStart = 13,
+			_frameEnd = 13,
+			_looping = 'once'			
+		}												
 	}
 }

@@ -19,9 +19,11 @@ Actor = Object{}
 --
 --  Actors support the following Events:
 --		on_take_damage(damage) - will be called when the actor takes damage
---		on_die(other) - will be called when the actor's health falls below 0
---						other is the actor that caused the health to fall below 0
+--		on_begin_die(other) - will be called when the actor's health falls below 0
+--							other is the actor that caused the health to fall below 0
+--		on_end_die(other) - will be called when the actor's dyig animation is finished
 --
+
 
 --
 --  Actor constructor
@@ -45,6 +47,7 @@ function Actor:_clone(values)
 	o.ACTOR = true
 	o._isAttacking = false
 	o._health = 20
+	o._isDying = false
 	
 	return o
 end
@@ -251,11 +254,27 @@ function Actor:takeDamage(damage, other)
 	
 	if self._health <= 0 then
 		self._health = 0
-		if self.on_die then
-			self:on_die(other)
+		self._isDying = true
+		if self.on_begin_die then
+			self:on_begin_die(other)
 		end
+		self:die(other)
 	end
 end
+	
+--
+--  Called when the actor's health reaches zero
+--
+function Actor:die(other)	
+	self:velocity(0,0)	
+	self:animation('die', true)
+	self._currentAnimation.done_cb = function()
+		self._currentAnimation.done_cb = nil	
+		if self.on_end_die then
+			self:on_end_die(other)
+		end
+	end
+end	
 
 --
 --  Does damaga

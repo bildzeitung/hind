@@ -81,6 +81,16 @@
 			_frameStart = 10,
 			_frameEnd = 12,
 			_looping = 'loop'
-		}		
+		},	
+		die = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'die',
+			_frameDuration = 0.04,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		}			
 	}
 }

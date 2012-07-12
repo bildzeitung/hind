@@ -54,6 +54,13 @@ function Animation:update(dt)
 						- (self._frameDir * 2)
 					self._frameDir = -self._frameDir
 				end
+			elseif self._looping == 'once' then
+				self._currentFrame = self._frameEnd
+				self._frameDir = 0
+				-- end the animation
+				if self.done_cb then
+					self.done_cb(self)
+				end
 			end
 		end		
 	end

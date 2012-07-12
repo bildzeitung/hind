@@ -77,11 +77,8 @@ function love.load()
 	]]
 	
 	drawInfoText = true
-
-	floatingTexts = {}	
-	
-	removals = {}
-	
+	floatingTexts = {}		
+	removals = {}	
 	renderer = objects.Renderer{}
 end
 
@@ -163,6 +160,14 @@ function createActors()
 	hero.on_take_damage = function(self, damage)
 		createDamageText(self, damage)
 	end
+	
+	-- when the hero dies
+	-- the game is over?
+	-- and credit the actor that
+	-- defeated him
+	hero.on_end_die = function(self, other)			
+		hero.dead = true
+	end	
 		
 	local sx = 0
 	local sy = 0
@@ -183,8 +188,7 @@ function createActors()
 		-- take him out of the game
 		-- and credit the actor that
 		-- defeated him
-		a.on_die = function(self, other)			
-			removals[a._id] = a			
+		a.on_begin_die = function(self, other)			
 			if other.rewardExperience then
 				other:rewardExperience(100)			
 			end
@@ -196,6 +200,12 @@ function createActors()
 			end
 			floatingTexts[ft] = true			
 		end
+		
+		-- when an actor has finished dying
+		-- then remove him from the game
+		a.on_end_die = function(self, other)			
+			removals[a._id] = a				
+		end		
 			
 		a.on_collide = function(self, other)
 			-- if we are colliding with an actoritem
@@ -219,6 +229,12 @@ function createActors()
 end
 
 function love.draw()
+	if hero.dead then		
+		love.graphics.setFont(largeFont)
+		love.graphics.print('GAME OVER', 300, 300)
+		return
+	end
+
 	renderer:draw( daCamera, { floatingTexts = floatingTexts, map = daMap,
 			actors = visibleActors, objects = visibleObjects }, profiler )
 		
@@ -328,6 +344,10 @@ function love.draw()
 end
 
 function love.update(dt)
+	if hero.dead then		
+		return
+	end
+
 	profiler:profile('updating lighting', 
 		function()
 			-- @TODO proper day / night cycles with changing colour
@@ -345,7 +365,7 @@ function love.update(dt)
 	
 	profiler:profile('handling keyboard input', 
 		function()
-			if not hero._isAttacking then
+			if not hero._isAttacking and not hero._isDying then
 				local vx, vy = 0, 0
 			
 				if love.keyboard.isDown('up') then
@@ -372,12 +392,12 @@ function love.update(dt)
 					local anim = hero:animation():name():gsub('walk','stand')
 					hero:animation(anim, true)
 				end
-			end
 				
-			if love.keyboard.isDown(' ') then
-				hero:attack()
+				if love.keyboard.isDown(' ') then
+					hero:attack()
+				end
 			end
-			
+							
 			if love.keyboard.isDown('q') then
 				zoom = 1
 			end
@@ -494,7 +514,7 @@ function love.update(dt)
 			end				
 		end)
 	
-	-- remove all entities that were schedule for removal
+	-- remove all entities that were scheduled for removal
 	for k, v in pairs(removals) do		
 		-- unregister the actor from the buckets
 		for b, _ in pairs(v._bucketIds) do
@@ -511,7 +531,7 @@ function love.update(dt)
 	profiler:profile('updating AI', 
 		function()
 			for a, _ in pairs(visibleActors) do
-				if a.velocity and not a.player then
+				if not a.HERO and not a._isDying then
 					if math.random() > 0.95 then
 						local xv = math.random()*200-100
 						local yv = math.random()*200-100

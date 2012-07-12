@@ -14,7 +14,7 @@ local pairs, table, print
 	
 module('objects')
 
-ActorItem = Object{ }
+ActorItem = Object{}
 
 --
 --  Actor constructor

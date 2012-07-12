@@ -44,8 +44,6 @@ function Actor:_clone(values)
 	o._map = nil
 	o.ACTOR = true
 	o._isAttacking = false
-	
-	o._experience = 0
 	o._health = 20
 	
 	return o
@@ -263,15 +261,13 @@ end
 --  Does damaga
 --
 function Actor:doDamage(other)
-	local weapon = self._equipped['weapon']
-	if weapon then
-		other:takeDamage(weapon._damage, self)
+	if self._damage then
+		print(other._id)
+		other:takeDamage(self._damage, self)
+	else
+		local weapon = self._equipped['weapon']
+		if weapon then
+			other:takeDamage(weapon._damage, self)
+		end	
 	end
-end
-
---
---  Rewards experience
---
-function Actor:rewardExperience(experience)
-	self._experience = self._experience + experience
 end

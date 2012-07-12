@@ -108,6 +108,19 @@ function createBuckets(cellSize, worldX, worldY)
 end
 
 --
+--  Creates a damage text
+--
+function createDamageText(actor, damage)
+	local ft = factories.createFloatingText( damage, largeFont,
+		{ 255, 0, 0, 255 }, { actor._position[1], actor._position[2] },
+		{ 0, -120 }, 1 )
+	ft.on_expired = function(self)
+		floatingTexts[self] = nil
+	end
+	floatingTexts[ft] = true
+end
+
+--
 --  Creates the actors
 --
 function createActors()
@@ -115,7 +128,7 @@ function createActors()
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createActor('content/actors/male_human.dat')
+	hero = factories.createHero('content/actors/male_human.dat')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
 	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
@@ -146,6 +159,12 @@ function createActors()
 	table.insert(actors, hero)
 	hero.player = true
 	
+	-- when the hero takes damage create 
+	-- a floating text that shows the damage
+	hero.on_take_damage = function(self, damage)
+		createDamageText(self, damage)
+	end
+		
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
@@ -158,13 +177,7 @@ function createActors()
 		-- when an actor takes damage create 
 		-- a floating text that shows the damage
 		a.on_take_damage = function(self, damage)
-			local ft = factories.createFloatingText( damage, largeFont,
-				{ 255, 0, 0, 255 }, { self._position[1], self._position[2] },
-				{ 0, -120 }, 1 )
-			ft.on_expired = function(self)
-				floatingTexts[self] = nil
-			end
-			floatingTexts[ft] = true
+			createDamageText(self, damage)
 		end
 		
 		-- when an actor dies
@@ -172,10 +185,10 @@ function createActors()
 		-- and credit the actor that
 		-- defeated him
 		a.on_die = function(self, other)			
-			removals[a._id] = a
-						
-			other:rewardExperience(100)
-			
+			removals[a._id] = a			
+			if other.rewardExperience then
+				other:rewardExperience(100)			
+			end
 			local ft = factories.createFloatingText( 100, largeFont,
 				{ 0, 255, 255, 255 }, { other._position[1], other._position[2] },
 				{ 0, -120 }, 1 )
@@ -186,6 +199,15 @@ function createActors()
 		end
 			
 		a.on_collide = function(self, other)
+			if other._actor then
+				other = other._actor
+			end
+			if other._id and other.HERO then
+				if not self._collidees[other._id] then
+					self:doDamage(other)				
+					self._collidees[other._id] = true
+				end
+			end
 		end		
 		
 		actors[a._id] = a
@@ -228,6 +250,7 @@ function love.draw()
 			
 			love.graphics.setFont(largeFont)
 			love.graphics.print('EXPERIENCE: ' .. hero._experience, 10, 20)
+			love.graphics.print('HEALTH: ' .. hero._health, 400, 20)
 			love.graphics.setFont(smallFont)			
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 50)
 			

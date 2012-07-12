@@ -1,4 +1,5 @@
 {
+	_damage = 5,
 	_animations = 
 	{
 		standup = 

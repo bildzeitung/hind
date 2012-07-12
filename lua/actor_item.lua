@@ -17,11 +17,6 @@ module('objects')
 ActorItem = Object{ }
 
 --
---  ActorItemss support the following Events:
---		on_collide(other) - will be called when the actoritem collides with another item
---
-
---
 --  Actor constructor
 --
 function ActorItem:_clone(values)
@@ -48,14 +43,4 @@ function ActorItem:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
-end
-
---
---  Called when the ActorItem collides 
---  with another object
---
-function ActorItem:collide(other)
-	if self.on_collide then
-		self:on_collide(other)
-	end
 end

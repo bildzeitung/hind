@@ -13,6 +13,7 @@ function love.load()
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
+	smallFont = love.graphics.newFont(12)
 	
 	screenWidth = 800
 	screenHeight = 600
@@ -183,6 +184,9 @@ function createActors()
 			end
 			floatingTexts[ft] = true			
 		end
+			
+		a.on_collide = function(self, other)
+		end		
 		
 		actors[a._id] = a
 	end	
@@ -222,10 +226,13 @@ function love.draw()
 		function()		
 			love.graphics.setPixelEffect()
 			
-			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
+			love.graphics.setFont(largeFont)
+			love.graphics.print('EXPERIENCE: ' .. hero._experience, 10, 20)
+			love.graphics.setFont(smallFont)			
+			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 50)
 			
 			if drawInfoText then
-				local y = 30
+				local y = 60
 				for k, v in pairs(hero._bucketIds) do
 					local count = table.count(buckets[k])
 					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		

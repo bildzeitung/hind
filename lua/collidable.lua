@@ -14,6 +14,12 @@ module('objects')
 Collidable = Object{}
 
 --
+--  Collidable support the following Events:
+--		on_collide(other) - will be called when the collidable collides
+--							with another collidable
+--
+
+--
 --  Collidable constructor
 --
 function Collidable:_clone(values)
@@ -46,6 +52,9 @@ end
 --  another object
 --
 function Collidable:collide(other)
+	if self.on_collide then
+		self:on_collide(other)
+	end
 end
 
 --

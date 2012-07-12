@@ -186,55 +186,52 @@ function Actor:draw(camera, drawTable)
 	end
 end
 
---
 --  Registers the actor in the proper
---	collision buckets
+--     collision buckets
 --
 local base_registerBuckets = Collidable.registerBuckets
-function Actor:registerBuckets(buckets)	
-	base_registerBuckets(self, buckets)
-	
-	-- register items in the buckets too
-	for k, item in pairs(self._equipped) do
-		item:registerBuckets(buckets)
-	end
+function Actor:registerBuckets(buckets)
+   base_registerBuckets(self, buckets)
+
+   -- register items in the buckets too
+   for k, item in pairs(self._equipped) do
+	   item:registerBuckets(buckets)
+   end
 end
 
 --
---  Called when the actor collides with
+--  Called when a collidable collides with
 --  another object
 --
-function Actor:collide(other)
-	if self._lastPosUpdate[1] ~= 0 or 
-		self._lastPosUpdate[2] ~= 0 then		
-			-- check if reversing the last update moves the
-			-- actor farther away from the other object
-			local xdiff = other._position[1] - self._position[1]
-			local ydiff = other._position[2] - self._position[2]			
-			local currentDist = xdiff * xdiff + ydiff * ydiff
+local base_collide = Collidable.collide
+function Actor:collide(other)	
+	if self._lastPosUpdate[1] ~= 0 or self._lastPosUpdate[2] ~= 0 then
+		-- check if reversing the last update moves the
+		-- actor farther away from the other object
+		local xdiff = other._position[1] - self._position[1]
+		local ydiff = other._position[2] - self._position[2]			
+		local currentDist = xdiff * xdiff + ydiff * ydiff
 
-			local xdiff = other._position[1] - 
-				(self._position[1] - self._lastPosUpdate[1])
-			local ydiff = other._position[2] - 
-				(self._position[2] - self._lastPosUpdate[2])
-			local possibleDist = xdiff * xdiff + ydiff * ydiff
+		local xdiff = other._position[1] - 
+			(self._position[1] - self._lastPosUpdate[1])
+		local ydiff = other._position[2] - 
+			(self._position[2] - self._lastPosUpdate[2])
+		local possibleDist = xdiff * xdiff + ydiff * ydiff
 
-			if currentDist < possibleDist then
-				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
-				self._position[2] = self._position[2] - self._lastPosUpdate[2]
-				self._lastPosUpdate[1] = 0
-				self._lastPosUpdate[2] = 0
-			end
+		if currentDist < possibleDist then
+			self._position[1] = self._position[1] - self._lastPosUpdate[1]		
+			self._position[2] = self._position[2] - self._lastPosUpdate[2]
+			self._lastPosUpdate[1] = 0
+			self._lastPosUpdate[2] = 0
+		end
+		
+		self:calculateBoundary()		
+		for _, item in pairs(self._equipped) do
+			item:update(0)
+		end	
 	end
-	
-	self._collidee = other
-	
-	-- calculate the bounding boxes
-	self:calculateBoundary()	
-	
-	for _, item in pairs(self._equipped) do
-		item:update(0)
-	end	
+		
+	base_collide(self, other)
 end
 
 --

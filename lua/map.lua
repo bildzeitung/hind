@@ -464,7 +464,7 @@ end
 --
 --  Draw the map
 --
-function _M:drawTiles(camera, drawTable)	
+function _M:draw(camera, drawTable)	
 	local cw, cv, zoomX, zoomY =
 		drawTable.cw, drawTable.cv, 
 		drawTable.zoomX, drawTable.zoomY

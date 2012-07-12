@@ -27,8 +27,8 @@
 			_offset = { 16, 32 },
 			_name = 'standleft',
 			_frameDuration = 0.10,
-			_frameStart = 10,
-			_frameEnd = 10,
+			_frameStart = 4,
+			_frameEnd = 4,
 			_looping = 'loop'
 		},		
 		walkleft = 
@@ -37,8 +37,8 @@
 			_offset = { 16, 32 },
 			_name = 'walkleft',
 			_frameDuration = 0.10,
-			_frameStart = 10,
-			_frameEnd = 12,
+			_frameStart = 4,
+			_frameEnd = 6,
 			_looping = 'loop'
 		},
 		standdown = 
@@ -67,8 +67,8 @@
 			_offset = { 16, 32 },
 			_name = 'standright',
 			_frameDuration = 0.10,
-			_frameStart = 4,
-			_frameEnd = 4,
+			_frameStart = 10,
+			_frameEnd = 10,
 			_looping = 'loop'
 		},	
 		walkright = 
@@ -77,8 +77,8 @@
 			_offset = { 16, 32 },
 			_name = 'walkright',
 			_frameDuration = 0.10,
-			_frameStart = 4,
-			_frameEnd = 6,
+			_frameStart = 10,
+			_frameEnd = 12,
 			_looping = 'loop'
 		}		
 	}

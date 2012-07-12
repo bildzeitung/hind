@@ -179,14 +179,6 @@ function Actor:draw(camera, drawTable)
 end
 
 --
---  Checks for collision with nearby objects
---
-local base_checkCollision = Collidable.checkCollision
-function Actor:checkCollision(b)
-	base_checkCollision(self,b)
-end
-
---
 --  Registers the actor in the proper
 --	collision buckets
 --
@@ -240,9 +232,19 @@ end
 --
 --  Takes damage
 --
-function Actor:hurt(damage)
+function Actor:takeDamage(damage)
 	self._health = self._health - damage		
 	
 	print('HIT!')
 	print(self._health)	
+end
+
+--
+--  Does damaga
+--
+function Actor:doDamage(other)
+	local weapon = self._equipped['weapon']
+	if weapon then
+		other:takeDamage(weapon._damage)
+	end
 end

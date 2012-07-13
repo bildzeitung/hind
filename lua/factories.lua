@@ -67,7 +67,7 @@ function createMap(ts, size)
 	local t = {}	
 	t._tileSet = tileSets[ts]
 	t._sizeInTiles = size	
-	local m = map:new(t)	
+	local m = objects.Map(t)
 	return m	
 end
 

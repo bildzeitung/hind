@@ -4,31 +4,46 @@
 	Created JUN-21-2012
 ]]
 
+local Object = (require 'object').Object
+
 require 'table_ext'
 
-module(..., package.seeall)
+local table, pairs, ipairs, math, io, print
+	= table, pairs, ipairs, math, io, print
+	
+module('objects')
+
+Map = Object{}
 
 --
---  Creates a new map
+--  Map constructor
 --
-function _M:new(t)
-	self.__index = self    
-	setmetatable(t, self)
-	
-	t._tiles = {
+function Map:_clone(values)
+	local o = Object._clone(self,values)
+			
+	o._tiles = {
 		base = {},
 		overlay = {},
 		roof = {}	
 	}
-	t._objects = {}
-	t._colliders = {}
+	o._objects = {}
+	o._colliders = {}
 	
 	-- center the map by default
-	local tileSize = t._tileSet:size()
-	t._size = { t._sizeInTiles[1] * tileSize[1],
-				t._sizeInTiles[2] * tileSize[2] }
+	local tileSize = o._tileSet:size()
+	o._size = { o._sizeInTiles[1] * tileSize[1],
+				o._sizeInTiles[2] * tileSize[2] }
 	
-	return t
+	-- the canvases the will hold the 
+	-- rendered map
+	o._canvases = {}
+	--[[
+	for i = 1, 25 do
+		o._canvases[i] = love.graphics.newCanvas( 2048, 2048 )
+	end
+	]]
+		
+	return o
 end
 
 --
@@ -40,7 +55,7 @@ end
 --	types start at index 1 and are contiguous in 
 --	a tileset
 --  
-function _M:transitions()
+function Map:transitions()
 	local tilesPerType = 18
 	
 	--  a table that maps the edge number
@@ -217,7 +232,7 @@ function _M:transitions()
 	print()
 end
 
-function _M:createObject(name, x, y)
+function Map:createObject(name, x, y)
 	local ts = self._tileSet:size()
 		
 	-- insert objet
@@ -262,7 +277,7 @@ end
 --
 --  Generates a map
 --
-function _M:generate()
+function Map:generate()
 		
 	for y = 1, self._sizeInTiles[2] do		
 		self._tiles.base[y] = {}
@@ -348,7 +363,7 @@ end
 --
 --  Create colliders
 --
-function _M:createColliders(b)
+function Map:createColliders(b)
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
 	
@@ -406,7 +421,7 @@ end
 --  Registers the map in the proper
 --	collision buckets
 --
-function _M:registerBuckets(buckets)
+function Map:registerBuckets(buckets)
 	for _, v in pairs(self._colliders) do
 		for k, _ in pairs(v._ids) do	
 			if buckets[k] then				
@@ -426,7 +441,7 @@ end
 --		padding - the number of cells on either side of the
 --			visble tiles to include
 --
-function _M:nearIds(camera, b, padding)
+function Map:nearIds(camera, b, padding)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()
@@ -464,7 +479,7 @@ end
 --
 --  Draw the map
 --
-function _M:draw(camera, drawTable)	
+function Map:draw(camera, drawTable)	
 	local cw, cv, zoomX, zoomY =
 		drawTable.cw, drawTable.cv, 
 		drawTable.zoomX, drawTable.zoomY
@@ -526,14 +541,13 @@ end
 -- 
 --  Returns the map size
 --
-function _M:size()
+function Map:size()
 	return self._size
 end
 
 -- 
 --  Returns the map size in tiles
 --
-function _M:sizeInTiles()
+function Map:sizeInTiles()
 	return self._sizeInTiles
 end
-

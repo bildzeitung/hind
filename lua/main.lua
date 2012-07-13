@@ -9,7 +9,7 @@ require 'factories'
 require 'renderer'
 require 'floating_text'
 
-function love.load()	
+function love.load()		
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)

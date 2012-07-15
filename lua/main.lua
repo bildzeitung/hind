@@ -165,7 +165,7 @@ function createActors()
 
 	-- add a collide event to the sword
 	longSword.on_collide = function(self, other)
-		if self._actor._isAttacking and other._id then		
+		if self._actor._isAttacking and other._health then		
 			if not self._collidees[other._id] then				
 				self._actor:doDamage(other)				
 				self._collidees[other._id] = true
@@ -232,7 +232,7 @@ function createActors()
 			removals[a._id] = a							
 						
 			-- drop a coin?
-			if math.random() > 0.75 then
+			if math.random() > 0.25 then
 				dropCoin(a)
 			end
 		end		

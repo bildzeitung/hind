@@ -21,6 +21,15 @@ function love.load()
 		screenWidth,screenHeight, false, false, 0 )		
 	love.graphics.setColorMode('replace')
 
+	soundEffects = {}
+	
+	local load = { 'coin_pickup', 'sword_cut_1', 'sword_cut_2', 'sword_slash_1' }
+	
+	for _, v in ipairs(load) do
+		soundEffects[v] = 
+			love.audio.newSource( 'content/sounds/' .. v .. '.wav', 'static' )
+	end
+	
 	tileSets = {}
 	
 	local load = {

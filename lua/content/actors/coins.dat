@@ -1,12 +1,15 @@
 {
 	on_collide = function(self, other)	
-		if other.HERO then
+		if other.HERO and self._value then
+			soundEffects['coin_pickup']:seek(0,'seconds')
+			love.audio.play(soundEffects['coin_pickup'])
 			removals[self._id] = self
-			other._gold = other._gold + self._value
+			other._gold = other._gold + self._value			
+			self._value = nil			
 		end
 	end,	
 	value = function(self, v)
-		if v < 10 then
+		if v < 70 then
 			self._value = 1
 			self:animation('copper')
 		elseif v < 95 then

@@ -9,8 +9,8 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
-local table, pairs, ipairs, print
-	= table, pairs, ipairs, print
+local table, pairs, ipairs, love, print
+	= table, pairs, ipairs, love, print
 	
 module('objects')
 
@@ -104,12 +104,22 @@ function Actor:update(dt)
 	end
 end
 
+--
+--  Attack!
+--  n.b. this function should probably live somewhere else
+--  such as where the actors behaviour is defined (.dat file?)
+-- 
 function Actor:attack()
-	-- can only attack once
+	-- can only attack when not already attacking
 	if self._isAttacking then
 		return 
 	end
 	
+	local weapon = self._equipped['weapon']	
+	if weapon then
+		weapon:attack()
+	end
+							
 	self._isAttacking = true
 	
 	self:velocity(0,0)
@@ -122,8 +132,7 @@ function Actor:attack()
 		self:animation(currentAnim, true)
 		self._currentAnimation.done_cb = nil			
 		self._isAttacking = false
-		
-		local weapon = self._equipped['weapon']
+			
 		if weapon then
 			weapon:resetCollisions()
 		end

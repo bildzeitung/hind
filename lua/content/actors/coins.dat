@@ -1,0 +1,35 @@
+{
+	_animations = 
+	{
+		gold = 
+		{	
+			_tileSet = 'coins',
+			_offset = { 16, 16 },
+			_name = 'standup',
+			_frameDuration = 0.06,
+			_frameStart = 1,
+			_frameEnd = 8,
+			_looping = 'loop'
+		},
+		silver = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 16 },
+			_name = 'walkup',
+			_frameDuration = 0.06,
+			_frameStart = 9,
+			_frameEnd = 16,
+			_looping = 'loop'
+		},
+		copper = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 16 },
+			_name = 'standleft',
+			_frameDuration = 0.06,
+			_frameStart = 17,
+			_frameEnd = 24,
+			_looping = 'loop'
+		}			
+	}
+}

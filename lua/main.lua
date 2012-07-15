@@ -26,7 +26,7 @@ function love.load()
 	local load = {
 		'outdoor', 'male_human', 
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
-		'plate_pants', 'longsword', 'monster' 
+		'plate_pants', 'longsword', 'monster', 'coins'
 	}
 		
 	for _, v in ipairs(load) do
@@ -107,14 +107,45 @@ end
 --
 --  Creates a damage text
 --
-function createDamageText(actor, damage)
+function createFloatingText(colour, actor, damage)
 	local ft = factories.createFloatingText( damage, largeFont,
-		{ 255, 0, 0, 255 }, { actor._position[1], actor._position[2] },
+		colour, { actor._position[1], actor._position[2] },
 		{ 0, -120 }, 1 )
 	ft.on_expired = function(self)
 		floatingTexts[self] = nil
 	end
 	floatingTexts[ft] = true
+end
+
+--
+--  Drop a coin
+--
+function dropCoin(actor)
+	local coin = factories.createStaticActor('content/actors/coins.dat')
+	coin:position(actor._position[1], actor._position[2])	
+		
+	-- set the type of coin
+	local coinType = math.random()
+	if coinType > 0.25 then
+		coin:animation('copper')
+		coin._value = 1	
+	elseif coinType > 0.05 then
+		coin:animation('silver')
+		coin._value = 10	
+	else
+		coin:animation('gold')
+		coin._value = 100
+	end	
+	
+	coin:update(0)
+	coin:registerBuckets(buckets)
+			
+	coin.on_collide = function(self, other)	
+		if other.HERO then
+			removals[coin._id] = coin
+			other._gold = other._gold + self._value
+		end
+	end
 end
 
 --
@@ -158,7 +189,7 @@ function createActors()
 	-- when the hero takes damage create 
 	-- a floating text that shows the damage
 	hero.on_take_damage = function(self, damage)
-		createDamageText(self, damage)
+		createFloatingText({255,0,0,255},self, damage)
 	end
 	
 	-- when the hero dies
@@ -181,7 +212,7 @@ function createActors()
 		-- when an actor takes damage create 
 		-- a floating text that shows the damage
 		a.on_take_damage = function(self, damage)
-			createDamageText(self, damage)
+			createFloatingText({255,0,0,255},self, damage)
 		end
 		
 		-- when an actor dies
@@ -191,29 +222,22 @@ function createActors()
 		a.on_begin_die = function(self, other)			
 			if other.rewardExperience then
 				other:rewardExperience(100)			
+				createFloatingText({0,255,255,255},other, 100)
 			end
-			local ft = factories.createFloatingText( 100, largeFont,
-				{ 0, 255, 255, 255 }, { other._position[1], other._position[2] },
-				{ 0, -120 }, 1 )
-			ft.on_expired = function(self)
-				floatingTexts[self] = nil
-			end
-			floatingTexts[ft] = true			
 		end
 		
 		-- when an actor has finished dying
 		-- then remove him from the game
 		a.on_end_die = function(self, other)			
-			removals[a._id] = a				
+			removals[a._id] = a							
+						
+			-- drop a coin?
+			if math.random() > 0.75 then
+				dropCoin(a)
+			end
 		end		
 			
 		a.on_collide = function(self, other)
-			-- if we are colliding with an actoritem
-			-- then actually collide with the actor
-			-- if this item doesn't ignore hits
-			if other._actor and not other._ignoresHits then
-				other = other._actor
-			end
 			if other._id and other.HERO then
 				if not self._collidees[other._id] then
 					self:doDamage(other)				
@@ -267,8 +291,10 @@ function love.draw()
 			love.graphics.setPixelEffect()
 			
 			love.graphics.setFont(largeFont)
-			love.graphics.print('EXPERIENCE: ' .. hero._experience, 10, 20)
-			love.graphics.print('HEALTH: ' .. hero._health, 400, 20)
+			love.graphics.print('HEALTH: ' .. hero._health, 10, 20)
+			love.graphics.print('GOLD: ' .. hero._gold, 250, 20)
+			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 20)			
+			
 			love.graphics.setFont(smallFont)			
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 50)
 			
@@ -531,7 +557,7 @@ function love.update(dt)
 	profiler:profile('updating AI', 
 		function()
 			for a, _ in pairs(visibleActors) do
-				if not a.HERO and not a._isDying then
+				if not a.HERO and not a._isDying and not a.STATICACTOR then
 					if math.random() > 0.95 then
 						local xv = math.random()*200-100
 						local yv = math.random()*200-100
@@ -571,7 +597,7 @@ function love.update(dt)
 			for a, _ in pairs(visibleActors) do
 				a:update(dt)
 			end
-		end)
+		end)	
 
 	-- update the collision buckets
 	profiler:profile('updating collision buckets', 
@@ -618,9 +644,11 @@ function love.update(dt)
 		function()				
 			for k, _ in pairs(visibleIds) do
 				for _, v in pairs(buckets[k]) do
-					if v.ACTOR then
+					if v.ACTOR or v.STATICACTOR then
 						visibleActors[v] = true
 					end
+					-- map objects that you can collide with but
+					-- never interact with
 					if v._image then
 						visibleObjects[v] = true
 					end	

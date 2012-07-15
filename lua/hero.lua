@@ -21,6 +21,7 @@ function Hero:_clone(values)
 			
 	o.HERO = true
 	o._experience = 0
+	o._gold = 0
 	
 	return o
 end

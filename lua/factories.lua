@@ -7,6 +7,7 @@
 require 'tileset'
 require 'map'
 require 'actor'
+require 'static_actor'
 require 'actor_item'
 require 'animation'
 require 'camera'
@@ -109,6 +110,26 @@ function createActor(filename)
 	actorID = actorID + 1	
 	local a = objects.Actor(t)
 	return a
+end
+
+--
+--  Returns a new static actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--
+function createStaticActor(filename)
+	local t = readTableFromFile(filename)
+	for k, v in pairs(t._animations) do
+		local a = createAnimation(v)
+		t._animations[k] = a		
+	end
+	t._id = actorID
+	actorID = actorID + 1	
+	local sa = objects.StaticActor(t)
+	return sa
 end
 
 --

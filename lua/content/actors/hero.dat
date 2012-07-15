@@ -1,6 +1,8 @@
 {
 	on_take_damage = function(self, damage)
 		createFloatingText({255,0,0,255},self, damage)
+		soundEffects['human_hurt_1']:rewind()
+		love.audio.play(soundEffects['human_hurt_1'])		
 	end,
 	on_end_die = function(self, other)			
 		self.dead = true

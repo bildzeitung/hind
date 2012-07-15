@@ -11,7 +11,6 @@ require 'static_actor'
 require 'actor_item'
 require 'animation'
 require 'camera'
-require 'hero'
 
 module (..., package.seeall)
 

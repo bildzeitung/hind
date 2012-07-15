@@ -23,7 +23,10 @@ function love.load()
 
 	soundEffects = {}
 	
-	local load = { 'coin_pickup', 'sword_cut_1', 'sword_cut_2', 'sword_slash_1' }
+	local load = { 
+		'coin_pickup', 'sword_cut_1', 'sword_cut_2', 'sword_slash_1',
+		'human_hurt_1'
+	}
 	
 	for _, v in ipairs(load) do
 		soundEffects[v] = 

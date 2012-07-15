@@ -145,7 +145,7 @@ function createActors()
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createHero('content/actors/male_human.dat')
+	hero = factories.createActor('content/actors/hero.dat')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
 	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
@@ -163,22 +163,7 @@ function createActors()
 	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
 	table.insert(actors, hero)
-	hero.player = true
 	
-	-- when the hero takes damage create 
-	-- a floating text that shows the damage
-	hero.on_take_damage = function(self, damage)
-		createFloatingText({255,0,0,255},self, damage)
-	end
-	
-	-- when the hero dies
-	-- the game is over?
-	-- and credit the actor that
-	-- defeated him
-	hero.on_end_die = function(self, other)			
-		hero.dead = true
-	end	
-		
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		

@@ -1,12 +1,12 @@
 {
 	attack = function()
-		soundEffects['sword_slash_1']:seek(0,'seconds')
+		soundEffects['sword_slash_1']:rewind()
 		love.audio.play(soundEffects['sword_slash_1'])
 	end,
 	on_collide = function(self, other)
-		if self._actor._isAttacking and other.doDamage then		
+		if self._actor._isAttacking and not other._isDying and other.doDamage then		
 			if not self._collidees[other._id] then	
-				soundEffects['sword_cut_2']:seek(0,'seconds')
+				soundEffects['sword_cut_2']:rewind()
 				love.audio.play(soundEffects['sword_cut_2'])			
 				self._actor:doDamage(other)				
 				self._collidees[other._id] = true

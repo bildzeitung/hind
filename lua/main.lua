@@ -165,7 +165,7 @@ function createActors()
 
 	-- add a collide event to the sword
 	longSword.on_collide = function(self, other)
-		if self._actor._isAttacking and other._health then		
+		if self._actor._isAttacking and other.doDamage then		
 			if not self._collidees[other._id] then				
 				self._actor:doDamage(other)				
 				self._collidees[other._id] = true

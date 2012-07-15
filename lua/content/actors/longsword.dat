@@ -1,7 +1,11 @@
 {
-	attack = function()
-		soundEffects['sword_slash_1']:rewind()
-		love.audio.play(soundEffects['sword_slash_1'])
+	on_begin_attack = function(self)
+		local sound = 'sword_slash_' .. math.floor(math.random() * 2) + 1
+		soundEffects[sound]:rewind()
+		love.audio.play(soundEffects[sound])
+	end,
+	on_end_attack = function(self)
+		self:resetCollisions(self)
 	end,
 	on_collide = function(self, other)
 		if self._actor._isAttacking and not other._isDying and other.doDamage then		

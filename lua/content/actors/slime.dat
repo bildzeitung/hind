@@ -1,4 +1,32 @@
 {
+	AI = function(self)
+		if not self._isDying then
+			if not self._isAttacking and math.random() > 0.95 then
+				local xv = math.random()*200-100
+				local yv = math.random()*200-100
+						
+				if math.abs(xv) < 50 then xv = 0 end
+				if math.abs(yv) < 50 then yv = 0 end
+						
+				self:velocity(xv, yv)				
+					
+				if yv > 0 then
+					self:animation('walkdown')
+				elseif yv < 0 then
+					self:animation('walkup')
+				end
+						
+				if xv > 0 then 
+					self:animation('walkright')
+				elseif xv < 0 then
+					self:animation('walkleft')
+				end
+			end		
+			if math.random() > 0.995 then
+				self:attack()
+			end										
+		end				
+	end,
 	on_take_damage = function(self, damage)
 		createFloatingText({255,0,0,255},self, damage)
 	end,
@@ -14,9 +42,14 @@
 		if math.random() > 0.25 then
 			dropCoin(self)
 		end
-	end,			
+	end,
+	on_begin_attack = function(self)
+	end,
+	on_end_attack = function(self)
+		self:resetCollisions()
+	end,
 	on_collide = function(self, other)
-		if other._id and other.HERO then
+		if self._isAttacking and not other._isDying and other._id and other.HERO then
 			if not self._collidees[other._id] then
 				self:doDamage(other)				
 				self._collidees[other._id] = true
@@ -46,6 +79,16 @@
 			_frameEnd = 3,
 			_looping = 'loop'
 		},
+		attackup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},		
 		standleft = 
 		{	
 			_tileSet = 'monsters',
@@ -66,6 +109,16 @@
 			_frameEnd = 6,
 			_looping = 'loop'
 		},
+		attackleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},		
 		standdown = 
 		{	
 			_tileSet = 'monsters',
@@ -86,6 +139,16 @@
 			_frameEnd = 9,
 			_looping = 'loop'
 		},
+		attackdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},	
 		standright = 
 		{	
 			_tileSet = 'monsters',
@@ -106,6 +169,16 @@
 			_frameEnd = 12,
 			_looping = 'loop'
 		},	
+		attackright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},			
 		die = 
 		{	
 			_tileSet = 'monsters',

@@ -25,7 +25,8 @@ function love.load()
 	
 	local load = { 
 		'coin_pickup', 'sword_cut_1', 'sword_cut_2', 'sword_slash_1',
-		'human_hurt_1'
+		'sword_slash_2', 'human_hurt_1', 'human_attack_1', 'human_attack_2', 
+		'human_attack_3', 'human_attack_4'
 	}
 	
 	for _, v in ipairs(load) do
@@ -481,34 +482,13 @@ function love.update(dt)
 		visibleActors[v] = nil
 	end	
 	
-	-- @TODO AI!!! (DOH!)
-	-- update the visible npcs with some crappy "AI"
+	-- do the actor's AI updates
 	profiler:profile('updating AI', 
 		function()
 			for a, _ in pairs(visibleActors) do
-				if not a.HERO and not a._isDying and not a.STATICACTOR then
-					if math.random() > 0.95 then
-						local xv = math.random()*200-100
-						local yv = math.random()*200-100
-						
-						if math.abs(xv) < 50 then xv = 0 end
-						if math.abs(yv) < 50 then yv = 0 end
-						
-						a:velocity(xv, yv)				
-					
-						if yv > 0 then
-							a:animation('walkdown')
-						elseif yv < 0 then
-							a:animation('walkup')
-						end
-						
-						if xv > 0 then 
-							a:animation('walkright')
-						elseif xv < 0 then
-							a:animation('walkleft')
-						end
-					end						
-				end	
+				if a.AI then
+					a:AI()
+				end					
 			end	
 		end)
 

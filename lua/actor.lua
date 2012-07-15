@@ -9,6 +9,8 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
+require 'log'
+
 local table, pairs, ipairs, love, print
 	= table, pairs, ipairs, love, print
 	
@@ -18,6 +20,9 @@ Actor = Object{}
 
 --
 --  Actors support the following Events:
+--
+--		on_begin_attack() - will be called when the actor begins attacking
+--		on_end_attack() - will be called when the actor ends attacking
 --		on_take_damage(damage) - will be called when the actor takes damage
 --		on_begin_die(other) - will be called when the actor's health falls below 0
 --							other is the actor that caused the health to fall below 0
@@ -115,29 +120,28 @@ function Actor:attack()
 		return 
 	end
 	
-	local weapon = self._equipped['weapon']	
-	if weapon then
-		weapon:attack()
-	end
-							
 	self._isAttacking = true
-	
-	self:velocity(0,0)
-	
+						
+	-- pick the correct attack animation
 	local currentAnim = self:animation():name()
 	local attackAnim = currentAnim:gsub('walk','attack')
 	attackAnim = attackAnim:gsub('stand','attack')
+	
+	-- switch to the attack animation
 	self:animation(attackAnim, true)
 	self._currentAnimation.done_cb = function()
 		self:animation(currentAnim, true)
 		self._currentAnimation.done_cb = nil			
 		self._isAttacking = false
-			
-		if weapon then
-			weapon:resetCollisions()
-		end
 		
+		if self.on_end_attack then
+			self:on_end_attack()
+		end
 	end
+	
+	if self.on_begin_attack then
+		self:on_begin_attack()
+	end	
 end
 
 --

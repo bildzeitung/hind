@@ -1,4 +1,22 @@
 {
+	on_begin_attack = function(self)
+		self:velocity(0,0)
+		
+		local sound = 'human_attack_' .. math.floor(math.random() * 4) + 1
+		soundEffects[sound]:rewind()
+		love.audio.play(soundEffects[sound])
+		
+		local weapon = self._equipped['weapon']	
+		if weapon then
+			weapon:on_begin_attack()
+		end
+	end,
+	on_end_attack = function(self)
+		local weapon = self._equipped['weapon']	
+		if weapon then
+			weapon:on_end_attack()
+		end
+	end,
 	on_take_damage = function(self, damage)
 		createFloatingText({255,0,0,255},self, damage)
 		soundEffects['human_hurt_1']:rewind()

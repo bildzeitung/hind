@@ -13,7 +13,7 @@
 		},
 		silver = 
 		{	
-			_tileSet = 'monsters',
+			_tileSet = 'coins',
 			_offset = { 16, 16 },
 			_name = 'walkup',
 			_frameDuration = 0.06,
@@ -23,7 +23,7 @@
 		},
 		copper = 
 		{	
-			_tileSet = 'monsters',
+			_tileSet = 'coins',
 			_offset = { 16, 16 },
 			_name = 'standleft',
 			_frameDuration = 0.06,

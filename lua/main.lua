@@ -93,6 +93,10 @@ function love.load()
 	floatingTexts = {}		
 	removals = {}	
 	renderer = objects.Renderer{}
+	
+	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
+	music:setVolume(0.15)
+	music:play()	
 end
 
 --

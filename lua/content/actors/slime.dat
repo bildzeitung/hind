@@ -1,4 +1,28 @@
 {
+	on_take_damage = function(self, damage)
+		createFloatingText({255,0,0,255},self, damage)
+	end,
+	on_begin_die = function(self, other)			
+		if other.rewardExperience then
+			other:rewardExperience(100)			
+			createFloatingText({0,255,255,255},other, 100)
+		end
+	end,		
+	on_end_die = function(self, other)			
+		removals[self._id] = self				
+		-- drop a coin?
+		if math.random() > 0.25 then
+			dropCoin(self)
+		end
+	end,			
+	on_collide = function(self, other)
+		if other._id and other.HERO then
+			if not self._collidees[other._id] then
+				self:doDamage(other)				
+				self._collidees[other._id] = true
+			end
+		end
+	end,
 	_damage = 5,
 	_animations = 
 	{

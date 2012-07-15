@@ -187,44 +187,6 @@ function createActors()
 		a:animation('standright')
 		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)
-		
-		-- when an actor takes damage create 
-		-- a floating text that shows the damage
-		a.on_take_damage = function(self, damage)
-			createFloatingText({255,0,0,255},self, damage)
-		end
-		
-		-- when an actor dies
-		-- take him out of the game
-		-- and credit the actor that
-		-- defeated him
-		a.on_begin_die = function(self, other)			
-			if other.rewardExperience then
-				other:rewardExperience(100)			
-				createFloatingText({0,255,255,255},other, 100)
-			end
-		end
-		
-		-- when an actor has finished dying
-		-- then remove him from the game
-		a.on_end_die = function(self, other)			
-			removals[a._id] = a							
-						
-			-- drop a coin?
-			if math.random() > 0.25 then
-				dropCoin(a)
-			end
-		end		
-			
-		a.on_collide = function(self, other)
-			if other._id and other.HERO then
-				if not self._collidees[other._id] then
-					self:doDamage(other)				
-					self._collidees[other._id] = true
-				end
-			end
-		end		
-		
 		actors[a._id] = a
 	end	
 	

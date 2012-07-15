@@ -123,29 +123,9 @@ end
 function dropCoin(actor)
 	local coin = factories.createStaticActor('content/actors/coins.dat')
 	coin:position(actor._position[1], actor._position[2])	
-		
-	-- set the type of coin
-	local coinType = math.random()
-	if coinType > 0.25 then
-		coin:animation('copper')
-		coin._value = 1	
-	elseif coinType > 0.05 then
-		coin:animation('silver')
-		coin._value = 10	
-	else
-		coin:animation('gold')
-		coin._value = 100
-	end	
-	
+	coin:value(math.floor(math.random()*100))
 	coin:update(0)
 	coin:registerBuckets(buckets)
-			
-	coin.on_collide = function(self, other)	
-		if other.HERO then
-			removals[coin._id] = coin
-			other._gold = other._gold + self._value
-		end
-	end
 end
 
 --
@@ -162,16 +142,6 @@ function createActors()
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
 	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
 	local longSword = factories.createActorItem('content/actors/longsword.dat')
-
-	-- add a collide event to the sword
-	longSword.on_collide = function(self, other)
-		if self._actor._isAttacking and other.doDamage then		
-			if not self._collidees[other._id] then				
-				self._actor:doDamage(other)				
-				self._collidees[other._id] = true
-			end
-		end
-	end	
 
 	hero:equipItem('weapon',longSword)		
 	hero:equipItem('legs',platePants)	

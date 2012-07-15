@@ -1,4 +1,22 @@
 {
+	on_collide = function(self, other)	
+		if other.HERO then
+			removals[self._id] = self
+			other._gold = other._gold + self._value
+		end
+	end,	
+	value = function(self, v)
+		if v < 10 then
+			self._value = 1
+			self:animation('copper')
+		elseif v < 95 then
+			self._value = 10
+			self:animation('silver')
+		else
+			self._value = 100
+			self:animation('gold')
+		end
+	end,
 	_animations = 
 	{
 		gold = 

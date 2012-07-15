@@ -73,26 +73,6 @@ function createMap(ts, size)
 end
 
 --
---  Returns a new hero loaded
---	from the provided data file
---
---  Inputs:
---		filename - the name of the data file
---		that describes the actor
---
-function createHero(filename)
-	local t = readTableFromFile(filename)
-	for k, v in pairs(t._animations) do
-		local a = createAnimation(v)
-		t._animations[k] = a		
-	end
-	t._id = actorID
-	actorID = actorID + 1	
-	local a = objects.Hero(t)
-	return a
-end
-
---
 --  Returns a new actor loaded
 --	from the provided data file
 --

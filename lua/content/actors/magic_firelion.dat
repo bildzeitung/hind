@@ -22,7 +22,7 @@
 	end,
 	on_collide = function(self, other)
 		--[[
-		if self._currentAction == 'attack' and not other._currentAction == 'die' and other._id and other.HERO then
+		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other._id and other.HERO then
 			if not self._collidees[other._id] then
 				self:doDamage(other)				
 				self._collidees[other._id] = true

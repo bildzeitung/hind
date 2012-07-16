@@ -128,6 +128,14 @@ function Actor:action(name, cancel)
 		return 
 	end
 	
+	-- an action is cancelled if 
+	-- on_begin_X returns false	
+	local retval	
+	if self['on_begin_' .. name] then
+		retval = self['on_begin_' .. name](self)
+	end		
+	if retval == false then return end
+	
 	-- set the current action
 	self._currentAction = name
 						
@@ -154,11 +162,7 @@ function Actor:action(name, cancel)
 		if self['on_end_' .. name] then
 			self['on_end_' .. name](self)
 		end
-	end
-	
-	if self['on_begin_' .. name] then
-		self['on_begin_' .. name](self)
-	end		
+	end	
 end
 
 --

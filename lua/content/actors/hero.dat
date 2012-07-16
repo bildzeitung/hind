@@ -1,17 +1,22 @@
 {
 	_spells = 
 	{
-		{ 'firelion', 'Fire Lion' },
-		{ 'iceshield', 'Ice Shield' }
+		{ 'firelion', 'Fire Lion', 50 },
+		{ 'iceshield', 'Ice Shield', 50 }
 	},
 	_currentSpell = 1,
 	_baseTable = 'content/actors/male_human.dat',
 	on_begin_spellcast = function(self)
+		local spell = self._spells[self._currentSpell]
+		if spell[3] > self._mana then return false end
+		self._mana = self._mana - spell[3]		
 		self:velocity(0,0)
 	end,
 	on_end_spellcast = function(self)
-		local magic = factories.createActor('content/actors/magic_'..
-			self._spells[self._currentSpell][1] .. '.dat')
+		local spell = self._spells[self._currentSpell]
+		local magic = 
+			factories.createActor('content/actors/magic_'..
+			spell[1] .. '.dat')			
 		magic._actor = self
 		self:ignoreCollision(magic)
 		magic:ignoreCollision(self)				
@@ -57,5 +62,6 @@
 	dead = false,
 	HERO = true,
 	_experience = 0,
-	_gold = 0
+	_gold = 0,
+	_mana = 200
 }

@@ -228,12 +228,11 @@ function love.draw()
 			
 			love.graphics.setFont(largeFont)
 			love.graphics.print('HEALTH: ' .. hero._health, 10, 10)			
-			love.graphics.print('GOLD: ' .. hero._gold, 500, 10)
-			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 10, 40)
-			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 40)			
-			
-			
-			--self._spells[self._currentSpell][1]
+			love.graphics.print('GOLD: ' .. hero._gold, 250, 10)
+			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 10)			
+			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
+			love.graphics.print('MANA: ' .. hero._mana, 250, 40)
+			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
 			
 			love.graphics.setFont(smallFont)			
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)

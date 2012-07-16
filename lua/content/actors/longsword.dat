@@ -8,7 +8,7 @@
 		self:resetCollisions(self)
 	end,
 	on_collide = function(self, other)
-		if self._actor._isAttacking and not other._isDying and other.doDamage then		
+		if self._actor._currentAction == 'attack' and other.doDamage then		
 			if not self._collidees[other._id] then	
 				soundEffects['sword_cut_2']:rewind()
 				love.audio.play(soundEffects['sword_cut_2'])			

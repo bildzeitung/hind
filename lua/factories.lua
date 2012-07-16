@@ -34,6 +34,14 @@ local function readTableFromFile(filename)
 			.. filename .. '" - the file did not parse properly.'
 	end
 	
+	-- merge in base tables if they are 
+	-- mentioned
+	while t._baseTable do 
+		local ot = readTableFromFile(t._baseTable)
+		t._baseTable = nil
+		t = table.merge(t,ot)
+	end
+	
 	return t
 end
 

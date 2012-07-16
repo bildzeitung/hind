@@ -31,6 +31,36 @@
 				2, 2, 2,
 				0, 0, 0}
 		},	
+		{	_file = '/content/images/terrain/tallgrass.png',
+			_boundaries = { default = nil },
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
+		},
+		{	_file = '/content/images/terrain/youngwheat.png',
+			_boundaries = { default = nil },
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
+		},
+		{	_file = '/content/images/terrain/wheat.png',
+			_boundaries = { default = nil },
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
+		},		
 		{	_file = '/content/images/terrain/dirt.png',
 			_boundaries = { default = nil },
 			_heights = { 
@@ -50,7 +80,17 @@
 				2, 0, 2,
 				2, 2, 2,
 				0, 0, 0}
-		},		
+		},	
+		{	_file = '/content/images/terrain/sand.png',
+			_boundaries = { default = nil },
+			_heights = { 
+				2, 2, 2,
+				2, 2, 2,
+				2, 2, 2,
+				2, 0, 2,
+				2, 2, 2,
+				0, 0, 0}
+		},
 		{	_file = '/content/images/terrain/outdoor.png',
 			_definitions = {
 				tall_tree = {

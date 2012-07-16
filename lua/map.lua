@@ -8,6 +8,8 @@ local Object = (require 'object').Object
 
 require 'table_ext'
 
+local log = require 'log'
+
 local table, pairs, ipairs, math, io, print
 	= table, pairs, ipairs, math, io, print
 	
@@ -294,51 +296,43 @@ function Map:generate()
 				self._tiles.base[y][x] = math.floor(math.random() * 3) + 16
 			end
 		end
-	end		
+	end			
 	print()
 	
-	-- generate land
-	local maxRadius = 6
-	local minRadius = 3
-	local numPatches = 750
-	for i = 1, numPatches do
-		io.write('MAP LAND PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
-		local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
-		local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
-		local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-		local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-		for yy = y - h, y + h do 
-			for xx = x - w, x + w do
-				self._tiles.base[yy][xx] = 29
-				if math.random() > 0.5 then
-					self._tiles.base[yy][xx] = math.floor(math.random() * 3) + 34
+
+	local terrain = 
+	{
+		{ name = 'GRASS', tile = 6, maxRadius = 10, minRadius = 3, numPatches = 1500, variations = true},	
+		{ name = 'DIRT', tile = 5, maxRadius = 6, minRadius = 3, numPatches = 750, variations = true },		
+		{ name = 'SAND', tile = 7, maxRadius = 50, minRadius = 20, numPatches = 5, variations = true }		
+	}
+		
+	-- generate terrain
+	for k, v in ipairs(terrain) do
+		local maxRadius = v.maxRadius
+		local minRadius = v.minRadius
+		local numPatches = v.numPatches
+		local tile = v.tile
+		for i = 1, numPatches do
+			io.write(v.name .. ' PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
+			local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
+			local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
+			local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+			local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
+			for yy = y - h, y + h do 
+				for xx = x - w, x + w do
+					self._tiles.base[yy][xx] = 18 * (tile-1) + 11
+					if v.variations then
+						if math.random() > 0.5 then
+							self._tiles.base[yy][xx] = math.floor(math.random() * 3) + (18 * tile) - 2
+						end
+						
+					end
 				end
 			end
 		end
+		print()
 	end
-	print()
-	
-	
-	-- add dirt patches
-	local maxRadius = 10
-	local minRadius = 3
-	local numPatches = 1500
-	for i = 1, numPatches do
-		io.write('MAP DIRT PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
-		local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
-		local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
-		local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-		local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-		for yy = y - h, y + h do 
-			for xx = x - w, x + w do
-				self._tiles.base[yy][xx] = 47
-				if math.random() > 0.5 then
-					self._tiles.base[yy][xx] = math.floor(math.random() * 3) + 52
-				end
-			end
-		end
-	end
-	print()
 	
 	-- add random objects
 	local current = 1
@@ -349,7 +343,8 @@ function Map:generate()
 		for x = 1, self._sizeInTiles[1] do
 			if y > 5 and y < self._sizeInTiles[2] - 5 and 
 				x > 5 and x < self._sizeInTiles[1] - 5 and 
-				math.random() > 0.98 then
+				math.random() > 0.99 and 
+				math.floor(self._tiles.base[y][x] / 18) == 5 then
 					local o = self:createObject(tree_cycle[(current % 3) + 1],x,y)
 					table.insert(self._objects, o)
 					current = current + 1

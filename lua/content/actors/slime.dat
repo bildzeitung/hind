@@ -1,7 +1,7 @@
 {
 	AI = function(self)
-		if not self._isDying then
-			if not self._isAttacking and math.random() > 0.95 then
+		if not self._currentAction == 'die' then
+			if not self._currentAction == 'attack' and math.random() > 0.95 then
 				local xv = math.random()*200-100
 				local yv = math.random()*200-100
 						
@@ -23,17 +23,18 @@
 				end
 			end		
 			if math.random() > 0.995 then
-				self:attack()
+				self:action('attack')
 			end										
 		end				
 	end,
 	on_take_damage = function(self, damage)
 		createFloatingText({255,0,0,255},self, damage)
 	end,
-	on_begin_die = function(self, other)			
-		if other.rewardExperience then
-			other:rewardExperience(100)			
-			createFloatingText({0,255,255,255},other, 100)
+	on_begin_die = function(self)		
+		self:velocity(0,0)
+		if self._killer.rewardExperience then
+			self._killer:rewardExperience(100)			
+			createFloatingText({0,255,255,255},self._killer, 100)
 		end
 	end,		
 	on_end_die = function(self, other)			
@@ -49,7 +50,7 @@
 		self:resetCollisions()
 	end,
 	on_collide = function(self, other)
-		if self._isAttacking and not other._isDying and other._id and other.HERO then
+		if self._currentAction == 'attack' and not other._currentAction == 'die' and other._id and other.HERO then
 			if not self._collidees[other._id] then
 				self:doDamage(other)				
 				self._collidees[other._id] = true

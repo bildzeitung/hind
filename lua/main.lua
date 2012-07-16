@@ -39,7 +39,7 @@ function love.load()
 	local load = {
 		'outdoor', 'male_human', 
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
-		'plate_pants', 'longsword', 'monster', 'coins'
+		'plate_pants', 'longsword', 'monster', 'coins', 'magic_firelion'
 	}
 		
 	for _, v in ipairs(load) do
@@ -96,6 +96,7 @@ function love.load()
 	
 	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
 	music:setVolume(0.15)
+	music:setLooping( true )
 	music:play()	
 end
 
@@ -325,7 +326,7 @@ function love.update(dt)
 	
 	profiler:profile('handling keyboard input', 
 		function()
-			if not hero._isAttacking and not hero._isDying then
+			if not hero._currentAction then
 				local vx, vy = 0, 0
 			
 				if love.keyboard.isDown('up') then
@@ -354,7 +355,7 @@ function love.update(dt)
 				end
 				
 				if love.keyboard.isDown(' ') then
-					hero:attack()
+					hero:action('attack')
 				end
 			end
 							
@@ -394,6 +395,18 @@ function love.update(dt)
 				showCollisionBoundaries = false
 			end
 	
+			if love.keyboard.isDown('0') then				
+				local magic = factories.createActor('content/actors/magic_firelion.dat')
+				hero:ignoreCollision(magic)
+				magic:ignoreCollision(hero)				
+				magic:map(daMap)
+				magic:position(hero._position[1], hero._position[2])
+				magic:animation('attack'..hero:direction())				
+				magic:update(0)
+				magic:registerBuckets(buckets)				
+				magic:action('attack')
+			end
+			
 			--@TODO coordinate the shadow and light position
 			-- with the light color for day / night effect
 			-- each light could also generate it's own shadow

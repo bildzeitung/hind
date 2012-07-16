@@ -1,4 +1,5 @@
 {
+	_baseTable = 'content/actors/male_human.dat',
 	on_begin_attack = function(self)
 		self:velocity(0,0)
 		
@@ -22,6 +23,9 @@
 		soundEffects['human_hurt_1']:rewind()
 		love.audio.play(soundEffects['human_hurt_1'])		
 	end,
+	on_begin_die = function(self, other)		
+		self:velocity(0,0)
+	end,	
 	on_end_die = function(self, other)			
 		self.dead = true
 	end,
@@ -31,138 +35,5 @@
 	dead = false,
 	HERO = true,
 	_experience = 0,
-	_gold = 0,
-	_animations = 
-	{
-		standup = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'standup',
-			_frameDuration = 0.10,
-			_frameStart = 1,
-			_frameEnd = 1,
-			_looping = 'loop'
-		},
-		walkup = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'walkup',
-			_frameDuration = 0.10,
-			_frameStart = 2,
-			_frameEnd = 9,
-			_looping = 'loop'
-		},
-		standleft = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'standleft',
-			_frameDuration = 0.10,
-			_frameStart = 10,
-			_frameEnd = 10,
-			_looping = 'loop'
-		},		
-		walkleft = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'walkleft',
-			_frameDuration = 0.10,
-			_frameStart = 11,
-			_frameEnd = 18,
-			_looping = 'loop'
-		},
-		standdown = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'standdown',
-			_frameDuration = 0.10,
-			_frameStart = 19,
-			_frameEnd = 19,
-			_looping = 'loop'
-		},		
-		walkdown = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'walkdown',
-			_frameDuration = 0.10,
-			_frameStart = 20,
-			_frameEnd = 27,
-			_looping = 'loop'
-		},
-		standright = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'standright',
-			_frameDuration = 0.10,
-			_frameStart = 28,
-			_frameEnd = 28,
-			_looping = 'loop'
-		},	
-		walkright = 
-		{	
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'walkright',
-			_frameDuration = 0.10,
-			_frameStart = 29,
-			_frameEnd = 36,
-			_looping = 'loop'
-		},
-		attackup = 
-		{
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'attackup',
-			_frameDuration = 0.04,
-			_frameStart = 37,
-			_frameEnd = 42,
-			_looping = 'onceboth'		
-		},
-		attackleft = 
-		{
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'attackleft',
-			_frameDuration = 0.04,
-			_frameStart = 43,
-			_frameEnd = 48,
-			_looping = 'onceboth'		
-		},
-		attackdown = 
-		{
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'attackdown',
-			_frameDuration = 0.04,
-			_frameStart = 49,
-			_frameEnd = 54,
-			_looping = 'onceboth'		
-		},
-		attackright = 
-		{
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'attackright',
-			_frameDuration = 0.04,
-			_frameStart = 55,
-			_frameEnd = 60,
-			_looping = 'onceboth'		
-		},
-		die = 
-		{
-			_tileSet = 'male_human',
-			_offset = { 32, 64 },
-			_name = 'die',
-			_frameDuration = 0.30,
-			_frameStart = 61,
-			_frameEnd = 67,
-			_looping = 'once'			
-		}		
-	}
+	_gold = 0
 }

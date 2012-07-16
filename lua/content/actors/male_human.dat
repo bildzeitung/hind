@@ -128,7 +128,7 @@
 			_name = 'die',
 			_frameDuration = 0.30,
 			_frameStart = 61,
-			_frameEnd = 67,
+			_frameEnd = 66,
 			_looping = 'once'			
 		}		
 	}

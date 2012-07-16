@@ -9,7 +9,7 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
-require 'log'
+local log = require 'log'
 
 local table, pairs, ipairs, love, print
 	= table, pairs, ipairs, love, print
@@ -21,14 +21,10 @@ Actor = Object{}
 --
 --  Actors support the following Events:
 --
---		on_begin_attack() - will be called when the actor begins attacking
---		on_end_attack() - will be called when the actor ends attacking
+--		on_begin_X() - will be called when the actor begins an action
+--		on_end_X() - will be called when the actor begins an action
 --		on_take_damage(damage) - will be called when the actor takes damage
---		on_begin_die(other) - will be called when the actor's health falls below 0
---							other is the actor that caused the health to fall below 0
---		on_end_die(other) - will be called when the actor's dyig animation is finished
 --
-
 
 --
 --  Actor constructor
@@ -50,9 +46,10 @@ function Actor:_clone(values)
 	o._velocity = { 0, 0 }
 	o._map = nil
 	o.ACTOR = true
-	o._isAttacking = false
-	o._health = 20
-	o._isDying = false
+	
+	o._currentAction = nil
+	
+	o._health = 20	
 	
 	return o
 end
@@ -110,38 +107,59 @@ function Actor:update(dt)
 end
 
 --
---  Attack!
---  n.b. this function should probably live somewhere else
---  such as where the actors behaviour is defined (.dat file?)
+--  Returns the direction the actor is facing
+--  
+function Actor:direction()
+	local currentAnim = self:animation():name()
+	local d = currentAnim:gsub('walk','')
+	d = d:gsub('stand','')
+	d = d:gsub('attack','')
+	
+	return d
+end
+
+--
+--  Do an action
 -- 
-function Actor:attack()
-	-- can only attack when not already attacking
-	if self._isAttacking then
+function Actor:action(name, cancel)
+	if not name then return self._currentAction end
+	
+	-- can only do an action when not doing an action
+	if self._currentAction and not cancel then
 		return 
 	end
 	
-	self._isAttacking = true
+	-- set the current action
+	self._currentAction = name
 						
-	-- pick the correct attack animation
-	local currentAnim = self:animation():name()
-	local attackAnim = currentAnim:gsub('walk','attack')
-	attackAnim = attackAnim:gsub('stand','attack')
-	
-	-- switch to the attack animation
-	self:animation(attackAnim, true)
+	-- save old animation
+	local currentAnim
+	if self._currentAnimation then
+		currentAnim = self._currentAnimation:name()
+	end
+	-- switch to the new animation
+	if self._animations[name] then
+		self:animation(name, true)
+	else
+		self:animation(name .. self:direction(), true)
+	end	
+	-- set the callback for when the animation ends
 	self._currentAnimation.done_cb = function()
-		self:animation(currentAnim, true)
-		self._currentAnimation.done_cb = nil			
-		self._isAttacking = false
+		if currentAnim then
+			self:animation(currentAnim, true)
+		end
 		
-		if self.on_end_attack then
-			self:on_end_attack()
+		self._currentAnimation.done_cb = nil			
+		self._currentAction = nil
+		
+		if self['on_end_' .. name] then
+			self['on_end_' .. name](self)
 		end
 	end
 	
-	if self.on_begin_attack then
-		self:on_begin_attack()
-	end	
+	if self['on_begin_' .. name] then
+		self['on_begin_' .. name](self)
+	end		
 end
 
 --
@@ -267,27 +285,10 @@ function Actor:takeDamage(damage, other)
 	
 	if self._health <= 0 then
 		self._health = 0
-		self._isDying = true
-		if self.on_begin_die then
-			self:on_begin_die(other)
-		end
-		self:die(other)
+		self._killer = other
+		self:action('die', true)
 	end
 end
-	
---
---  Called when the actor's health reaches zero
---
-function Actor:die(other)	
-	self:velocity(0,0)	
-	self:animation('die', true)
-	self._currentAnimation.done_cb = function()
-		self._currentAnimation.done_cb = nil	
-		if self.on_end_die then
-			self:on_end_die(other)
-		end
-	end
-end	
 
 --
 --  Does damaga

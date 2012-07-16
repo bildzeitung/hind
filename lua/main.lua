@@ -39,7 +39,8 @@ function love.load()
 	local load = {
 		'outdoor', 'male_human', 
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
-		'plate_pants', 'longsword', 'monster', 'coins', 'magic_firelion'
+		'plate_pants', 'longsword', 'monster', 'coins', 
+		'magic_firelion', 'magic_iceshield'
 	}
 		
 	for _, v in ipairs(load) do
@@ -226,15 +227,19 @@ function love.draw()
 			love.graphics.setPixelEffect()
 			
 			love.graphics.setFont(largeFont)
-			love.graphics.print('HEALTH: ' .. hero._health, 10, 20)
-			love.graphics.print('GOLD: ' .. hero._gold, 250, 20)
-			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 20)			
+			love.graphics.print('HEALTH: ' .. hero._health, 10, 10)			
+			love.graphics.print('GOLD: ' .. hero._gold, 500, 10)
+			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 10, 40)
+			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 40)			
+			
+			
+			--self._spells[self._currentSpell][1]
 			
 			love.graphics.setFont(smallFont)			
-			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 50)
+			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
 			
 			if drawInfoText then
-				local y = 60
+				local y = 85
 				for k, v in pairs(hero._bucketIds) do
 					local count = table.count(buckets[k])
 					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
@@ -399,6 +404,20 @@ function love.update(dt)
 				hero:action('spellcast')
 			end
 			
+			if love.keyboard.isDown('=') then
+				hero._currentSpell = hero._currentSpell + 1
+				if hero._currentSpell > #hero._spells then
+					hero._currentSpell = #hero._spells
+				end
+			end			
+
+			if love.keyboard.isDown('-') then	
+				hero._currentSpell = hero._currentSpell - 1
+				if hero._currentSpell < 1 then
+					hero._currentSpell = 1
+				end
+			end			
+		
 			--@TODO coordinate the shadow and light position
 			-- with the light color for day / night effect
 			-- each light could also generate it's own shadow

@@ -3,6 +3,24 @@
 		objects.Collidable.collide(self, other)
 	end,
 	on_begin_attack = function(self)
+		local dir = self._actor:direction()
+		if dir == 'right' then
+			self:velocity(200,0)
+			self:position(self._actor._position[1] + 64, 
+				self._actor._position[2])					
+		elseif dir == 'left' then
+			self:velocity(-200,0)
+			self:position(self._actor._position[1] - 64, 
+				self._actor._position[2])					
+		elseif dir == 'up' then
+			self:velocity(0,-200)
+			self:position(self._actor._position[1], 
+				self._actor._position[2] - 64)					
+		elseif dir == 'down' then
+			self:velocity(0,200)
+			self:position(self._actor._position[1], 
+				self._actor._position[2])
+		end
 	end,
 	on_end_attack = function(self)
 		removals[self._id] = self				

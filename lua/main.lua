@@ -95,9 +95,9 @@ function love.load()
 	renderer = objects.Renderer{}
 	
 	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
-	music:setVolume(0.15)
-	music:setLooping( true )
-	music:play()	
+	--music:setVolume(0.15)
+	--music:setLooping( true )
+	--music:play()	
 end
 
 --
@@ -395,16 +395,8 @@ function love.update(dt)
 				showCollisionBoundaries = false
 			end
 	
-			if love.keyboard.isDown('0') then				
-				local magic = factories.createActor('content/actors/magic_firelion.dat')
-				hero:ignoreCollision(magic)
-				magic:ignoreCollision(hero)				
-				magic:map(daMap)
-				magic:position(hero._position[1], hero._position[2])
-				magic:animation('attack'..hero:direction())				
-				magic:update(0)
-				magic:registerBuckets(buckets)				
-				magic:action('attack')
+			if love.keyboard.isDown('0') then	
+				hero:action('spellcast')
 			end
 			
 			--@TODO coordinate the shadow and light position

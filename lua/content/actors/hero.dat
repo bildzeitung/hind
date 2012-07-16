@@ -1,5 +1,34 @@
 {
 	_baseTable = 'content/actors/male_human.dat',
+	on_begin_spellcast = function(self)
+		self:velocity(0,0)
+	end,
+	on_end_spellcast = function(self)
+		local magic = factories.createActor('content/actors/magic_firelion.dat')
+		self:ignoreCollision(magic)
+		magic:ignoreCollision(self)				
+		magic:map(daMap)
+
+		local dir = self:direction()
+		if dir == 'right' then
+			magic:velocity(200,0)
+			magic:position(self._position[1] + 64, self._position[2])					
+		elseif dir == 'left' then
+			magic:velocity(-200,0)
+			magic:position(self._position[1] - 64, self._position[2])					
+		elseif dir == 'up' then
+			magic:velocity(0,-200)
+			magic:position(self._position[1], self._position[2] - 64)					
+		elseif dir == 'down' then
+			magic:velocity(0,200)
+			magic:position(self._position[1], self._position[2])
+		end
+		
+		magic:animation('attack'..self:direction())				
+		magic:update(0)
+		magic:registerBuckets(buckets)				
+		magic:action('attack')
+	end,
 	on_begin_attack = function(self)
 		self:velocity(0,0)
 		

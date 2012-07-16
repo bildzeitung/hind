@@ -111,11 +111,10 @@ end
 --  
 function Actor:direction()
 	local currentAnim = self:animation():name()
-	local d = currentAnim:gsub('walk','')
-	d = d:gsub('stand','')
-	d = d:gsub('attack','')
-	
-	return d
+	if currentAnim:find('left') then return 'left' end
+	if currentAnim:find('right') then return 'right' end
+	if currentAnim:find('up') then return 'up' end
+	if currentAnim:find('down') then return 'down' end
 end
 
 --

@@ -8,7 +8,7 @@
 		self:resetCollisions(self)
 	end,
 	on_collide = function(self, other)
-		if self._actor._currentAction == 'attack' and other.doDamage then		
+		if self._actor._currentAction == 'attack' and other._currentAction ~= 'die' and other.doDamage then		
 			if not self._collidees[other._id] then	
 				soundEffects['sword_cut_2']:rewind()
 				love.audio.play(soundEffects['sword_cut_2'])			
@@ -150,6 +150,46 @@
 			_frameStart = 13,
 			_frameEnd = 13,
 			_looping = 'once'			
-		}												
+		},
+		spellcastup = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'spellcastup',
+			_frameDuration = 0.06,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'once'			
+		},
+		spellcastleft = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'spellcastleft',
+			_frameDuration = 0.06,
+			_frameStart = 7,
+			_frameEnd = 7,
+			_looping = 'once'			
+		},
+		spellcastdown = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'spellcastdown',
+			_frameDuration = 0.06,
+			_frameStart = 13,
+			_frameEnd = 13,
+			_looping = 'once'			
+		},
+		spellcastright = 
+		{
+			_tileSet = 'longsword',
+			_offset = { 96, 128 },
+			_name = 'spellcastright',
+			_frameDuration = 0.06,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'once'			
+		}			
 	}
 }

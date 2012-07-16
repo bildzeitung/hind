@@ -136,7 +136,7 @@
 			_tileSet = 'chain_armour',
 			_offset = { 32, 64.05 },
 			_name = 'spellcastup',
-			_frameDuration = 0.06,
+			_frameDuration = 0.12,
 			_frameStart = 67,
 			_frameEnd = 73,
 			_looping = 'once'			
@@ -146,7 +146,7 @@
 			_tileSet = 'chain_armour',
 			_offset = { 32, 64.05 },
 			_name = 'spellcastleft',
-			_frameDuration = 0.06,
+			_frameDuration = 0.12,
 			_frameStart = 74,
 			_frameEnd = 80,
 			_looping = 'once'			
@@ -156,7 +156,7 @@
 			_tileSet = 'chain_armour',
 			_offset = { 32, 64.05 },
 			_name = 'spellcastdown',
-			_frameDuration = 0.06,
+			_frameDuration = 0.12,
 			_frameStart = 81,
 			_frameEnd = 87,
 			_looping = 'once'			
@@ -166,7 +166,7 @@
 			_tileSet = 'chain_armour',
 			_offset = { 32, 64.05 },
 			_name = 'spellcastright',
-			_frameDuration = 0.06,
+			_frameDuration = 0.12,
 			_frameStart = 88,
 			_frameEnd = 94,
 			_looping = 'once'			

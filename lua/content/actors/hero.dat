@@ -1,11 +1,29 @@
 {
+	dead = false,
+	HERO = true,
+	_experience = 0,
+	_gold = 0,
+	_mana = 200,
+	_manaRegen = 0,
 	_spells = 
 	{
 		{ 'firelion', 'Fire Lion', 50 },
 		{ 'iceshield', 'Ice Shield', 50 }
 	},
 	_currentSpell = 1,
-	_baseTable = 'content/actors/male_human.dat',
+	_baseTable = 'content/actors/male_human.dat',	
+	update = function(self,dt)
+		objects.Actor.update(self,dt)
+		
+		self._manaRegen = self._manaRegen + dt
+		if self._manaRegen > 1 then
+			self._mana = self._mana + 1
+			self._manaRegen = self._manaRegen - 1
+			if self._mana > 200 then
+				self._mana = 200
+			end			
+		end
+	end,
 	on_begin_spellcast = function(self)
 		local spell = self._spells[self._currentSpell]
 		if spell[3] > self._mana then return false end
@@ -58,10 +76,5 @@
 	end,
 	rewardExperience = function(self, experience)
 		self._experience = self._experience + experience
-	end,
-	dead = false,
-	HERO = true,
-	_experience = 0,
-	_gold = 0,
-	_mana = 200
+	end
 }

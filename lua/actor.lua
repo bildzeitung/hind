@@ -193,9 +193,8 @@ end
 --		a - an animation index or nil
 --		r - true if the animation should be reset
 --
-local base_animation = Drawable.animation
 function Actor:animation(a, r)	
-	local ret = base_animation(self, a, r)
+	local ret = Drawable.animation(self, a, r)
 	
 	if a then
 		-- set the animations for the equipped items
@@ -210,9 +209,8 @@ end
 --
 --  Draw the actor
 --
-local base_draw = Drawable.draw
 function Actor:draw(camera, drawTable)
-	base_draw(self, camera, drawTable)
+	Drawable.draw(self, camera, drawTable)
 	
 	for _, v in ipairs(self._itemDrawOrder) do
 		if self._equipped[v] then
@@ -224,9 +222,8 @@ end
 --  Registers the actor in the proper
 --     collision buckets
 --
-local base_registerBuckets = Collidable.registerBuckets
 function Actor:registerBuckets(buckets)
-   base_registerBuckets(self, buckets)
+   Collidable.registerBuckets(self, buckets)
 
    -- register items in the buckets too
    for k, item in pairs(self._equipped) do
@@ -238,7 +235,6 @@ end
 --  Called when a collidable collides with
 --  another object
 --
-local base_collide = Collidable.collide
 function Actor:collide(other)	
 	if self._lastPosUpdate[1] ~= 0 or self._lastPosUpdate[2] ~= 0 then
 		-- check if reversing the last update moves the
@@ -266,7 +262,7 @@ function Actor:collide(other)
 		end	
 	end
 		
-	base_collide(self, other)
+	Collidable.collide(self, other)
 end
 
 --

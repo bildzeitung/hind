@@ -8,8 +8,10 @@ require 'profiler'
 require 'factories'
 require 'renderer'
 require 'floating_text'
+require('libraries.loveframes')
 
-function love.load()		
+function love.load()	
+	
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
@@ -99,6 +101,17 @@ function love.load()
 	--music:setVolume(0.15)
 	--music:setLooping( true )
 	--music:play()	
+	
+	loveframes.config['DEBUG'] = false
+	loveframes.util.SetActiveSkin('Hind')
+	
+	local parentframe = loveframes.Create('frame')
+	local button1 = loveframes.Create("button", parentframe)
+	button1:SetPos(5, 5)
+
+	local button2 = loveframes.Create('button')
+	button2:SetParent(parentframe)
+	button2:SetPos(5, 35)	
 end
 
 --
@@ -306,6 +319,8 @@ function love.draw()
 				love.graphics.print(string.format('%.5f', 1/total), 10, y)
 			end
 		end)
+		
+	loveframes.draw()
 end
 
 function love.update(dt)
@@ -358,9 +373,13 @@ function love.update(dt)
 					hero:animation(anim, true)
 				end
 				
-				if love.keyboard.isDown(' ') then
+				if love.keyboard.isDown('lshift') then
 					hero:action('attack')
 				end
+				
+				if love.keyboard.isDown('lctrl') then	
+					hero:action('spellcast')
+				end				
 			end
 							
 			if love.keyboard.isDown('q') then
@@ -397,11 +416,7 @@ function love.update(dt)
 
 			if love.keyboard.isDown('n') then
 				showCollisionBoundaries = false
-			end
-	
-			if love.keyboard.isDown('0') then	
-				hero:action('spellcast')
-			end
+			end	
 			
 			if love.keyboard.isDown('=') then
 				hero._currentSpell = hero._currentSpell + 1
@@ -591,4 +606,25 @@ function love.update(dt)
 				end
 			end	
 		end)
+		
+	loveframes.update(dt)
+end
+
+function love.mousepressed(x, y, button)
+	loveframes.mousepressed(x, y, button)
+
+end
+
+function love.mousereleased(x, y, button)
+	loveframes.mousereleased(x, y, button)
+
+end
+
+function love.keypressed(key, unicode)
+	loveframes.keypressed(key, unicode)
+
+end
+
+function love.keyreleased(key)
+	loveframes.keyreleased(key)
 end

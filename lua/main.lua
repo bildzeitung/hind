@@ -157,16 +157,26 @@ function createBuckets(cellSize, worldX, worldY)
 end
 
 --
---  Creates a damage text
+--  Creates floating text
 --
-function createFloatingText(colour, actor, damage)
-	local ft = factories.createFloatingText( damage, largeFont,
+function createFloatingText(colour, actor, text)
+	local ft = factories.createFloatingText( text, largeFont,
 		colour, { actor._position[1], actor._position[2] },
 		{ 0, -120 }, 1 )
 	ft.on_expired = function(self)
 		floatingTexts[self] = nil
 	end
 	floatingTexts[ft] = true
+	
+	-- @TODO find a better way to seperate floating texts!
+	for k1, _ in pairs(floatingTexts) do
+		for k2, _ in pairs(floatingTexts) do
+			if k1 ~= k2 and k1._position[1] == k2._position[1] and
+			k1._position[2] == k2._position[2] then
+				k1._position[2] = k1._position[2] + 20
+			end
+		end
+	end
 end
 
 --
@@ -204,7 +214,7 @@ function createActors()
 			end
 			
 			if self['on_set_' .. k]  then
-				return self['on_set_' .. k](self, self['_'..k]) 
+				return self['on_set_' .. k](self, self['_'..k], value) 
 			end
 		end
 	end
@@ -221,7 +231,24 @@ function createActors()
 	hero:equipItem('head',chainHelmet)	
 	hero:equipItem('torso',chainArmour)	
 	hero:equipItem('feet',plateShoes)	
-	hero:animation('standright')		
+	hero:animation('standright')	
+	
+	hero.on_set_greed = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Greed: ' .. justSet)
+	end
+	
+	hero.on_set_likeable = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Likeable: ' .. justSet)
+	end	
+
+	hero.on_set_luck = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Luck: ' .. justSet)
+	end	
+	
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_puppy'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_kitten'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_mojo'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_mind'})
 	
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)

@@ -37,8 +37,9 @@
 					text = 'I can help you find @_pronoun##1@ but it\'s going to cost you. %Gold:100 Greed:25%',
 					event = function(self) 
 						-- @TODO could factor in the NPC\'s wealth into this choice
-						if math.random() > 0.95 then 
+						if math.random() > 0.25 then 
 							self._hero:gold(100)
+							self._hero:greed(25)
 							self:branch(3)
 						else
 							self:branch(6)
@@ -54,6 +55,7 @@
 						-- @TODO could factor in the NPC\'s wealth into this choice
 						if math.random() > 0.4 then 
 							self._hero:gold(500)
+							self._hero:greed(25)
 							self:branch(3)
 						else
 							self:branch(6)
@@ -79,8 +81,7 @@
 		--5
 		{ 
 			text = '@NPC@->I can see that you are a greedy, greedy person, but what choice do I have?',
-			event = function(self) 			
-				self._hero:greed(50)
+			event = function(self) 							
 				self._quest:accept()
 				self:branch(8)
 			end

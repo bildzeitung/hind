@@ -132,7 +132,7 @@ function DialogGenerator:dialog(params)
 		if text:find('%@NEXT%@') then 
 			replaceEvent(t, 
 				function(self)
-					self:branch(k + 1)
+					self:branch(self._currentBranch + 1)
 				end
 			)
 			
@@ -151,8 +151,9 @@ function DialogGenerator:dialog(params)
 		
 		local _, _, cap = text:find('%@SKIP(%d+)%@')
 		if cap then
+			if tonumber(cap) then cap = tonumber(cap) end
 			replaceEvent(t, 
-				function(self)
+				function(self)				
 					self:branch(cap)
 				end
 			)

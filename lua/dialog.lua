@@ -94,7 +94,7 @@ function Dialog:viewed(option)
 	
 	-- execute the event for this branch if one exists
 	if branch.event then
-		branch:event(self)
+		branch.event(self)
 	end
 end
 

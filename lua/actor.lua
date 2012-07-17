@@ -11,8 +11,8 @@ require 'collidable'
 
 local log = require 'log'
 
-local table, pairs, ipairs, love, print
-	= table, pairs, ipairs, love, print
+local table, pairs, ipairs, type, love
+	= table, pairs, ipairs, type, love
 	
 module('objects')
 
@@ -270,14 +270,7 @@ end
 --  Takes damage
 --
 function Actor:takeDamage(damage, other)
-	print('==============================')
-	print('HIT!')
-	print('Health before: ' .. self._health)	
-
 	self._health = self._health - damage	
-
-	print('Health after: ' .. self._health)	
-	print('------------------------------')
 
 	if self.on_take_damage then
 		self:on_take_damage(damage)
@@ -295,7 +288,6 @@ end
 --
 function Actor:doDamage(other)
 	if self._damage then
-		print(other._id)
 		other:takeDamage(self._damage, self)
 	else
 		local weapon = self._equipped['weapon']
@@ -323,8 +315,12 @@ end
 --
 --  Removes a dialog from the actor
 --
-function Actor:removeDialog(name)
-	self._dialogs[name] = nil
+function Actor:removeDialog(d)
+	if type(d) == 'string' then
+		self._dialogs[d] = nil
+	else
+		self._dialogs[d:name()] = nil
+	end
 end
 
 --

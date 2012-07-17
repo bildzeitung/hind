@@ -270,12 +270,15 @@ end
 --]]---------------------------------------------------------
 function skin.DrawFrame(object)	
 	-- draw the background
-	love.graphics.setColor(unpack(skin.controls.frame_body_color))		
+	love.graphics.setColor(unpack(skin.controls.frame_body_color))	
+	
 	love.graphics.rectangle("fill", object:GetX() + skin.images['frame-leftedge.png']:getWidth(), 
 		object:GetY() + skin.images['frame-topedge.png']:getHeight(), 
 		object:GetWidth() - skin.images['frame-leftedge.png']:getWidth() * 2, 
 		object:GetHeight() - skin.images['frame-topedge.png']:getHeight() * 2)
 		
+	love.graphics.setColor(255,255,255,255)
+	
 	-- draw corners
 	love.graphics.draw(skin.images['frame-topleft.png'],
 		object:GetX(), object:GetY())

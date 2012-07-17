@@ -13,6 +13,7 @@
 			text = '@NPC@->You there, can you help me? I am desperate. I have lost my @_noun##1@ and am feeling very sad. Please help me find @_pronoun##1@! @SKIP2@',
 			event = function(self)
 				--@TODO create new quest?
+				self._quest = { accept = function() end, complete = function() end }
 			end
 		},
 		randomStart2 = {
@@ -22,6 +23,7 @@
 			text = '@NPC@->Thank goodness I have found you. You look like someone who can help me. I have lost my @_noun##1@ and am feeling very sad. Please help me find @_pronoun##1@! If you help me I will be eternally grateful. @SKIP2@',
 			event = function(self)
 				--@TODO create new quest?
+				self._quest = { accept = function() end, complete = function() end }			
 			end
 		} 		
 		;
@@ -32,10 +34,10 @@
 			options = 
 			{
 				{ 
-					text = 'I can help you find @_pronoun##1@ but it\'s going to cost you. %Gold:100% %Greed:25%',
+					text = 'I can help you find @_pronoun##1@ but it\'s going to cost you. %Gold:100 Greed:25%',
 					event = function(self) 
 						-- @TODO could factor in the NPC\'s wealth into this choice
-						if math.random() > 0.25 then 
+						if math.random() > 0.95 then 
 							self._hero:gold(100)
 							self:branch(3)
 						else
@@ -47,7 +49,7 @@
 					available = function(self) 
 						return self._hero:greed() > 1000
 					end,
-					text = 'I can help you find @_pronoun##1@ but it\'s going to cost you, BIG TIME. %Gold:500% %Greed:25%',
+					text = 'I can help you find @_pronoun##1@ but it\'s going to cost you, BIG TIME. %Gold:500 Greed:25%',
 					event = function(self) 
 						-- @TODO could factor in the NPC\'s wealth into this choice
 						if math.random() > 0.4 then 
@@ -87,6 +89,7 @@
 		{
 			text = '@NPC@->Oh you want to charge me. Forget it then I will find someone else to help me. Don\'t you know greedy people never prosper. @END@',
 			event = function(self)
+				self._hero:likeable(-25)
 			end
 		},
 		--7
@@ -105,7 +108,7 @@
 			options = 
 			{			
 				{ 
-					text = 'I found your @_noun##1@, but you\'re going to have to pay more to get it back. %Gold:200% %Greed:50%',
+					text = 'I found your @_noun##1@, but you\'re going to have to pay more to get it back. %Gold:200 Greed:50%',
 					event = function(self) 
 						if math.random() > 0.25 then 
 							self:branch(12)
@@ -114,7 +117,7 @@
 						end
 					end 
 				},
-				'I found your @_noun##1@ and you can have it. @NEXT@ %Greed:-50% %Likeable:25%'
+				'I found your @_noun##1@ and you can have it. @NEXT@ %Greed:-50 Likeable:25%'
 			}
 		},
 		--11

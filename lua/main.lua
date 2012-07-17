@@ -10,6 +10,7 @@ require 'renderer'
 require 'floating_text'
 require 'libraries.loveframes'
 require 'dialog_generator'
+require 'dialog_viewer'
 
 function love.load()	
 	profiler = objects.Profiler{}	
@@ -21,7 +22,6 @@ function love.load()
 	screenHeight = 675
 	local success = love.graphics.setMode( 
 		screenWidth,screenHeight, false, false, 0 )		
-	love.graphics.setColorMode('replace')
 
 	soundEffects = {}
 	
@@ -78,8 +78,20 @@ function love.load()
 	npc:name('Bilbo')
 	
 	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	dg:dialog{ npc = npc, hero = hero }	
-	dg.on_finish = function(self)
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
+	
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
+
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
 		self._npc:removeDialog(self)
 	end
 		
@@ -119,23 +131,7 @@ function love.load()
 	loveframes.config['DEBUG'] = false
 	loveframes.util.SetActiveSkin('Hind')
 	
-	--[[	
-	local parentframe = loveframes.Create('frame')
-	parentframe:SetSize(500, 300)
-	]]
-	
-	--parentframe:ShowCloseButton(false)
-	--parentframe:SetDraggable(false)
-	
-	--[[
-	local button1 = loveframes.Create("button", parentframe)
-	button1:SetPos(5, 5)
-
-	local button2 = loveframes.Create('button')
-	button2:SetParent(parentframe)
-	button2:SetPos(5, 35)	
-	]]
-
+	state = 'normalGame'
 end
 
 --
@@ -247,6 +243,8 @@ function createActors()
 end
 
 function love.draw()
+	love.graphics.setColor(255,255,255,255)
+	
 	if hero.dead then		
 		love.graphics.setFont(largeFont)
 		love.graphics.print('GAME OVER', 300, 300)
@@ -390,7 +388,7 @@ function love.update(dt)
 	
 	profiler:profile('handling keyboard input', 
 		function()
-			if not hero._currentAction then
+			if not hero._currentAction and state ~= 'inDialog' then
 				local vx, vy = 0, 0
 			
 				if love.keyboard.isDown('up') then
@@ -414,16 +412,19 @@ function love.update(dt)
 				hero:velocity(vx, vy)
 				
 				if vx == 0 and vy == 0 then
-					local anim = hero:animation():name():gsub('walk','stand')
-					hero:animation(anim, true)
+					hero:animation('stand' .. hero:direction(), true)
 				end
 				
 				if love.keyboard.isDown('lctrl') then
-					if hero:distanceFrom(npc) < 100 then
-						local d = npc:dialogs()
-						for k, v in pairs(d) do
-							local b = v:branch()
+					if hero:distanceFrom(npc) < 100 and table.count(npc:dialogs()) > 0 then
+						local oldState = state
+						hero:velocity(0,0)
+						hero:animation('stand' .. hero:direction(), true)
+						dialogViewer = objects.DialogViewer{ npc }
+						dialogViewer.on_close = function(self)
+							state = oldState
 						end
+						state = 'inDialog'
 					else
 						hero:action('attack')
 					end
@@ -675,6 +676,9 @@ end
 function love.keypressed(key, unicode)
 	loveframes.keypressed(key, unicode)
 
+	if state == 'inDialog' then
+		dialogViewer:keypressed(key, unicode)
+	end
 end
 
 function love.keyreleased(key)

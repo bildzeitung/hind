@@ -303,3 +303,11 @@ function Actor:doDamage(other)
 		end	
 	end
 end
+
+--
+--  Sets or gets the actors name
+--
+function Actor:name(n)
+	if not n then return self._name end
+	self._name = n
+end

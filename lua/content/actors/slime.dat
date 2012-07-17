@@ -32,8 +32,8 @@
 	end,
 	on_begin_die = function(self)		
 		self:velocity(0,0)
-		if self._killer.rewardExperience then
-			self._killer:rewardExperience(100)			
+		if self._killer.experience then
+			self._killer:experience(100)			
 			createFloatingText({0,255,255,255},self._killer, 100)
 		end
 	end,		

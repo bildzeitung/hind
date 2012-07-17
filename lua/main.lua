@@ -9,8 +9,9 @@ require 'factories'
 require 'renderer'
 require 'floating_text'
 require 'libraries.loveframes'
+require 'dialog_generator'
 
-function love.load()		
+function love.load()	
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
@@ -67,6 +68,17 @@ function love.load()
 	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
 	
 	createActors()
+	
+	local npc = factories.createActor('content/actors/male_human.dat')
+	npc._health = 2000
+	npc:animation('standright')
+	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
+	npc:map(daMap)
+	actors[npc._id] = npc
+	npc:name('Bilbo')
+	
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	dg:dialog{ npc = npc, hero = hero }	
 		
 	zoom = 1
 	showCollisionBoundaries = false
@@ -120,6 +132,7 @@ function love.load()
 	button2:SetParent(parentframe)
 	button2:SetPos(5, 35)	
 	]]
+
 end
 
 --
@@ -177,6 +190,27 @@ function createActors()
 	
 	actors = {}
 	hero = factories.createActor('content/actors/hero.dat')
+	
+	for k, v in pairs(hero._attributes) do
+		hero['_'..k] = v
+		hero[k] = function(self, value, absolute)
+			if not value then
+				return self['_'..k]
+			end
+			
+			if absolute then
+				self['_'..k] = value
+			else
+				self['_'..k] = self['_'..k] + value
+			end
+			
+			if self['on_set_' .. k]  then
+				return self['on_set_' .. k](self, self['_'..k]) 
+			end
+		end
+	end
+	
+	hero:name('Sir Gallahad')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
 	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
 	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
@@ -249,10 +283,10 @@ function love.draw()
 			
 			love.graphics.setFont(largeFont)
 			love.graphics.print('HEALTH: ' .. hero._health, 10, 10)			
-			love.graphics.print('GOLD: ' .. hero._gold, 250, 10)
-			love.graphics.print('EXPERIENCE: ' .. hero._experience, 500, 10)			
+			love.graphics.print('GOLD: ' .. hero:gold(), 250, 10)
+			love.graphics.print('EXPERIENCE: ' .. hero:experience(), 500, 10)			
 			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
-			love.graphics.print('MANA: ' .. hero._mana, 250, 40)
+			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
 			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
 			
 			love.graphics.setFont(smallFont)			

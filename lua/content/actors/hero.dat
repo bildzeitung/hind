@@ -1,21 +1,18 @@
 {
+	_baseTable = 'content/actors/male_human.dat',	
 	dead = false,
 	HERO = true,
-	_experience = 0,
-	_manaRegen = 0,
-	_gold = 0,
-	_mana = 200,	
-	_greed = 0,
-	_likeability = 0,
-	_luck = 0,
-	_alignment = 0,
+	_attributes = 
+	{
+		experience = 0, gold = 0, greed = 0,
+		likeability = 0, luck = 0, alignment = 0,
+		mana = 200, manaRegen = 100, currentSpell = 1
+	},
 	_spells = 
 	{
 		{ 'firelion', 'Fire Lion', 50 },
 		{ 'iceshield', 'Ice Shield', 50 }
 	},
-	_currentSpell = 1,
-	_baseTable = 'content/actors/male_human.dat',	
 	update = function(self,dt)
 		objects.Actor.update(self,dt)
 		
@@ -77,26 +74,6 @@
 	end,	
 	on_end_die = function(self, other)			
 		self.dead = true
-	end,
-	rewardExperience = function(self, experience)
-		self._experience = self._experience + experience
-	end,
-	greed = function(self, value)
-		if not value then return self._greed end
-		self._greed = self._greed + value		
-		if self._greed < 0 then self._greed = 0 end
-	end,
-	likeability = function(self, value)
-		if not value then return self._likeability end
-		self._likeability = self._likeability + value		
-	end,
-	gold = function(self, value)
-		if not value then return self._gold end
-		self._gold = self._gold + value
-	end,
-	luck = function(self, value)
-		if not value then return self._luck end
-		self._luck = self._luck + value
 	end,
 	inventoryContains = function(self, item)
 		for k, v in ipairs(self._inventory) do			

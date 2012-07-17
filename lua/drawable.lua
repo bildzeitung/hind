@@ -85,6 +85,15 @@ function Drawable:position(x, y)
 	self._position[2] = y
 end
 
+--
+--  Get the distance from another drawable
+--
+function Drawable:distanceFrom(other)
+	local x = self._position[1] - other._position[1]
+	local y = self._position[2] - other._position[2]
+	return math.sqrt(x*x+y*y)
+end
+
 
 --
 --  Set or get the screen position

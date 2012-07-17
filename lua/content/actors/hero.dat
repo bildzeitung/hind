@@ -5,7 +5,7 @@
 	_attributes = 
 	{
 		experience = 0, gold = 0, greed = 0,
-		likeability = 0, luck = 0, alignment = 0,
+		likeable = 0, luck = 0, alignment = 0,
 		mana = 200, manaRegen = 100, currentSpell = 1
 	},
 	_spells = 

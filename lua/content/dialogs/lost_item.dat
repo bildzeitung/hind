@@ -1,4 +1,5 @@
 {
+	_name = 'My Lost @_noun##1@',
 	_continuations =
 	{
 		['8'] = function(self) 

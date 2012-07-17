@@ -40,6 +40,7 @@ function Actor:_clone(values)
 	o._itemDrawOrder = { 'weapon', 'hands', 'head', 'belt', 
 		'torso', 'legs', 'feet', 'body', 'behind' }
   
+	o._dialogs = {}	
 	o._equipped = {}
 	o._inventory = {}
   	o._lastPosUpdate = { 0, 0 }	
@@ -311,3 +312,27 @@ function Actor:name(n)
 	if not n then return self._name end
 	self._name = n
 end
+
+--
+--  Adds a dialog to the actor
+--
+function Actor:addDialog(d)
+	self._dialogs[d:name()] = d
+end
+
+--
+--  Removes a dialog from the actor
+--
+function Actor:removeDialog(name)
+	self._dialogs[name] = nil
+end
+
+--
+--  The list of dialogs this actor currently owns
+--
+function Actor:dialogs()
+	return self._dialogs
+end
+
+
+

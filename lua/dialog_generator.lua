@@ -180,11 +180,15 @@ function DialogGenerator:dialog(params)
 		end
 	end
 	
-	local d = Dialog{t}
+	log.log(table.dump(t))
+	
+	local d = Dialog(t)
 	
 	d._quest = quest
 	d._npc = npc	
 	d._hero = hero
+	
+	npc:addDialog(d)
 	
 	return d
 end

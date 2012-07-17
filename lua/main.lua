@@ -69,7 +69,7 @@ function love.load()
 	
 	createActors()
 	
-	local npc = factories.createActor('content/actors/male_human.dat')
+	npc = factories.createActor('content/actors/male_human.dat')
 	npc._health = 2000
 	npc:animation('standright')
 	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
@@ -79,6 +79,9 @@ function love.load()
 	
 	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
 	dg:dialog{ npc = npc, hero = hero }	
+	dg.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
 		
 	zoom = 1
 	showCollisionBoundaries = false
@@ -415,11 +418,18 @@ function love.update(dt)
 					hero:animation(anim, true)
 				end
 				
-				if love.keyboard.isDown('lshift') then
-					hero:action('attack')
+				if love.keyboard.isDown('lctrl') then
+					if hero:distanceFrom(npc) < 100 then
+						local d = npc:dialogs()
+						for k, v in pairs(d) do
+							local b = v:branch()
+						end
+					else
+						hero:action('attack')
+					end
 				end
 				
-				if love.keyboard.isDown('lctrl') then	
+				if love.keyboard.isDown('lshift') then	
 					hero:action('spellcast')
 				end				
 			end

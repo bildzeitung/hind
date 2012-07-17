@@ -8,17 +8,16 @@ require 'profiler'
 require 'factories'
 require 'renderer'
 require 'floating_text'
-require('libraries.loveframes')
+require 'libraries.loveframes'
 
-function love.load()	
-	
+function love.load()		
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
 	smallFont = love.graphics.newFont(12)
 	
-	screenWidth = 800
-	screenHeight = 600
+	screenWidth = 1200
+	screenHeight = 675
 	local success = love.graphics.setMode( 
 		screenWidth,screenHeight, false, false, 0 )		
 	love.graphics.setColorMode('replace')
@@ -105,13 +104,22 @@ function love.load()
 	loveframes.config['DEBUG'] = false
 	loveframes.util.SetActiveSkin('Hind')
 	
+	--[[	
 	local parentframe = loveframes.Create('frame')
+	parentframe:SetSize(500, 300)
+	]]
+	
+	--parentframe:ShowCloseButton(false)
+	--parentframe:SetDraggable(false)
+	
+	--[[
 	local button1 = loveframes.Create("button", parentframe)
 	button1:SetPos(5, 5)
 
 	local button2 = loveframes.Create('button')
 	button2:SetParent(parentframe)
 	button2:SetPos(5, 35)	
+	]]
 end
 
 --

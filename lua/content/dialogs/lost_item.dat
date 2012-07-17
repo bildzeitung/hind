@@ -1,0 +1,151 @@
+{
+	_continuations =
+	{
+		['8'] = function(self) 
+			return hero:inventoryContains(questItem_@NPC@_@_noun##1@)
+		end
+	},
+	_branches =
+	{
+		questStart1 = {
+			'$hero->Hi @NPC@, @quest_giver@ sent me here because they heard that you lost your @_noun##1@'
+		},		
+		randomStart1 = {
+			'$npc1->Thank goodness I have found you. You look like someone who can help me. I have lost my @_noun##1@ and am feeling very sad. Please help me find @_pronoun##1@! If you help me I will be eternally grateful. @SKIP2@'
+		} 
+		;
+		--1
+		'$npc1->Yes @HERO@ it's true. I've lost my @_noun##1@ @NEXT@',
+		--2
+		{
+			options = 
+			{
+				{ 
+					text = 'I can help you find @_pronoun##1@ but it's going to cost you. %Gold:100% %Greed:25%',
+					event = function(self) 
+						-- @TODO could factor in the NPC's wealth into this choice
+						if math.random() > 0.25 then 
+							hero:gold(100)
+							self:branch(3)
+						else
+							self:branch(6)
+						end
+					end 
+				},
+				{ 
+					available = function(self) 
+						return hero:greed() > 1000
+					end,
+					text = 'I can help you find @_pronoun##1@ but it's going to cost you, BIG TIME. %Gold:500% %Greed:25%',
+					event = function(self) 
+						-- @TODO could factor in the NPC's wealth into this choice
+						if math.random() > 0.4 then 
+							hero:gold(500)
+							self:branch(3)
+						else
+							self:branch(6)
+						end
+					end 
+				},				
+				{
+					available = function(self) 
+						if hero:greed() < 500 then 
+							return true 
+						else
+							return math.random() > 0.25
+						end
+					end,
+					text = 'I would be more than happy to help you find @_pronoun##1@ @SKIP7@'
+				}
+			}
+		},
+		--3
+		'$npc1->Yes, yes of course I will pay you, my @_noun##1@ is too important to me, I must have @_pronoun##1@ back. @NEXT@',
+		--4
+		'$hero->If I find @_pronoun##1@ I will bring @_pronoun##1@ back, but I may hold out for more money. @NEXT@',
+		--5
+		{ 
+			text = '$npc1->I can see that you are a greedy, greedy person, but what choice do I have?',
+			event = function(self) 			
+				hero:greed(50)
+				self._quest:accept()
+				self:branch(8)
+			end
+		},
+		--6
+		{
+			text = '$npc1->Oh you want to charge me. Forget it then I will find someone else to help me. Don't you know greedy people never prosper. @END@',
+			event = function(self)
+			end
+		},
+		--7
+		{
+			text = '$npc1->Oh that's so wonderful! Thank you! @NEXT@',
+			event = function(self) 
+				self._quest:accept()
+			end
+		},
+		--8
+		'$npc1->Have you found my @_noun##1@ yet? Please hurry!',
+		--9
+		text = '$npc1->You found my @_noun##1@. Thank you! @NEXT@',
+		--10
+		{
+			options = 
+			{			
+				{ 
+					text = 'I found your @_noun##1@, but you're going to have to pay more to get it back. %Gold:200% %Greed:50%',
+					event = function(self) 
+						if math.random() > 0.25 then 
+							self:branch(12)
+						else
+							self:branch(13)
+						end
+					end 
+				},
+				'I found your @_noun##1@ and you can have it. @NEXT@ %Greed:-50% %Likeable:25%'
+			}
+		},
+		--11
+		{
+			text = '$npc1->Thank you kind sir. You are a kind and generous person. May the gods smile upon you and light your way. @SKIP14@',
+			event = function(self) 
+				hero:greed(-50)
+				hero:likeable(25)
+				hero:luck(25)
+			end
+		},
+		--12
+		{
+			text = '$npc1->What choice do I have, here is your money. @SKIP14@',
+			event = function(self) 
+				hero:gold(200)
+				hero:greed(50)
+			end
+		},
+		--13
+		{
+			text = '$np1->I can't believe you would do this to someone who lost something so valuable to them. You keep it and my you be cursed for 1,000 years! @END@',
+			event = function(self) 
+				hero:likeable(-50)
+				hero:luck(-50)			
+			end
+		},
+		--14
+		{
+			event = function(self) 
+				self._quest:complete()
+				hero:discardItem(questItem_@NPC@_@_noun##1@)
+				self:end()
+			end
+		}
+	},
+	_noun = 
+	{
+		'kitten', 'puppy', 'mojo', 'mind'
+	},
+	_pronoun =
+	{
+		'her', 'him', 'it', 'it'
+	}
+}

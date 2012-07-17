@@ -1,10 +1,10 @@
 {
 	on_collide = function(self, other)	
-		if other.HERO and self._value then
+		if other.gold then
 			soundEffects['coin_pickup']:rewind()
 			love.audio.play(soundEffects['coin_pickup'])
 			removals[self._id] = self
-			other._gold = other._gold + self._value			
+			other:gold(self._value)
 			self._value = nil			
 		end
 	end,	

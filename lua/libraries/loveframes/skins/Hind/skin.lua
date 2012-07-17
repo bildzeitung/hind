@@ -22,7 +22,7 @@ skin.controls = {}
 
 -- frame
 skin.controls.frame_border_color 					= bordercolor
-skin.controls.frame_body_color 						= {255, 255, 255, 150}
+skin.controls.frame_body_color 						= {15, 15, 15, 255}
 skin.controls.frame_top_color						= {102, 194, 255, 255}
 skin.controls.frame_name_color						= {255, 255, 255, 255}
 skin.controls.frame_name_font						= smallfont
@@ -268,33 +268,67 @@ end
 	- func: DrawFrame(object)
 	- desc: draws the frame object
 --]]---------------------------------------------------------
-function skin.DrawFrame(object)
+function skin.DrawFrame(object)	
+	-- draw the background
+	love.graphics.setColor(unpack(skin.controls.frame_body_color))		
+	love.graphics.rectangle("fill", object:GetX() + skin.images['frame-leftedge.png']:getWidth(), 
+		object:GetY() + skin.images['frame-topedge.png']:getHeight(), 
+		object:GetWidth() - skin.images['frame-leftedge.png']:getWidth() * 2, 
+		object:GetHeight() - skin.images['frame-topedge.png']:getHeight() * 2)
+		
+	-- draw corners
+	love.graphics.draw(skin.images['frame-topleft.png'],
+		object:GetX(), object:GetY())
 
-	local gradientcolor = {}
-	
-	-- frame body
-	love.graphics.setColor(unpack(skin.controls.frame_body_color))
-	love.graphics.rectangle("fill", object:GetX(), object:GetY(), object:GetWidth(), object:GetHeight())
-	
-	-- frame top bar
-	love.graphics.setColor(unpack(skin.controls.frame_top_color))
-	love.graphics.rectangle("fill", object:GetX(), object:GetY(), object:GetWidth(), 25)
-	
-	gradientcolor = {skin.controls.frame_top_color[1] - 20, skin.controls.frame_top_color[2] - 20, skin.controls.frame_top_color[3] - 20, 255}
-	skin.DrawGradient(object:GetX(), object:GetY(), object:GetWidth(), 25, "up", gradientcolor)
-	
-	love.graphics.setColor(unpack(skin.controls.frame_border_color))
-	skin.OutlinedRectangle(object:GetX(), object:GetY() + 25, object:GetWidth(), 1)
-	
-	-- frame name section
-	love.graphics.setFont(skin.controls.frame_name_font)
-	love.graphics.setColor(unpack(skin.controls.frame_name_color))
-	love.graphics.print(object.name, object:GetX() + 5, object:GetY() + 5)
-	
-	-- frame border
-	love.graphics.setColor(unpack(skin.controls.frame_border_color))
-	skin.OutlinedRectangle(object:GetX(), object:GetY(), object:GetWidth(), object:GetHeight())
+	love.graphics.draw(skin.images['frame-topright.png'],
+		object:GetX() + object:GetWidth() 
+		- skin.images['frame-topright.png']:getWidth(), 
+		object:GetY())		
 
+	love.graphics.draw(skin.images['frame-bottomleft.png'],
+		object:GetX(), object:GetY() + object:GetHeight()
+		- skin.images['frame-topright.png']:getHeight())	
+
+	love.graphics.draw(skin.images['frame-bottomright.png'],
+		object:GetX() + object:GetWidth() 
+		- skin.images['frame-bottomright.png']:getWidth(), 
+		object:GetY() + object:GetHeight()
+		- skin.images['frame-bottomright.png']:getHeight())	
+	
+	-- draw edges
+	local requiredHeight = object:GetHeight() - 
+		skin.images['frame-topleft.png']:getHeight() -
+		skin.images['frame-bottomleft.png']:getHeight()
+	local scaleFactor = requiredHeight /
+		skin.images['frame-leftedge.png']:getHeight()
+	
+	love.graphics.draw(skin.images['frame-leftedge.png'],
+		object:GetX(),
+		object:GetY() + skin.images['frame-topright.png']:getHeight(),
+		0, 1, scaleFactor)
+		
+	love.graphics.draw(skin.images['frame-rightedge.png'],
+		object:GetX() + object:GetWidth() 
+		- skin.images['frame-rightedge.png']:getWidth(),
+		object:GetY() + skin.images['frame-topright.png']:getHeight(),
+		0, 1, scaleFactor)		
+		
+	local requiredWidth = object:GetWidth() - 
+		skin.images['frame-topleft.png']:getWidth() -
+		skin.images['frame-topright.png']:getWidth()
+	local scaleFactor = requiredWidth /
+		skin.images['frame-topedge.png']:getWidth()
+	
+	love.graphics.draw(skin.images['frame-topedge.png'],
+		object:GetX() + skin.images['frame-topleft.png']:getWidth(),
+		object:GetY(),
+		0, scaleFactor, 1)
+
+	love.graphics.draw(skin.images['frame-bottomedge.png'],
+		object:GetX() + skin.images['frame-bottomleft.png']:getWidth(),
+		object:GetY() + object:GetHeight()
+		- skin.images['frame-bottomedge.png']:getHeight(),
+		0, scaleFactor, 1)			
 end
 
 --[[---------------------------------------------------------
@@ -381,7 +415,7 @@ function skin.DrawCloseButton(object)
 	local theight = font:getHeight("X")
 	local hover = object.hover
 	local down = object.down
-	local image = skin.images["close.png"]
+	local image = skin.images["close_red.png"]
 	local gradientcolor = {}
 	
 	if down == true then

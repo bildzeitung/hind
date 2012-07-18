@@ -1,6 +1,19 @@
 {
+	_name = 'chain_helmet',
+	_description = 'Chain Helmet',
+	_baseTable = 'content/actors/item.dat',	
 	_animations = 
 	{
+		inventory = 
+		{	
+			_tileSet = 'chain_helmet',
+			_offset = { 32, 64.08 },
+			_name = 'inventory',
+			_frameDuration = 0.10,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'loop'
+		},
 		standup = 
 		{	
 			_tileSet = 'chain_helmet',

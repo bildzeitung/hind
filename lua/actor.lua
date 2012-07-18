@@ -170,21 +170,41 @@ end
 --  Equips an item
 --
 function Actor:equipItem(slot, item)
-	self._equipped[slot] = item
-	item._actor = self
-	
 	-- ignore collisions between the items and the actor
 	self:ignoreCollision(item)	
 	item:ignoreCollision(self)	
-	-- ignore collisions between the items themselves
+	-- ignore collisions between the equipped items
 	for _, i in pairs(self._equipped) do
 		i:ignoreCollision(item)
 		item:ignoreCollision(i)
 	end
 	
+	self._equipped[slot] = item
+	item._actor = self	
+	
 	if self._currentAnimation then
 		item:animation(self._currentAnimation:name())
 	end
+end
+
+
+--
+--  Unequips an item
+--
+function Actor:unequipItem(slot)
+	local item = self._equipped[slot]
+	
+	-- allow collisions between the items and the actor
+	self:allowCollision(item)	
+	item:allowCollision(self)	
+	-- allow collisions between the equipped items
+	for _, i in pairs(self._equipped) do
+		i:allowCollision(item)
+		item:allowCollision(i)
+	end
+	
+	self._equipped[slot] = nil
+	item._actor = nil	
 end
 
 --
@@ -237,32 +257,35 @@ end
 --  another object
 --
 function Actor:collide(other)	
-	if self._lastPosUpdate[1] ~= 0 or self._lastPosUpdate[2] ~= 0 then
-		-- check if reversing the last update moves the
-		-- actor farther away from the other object
-		local xdiff = other._position[1] - self._position[1]
-		local ydiff = other._position[2] - self._position[2]			
-		local currentDist = xdiff * xdiff + ydiff * ydiff
+	-- only adjust positions for blocking items
+	if not other._nonBlocking then
+		if self._lastPosUpdate[1] ~= 0 or self._lastPosUpdate[2] ~= 0 then
+			-- check if reversing the last update moves the
+			-- actor farther away from the other object
+			local xdiff = other._position[1] - self._position[1]
+			local ydiff = other._position[2] - self._position[2]			
+			local currentDist = xdiff * xdiff + ydiff * ydiff
 
-		local xdiff = other._position[1] - 
-			(self._position[1] - self._lastPosUpdate[1])
-		local ydiff = other._position[2] - 
-			(self._position[2] - self._lastPosUpdate[2])
-		local possibleDist = xdiff * xdiff + ydiff * ydiff
+			local xdiff = other._position[1] - 
+				(self._position[1] - self._lastPosUpdate[1])
+			local ydiff = other._position[2] - 
+				(self._position[2] - self._lastPosUpdate[2])
+			local possibleDist = xdiff * xdiff + ydiff * ydiff
 
-		if currentDist < possibleDist then
-			self._position[1] = self._position[1] - self._lastPosUpdate[1]		
-			self._position[2] = self._position[2] - self._lastPosUpdate[2]
-			self._lastPosUpdate[1] = 0
-			self._lastPosUpdate[2] = 0
+			if currentDist < possibleDist then
+				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
+				self._position[2] = self._position[2] - self._lastPosUpdate[2]
+				self._lastPosUpdate[1] = 0
+				self._lastPosUpdate[2] = 0
+			end
+			
+			self:calculateBoundary()		
+			for _, item in pairs(self._equipped) do
+				item:update(0)
+			end	
 		end
-		
-		self:calculateBoundary()		
-		for _, item in pairs(self._equipped) do
-			item:update(0)
-		end	
 	end
-		
+	
 	Collidable.collide(self, other)
 end
 
@@ -330,5 +353,18 @@ function Actor:dialogs()
 	return self._dialogs
 end
 
+--
+--  Returns the actor's inventory
+--
+function Actor:inventory()
+	return self._inventory
+end
+
+--
+--  Returns the actor's equipped inventory
+--
+function Actor:equipped()
+	return self._equipped
+end
 
 

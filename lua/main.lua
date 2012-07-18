@@ -11,6 +11,7 @@ require 'floating_text'
 require 'libraries.loveframes'
 require 'dialog_generator'
 require 'dialog_viewer'
+require 'inventory_viewer'
 
 function love.load()	
 	profiler = objects.Profiler{}	
@@ -132,6 +133,8 @@ function love.load()
 	loveframes.util.SetActiveSkin('Hind')
 	
 	state = 'normalGame'
+	
+	overlays = {}
 end
 
 --
@@ -180,24 +183,48 @@ function createFloatingText(colour, actor, text)
 end
 
 --
+--
+--
+function createItem(description, position, cb)
+	item = factories.createStaticActor(description)
+	item:position(position[1], position[2])
+	if cb then cb(item) end
+	item:update(0)
+	item:registerBuckets(buckets)			
+end
+
+--
 --  Drop an item
 --
 function dropItem(actor)
 	-- drop an item
-	local item
-	
-	if math.random() > 0.25 then		
+	if math.random() > 0.52 then		
 		if math.random() > 0.25 then
-			item = factories.createStaticActor('content/actors/coins.dat')
-			item:value(math.floor(math.random()*100))
+			createItem('content/actors/coins.dat', actor:position(),
+				function(item)
+					item:value(math.floor(math.random()*100))
+				end)
 		else
-			item = factories.createStaticActor('content/actors/potions.dat')
-			item:setType('weak','healing')
+			createItem('content/actors/potions.dat', actor:position(),
+				function(item)
+					item:setType('weak','healing')
+				end)
 		end
-						
-		item:position(actor._position[1], actor._position[2])	
-		item:update(0)
-		item:registerBuckets(buckets)		
+	end
+end
+
+function createBunchOPotions(pos)
+	-- create bunch o' potions
+	for y = -300, -50, 34 do
+		for x = -400, 400, 34 do
+			local pos = { pos[1], pos[2] }
+			pos[1] = pos[1] + x
+			pos[2] = pos[2] + y
+			createItem('content/actors/potions.dat', pos,
+				function(item)
+					item:setType('weak','healing')
+				end)
+		end
 	end
 end
 
@@ -257,6 +284,7 @@ function createActors()
 	end	
 	
 	--[[
+	-- give the hero items that will complete the dialogs
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_puppy'})
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_kitten'})
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_mojo'})
@@ -267,7 +295,9 @@ function createActors()
 	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
 	table.insert(actors, hero)
-	
+
+	--createBunchOPotions(hero:position())
+				
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
@@ -330,17 +360,8 @@ function love.draw()
 			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
 			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
 			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
-			love.graphics.print('INVENTORY', 750, 10)
 			
-			love.graphics.setFont(smallFont)			
-			local y = 35
-			for k, v in ipairs(hero._inventory) do
-				love.graphics.print(v:name() .. ' ' .. v:description() .. ' ' .. 
-					v:count(), 750, y)
-				y = y + 15
-			end
-			
-			
+			love.graphics.setFont(smallFont)						
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
 			
 			if drawInfoText then
@@ -438,7 +459,7 @@ function love.update(dt)
 	
 	profiler:profile('handling keyboard input', 
 		function()
-			if not hero._currentAction and state ~= 'inDialog' then
+			if not hero._currentAction and table.count(overlays) == 0 then
 				local vx, vy = 0, 0
 			
 				if love.keyboard.isDown('up') then
@@ -467,14 +488,13 @@ function love.update(dt)
 				
 				if love.keyboard.isDown('lctrl') then
 					if hero:distanceFrom(npc) < 100 and table.count(npc:dialogs()) > 0 then
-						local oldState = state
 						hero:velocity(0,0)
 						hero:animation('stand' .. hero:direction(), true)
 						dialogViewer = objects.DialogViewer{ npc }
+						overlays[dialogViewer] = true
 						dialogViewer.on_close = function(self)
-							state = oldState
+							overlays[dialogViewer] = nil
 						end
-						state = 'inDialog'
 					else
 						hero:action('attack')
 					end
@@ -482,6 +502,16 @@ function love.update(dt)
 				
 				if love.keyboard.isDown('lshift') then	
 					hero:action('spellcast')
+				end		
+
+				if love.keyboard.isDown('i') then
+					hero:velocity(0,0)
+					hero:animation('stand' .. hero:direction(), true)
+					inventoryViewer = objects.InventoryViewer{ hero }
+					overlays[inventoryViewer] = true
+					inventoryViewer.on_close = function(self)
+						overlays[inventoryViewer] = nil
+					end
 				end				
 			end
 							
@@ -716,21 +746,39 @@ end
 function love.mousepressed(x, y, button)
 	loveframes.mousepressed(x, y, button)
 
+	for overlay, _ in pairs(overlays) do
+		if overlay.mousepressed then
+			overlay:mousepressed(x, y ,button)
+		end	
+	end
 end
 
 function love.mousereleased(x, y, button)
 	loveframes.mousereleased(x, y, button)
 
+	for overlay, _ in pairs(overlays) do
+		if overlay.mousereleased then
+			overlay:mousereleased(x, y ,button)
+		end	
+	end
 end
 
 function love.keypressed(key, unicode)
 	loveframes.keypressed(key, unicode)
 
-	if state == 'inDialog' then
-		dialogViewer:keypressed(key, unicode)
+	for overlay, _ in pairs(overlays) do
+		if overlay.keypressed then
+			overlay:keypressed(key, unicode)
+		end	
 	end
 end
 
 function love.keyreleased(key)
 	loveframes.keyreleased(key)
+	
+	for overlay, _ in pairs(overlays) do
+		if overlay.keyreleased then
+			overlay:keyreleased(key)
+		end	
+	end
 end

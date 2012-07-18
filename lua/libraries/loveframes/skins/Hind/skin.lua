@@ -77,8 +77,8 @@ skin.controls.scrollarea_border_color				= bordercolor
 skin.controls.scrollbody_body_color					= {0, 0, 0, 0}
 
 -- panel
-skin.controls.panel_body_color 						= {232, 232, 232, 255}
-skin.controls.panel_border_color					= bordercolor
+skin.controls.panel_body_color 						= {10, 10, 10, 255}
+skin.controls.panel_border_color					= {200, 200, 200, 255}
 
 -- tab panel
 skin.controls.tabpanel_body_color 					= {232, 232, 232, 255}

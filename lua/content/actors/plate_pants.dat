@@ -1,6 +1,19 @@
 {
+	_name = 'plate_pants',
+	_description = 'Plate Pants',
+	_baseTable = 'content/actors/item.dat',	
 	_animations = 
 	{
+		inventory = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'inventory',
+			_frameDuration = 0.10,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'loop'
+		},
 		standup = 
 		{	
 			_tileSet = 'plate_pants',

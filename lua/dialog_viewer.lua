@@ -14,57 +14,15 @@ local loveframes = loveframes
 
 local log = require 'log'
 
-local table, next, pairs, ipairs, love
-	= table, next, pairs, ipairs, love
+local table, next, pairs, ipairs, type, love
+	= table, next, pairs, ipairs, type, love
 	
 module('objects')
 
 DialogViewer = Object{ _init = { '_npc' } }
 
---
--- the GUI library works with non destroyable GUI elements
--- ugh...
---
+-- only need one of these
 DialogViewer._nameFont = love.graphics.newFont(14)
-
-DialogViewer._npcFrame = loveframes.Create('frame')
-DialogViewer._npcFrame:SetSize(500, 300)
-DialogViewer._npcFrame:SetPos(10,10)
-DialogViewer._npcFrame:ShowCloseButton(false)
-DialogViewer._npcFrame:SetDraggable(false)
-DialogViewer._npcFrame:SetVisible(false)
-DialogViewer._npcFrame:SetAlwaysUpdate(false)
-
-DialogViewer._npcName = loveframes.Create('text')
-DialogViewer._npcName:SetParent(DialogViewer._npcFrame)
-DialogViewer._npcName:SetPos(10,10)
-DialogViewer._npcName:SetFont(DialogViewer._nameFont)
-
-DialogViewer._npcText = loveframes.Create('text')
-DialogViewer._npcText:SetParent(DialogViewer._npcFrame)
-DialogViewer._npcText:SetPos(10,30)
-DialogViewer._npcText:SetMaxWidth(480)
-
-DialogViewer._heroFrame = loveframes.Create('frame')
-DialogViewer._heroFrame:SetSize(500, 300)
-DialogViewer._heroFrame:SetPos(690,360)
-DialogViewer._heroFrame:ShowCloseButton(false)
-DialogViewer._heroFrame:SetDraggable(false)
-DialogViewer._heroFrame:SetVisible(false)
-DialogViewer._heroFrame:SetAlwaysUpdate(false)
-
-DialogViewer._heroName = loveframes.Create('text')
-DialogViewer._heroName:SetParent(DialogViewer._heroFrame)
-DialogViewer._heroName:SetPos(10,10)
-DialogViewer._heroName:SetFont(DialogViewer._nameFont)
-
-DialogViewer._heroTexts = {}
-for i = 1, 6 do
-	DialogViewer._heroTexts[i] = loveframes.Create('text')
-	DialogViewer._heroTexts[i]:SetParent(DialogViewer._heroFrame)
-	DialogViewer._heroTexts[i]:SetPos(10,30 + (i-1) * 40)
-	DialogViewer._heroTexts[i]:SetMaxWidth(480)
-end
 
 --
 --  DialogViewer constructor
@@ -78,8 +36,42 @@ function DialogViewer:_clone(values)
 	o._currentOption = nil
 	o._availableOptions = nil
 	
-	DialogViewer._npcFrame:SetVisible(true)
-	DialogViewer._heroFrame:SetVisible(true)
+	o._elements = {}
+	
+	o._elements['npcFrame'] = loveframes.Create('frame')
+	o._elements['npcFrame']:SetSize(500, 300)
+	o._elements['npcFrame']:SetPos(10,10)
+	o._elements['npcFrame']:ShowCloseButton(false)
+	o._elements['npcFrame']:SetDraggable(false)
+
+	o._elements['npcName'] = loveframes.Create('text')
+	o._elements['npcName']:SetParent(o._elements['npcFrame'])
+	o._elements['npcName']:SetPos(10,10)
+	o._elements['npcName']:SetFont(self._nameFont)
+
+	o._elements['npcText'] = loveframes.Create('text')
+	o._elements['npcText']:SetParent(o._elements['npcFrame'])
+	o._elements['npcText']:SetPos(10,30)
+	o._elements['npcText']:SetMaxWidth(480)
+
+	o._elements['heroFrame'] = loveframes.Create('frame')
+	o._elements['heroFrame']:SetSize(500, 300)
+	o._elements['heroFrame']:SetPos(690,360)
+	o._elements['heroFrame']:ShowCloseButton(false)
+	o._elements['heroFrame']:SetDraggable(false)
+	
+	o._elements['heroName'] = loveframes.Create('text')
+	o._elements['heroName']:SetParent(o._elements['heroFrame'])
+	o._elements['heroName']:SetPos(10,10)
+	o._elements['heroName']:SetFont(self._nameFont)
+
+	o._elements['heroTexts'] = {}
+	for i = 1, 6 do
+		o._elements['heroTexts'][i] = loveframes.Create('text')
+		o._elements['heroTexts'][i]:SetParent(o._elements['heroFrame'])
+		o._elements['heroTexts'][i]:SetPos(10,30 + (i-1) * 40)
+		o._elements['heroTexts'][i]:SetMaxWidth(480)
+	end	
 	
 	local dialogs = o._npc:dialogs()
 	local k, dialog = next(dialogs)
@@ -95,9 +87,9 @@ function DialogViewer:_clone(values)
 		o:selectDialog(k)
 	end
 	
-	if DialogViewer._npcName:GetVisible() then
-		DialogViewer._npcName:SetText({{255, 255, 0, 255}, dialog._npc:name()})
-		DialogViewer._heroName:SetText({{255, 255, 0, 255},dialog._hero:name()})			
+	if o._elements['npcName']:GetVisible() then
+		o._elements['npcName']:SetText{{255, 255, 0, 255}, dialog._npc:name()}
+		o._elements['heroName']:SetText{{255, 255, 0, 255},dialog._hero:name()}
 		o:updateNPCFrame()
 		o:updateHeroFrame()
 	end
@@ -130,11 +122,11 @@ function DialogViewer:updateNPCFrame()
 		if text then
 			if text:find(self._npc:name() .. '%-%>') then
 				text = text:gsub(self._npc:name() .. '%-%>','')
-				DialogViewer._npcText:SetText({{255,255,255,255},text})
+				self._elements['npcText']:SetText{{255,255,255,255},text}
 			end	
 		end
 	else
-		DialogViewer._npcText:SetText({{255,255,255,255},'What would you like to talk about?'})
+		self._elements['npcText']:SetText{{255,255,255,255},'What would you like to talk about?'}
 	end
 end
 
@@ -195,8 +187,8 @@ end
 --
 function DialogViewer:updateHeroFrame()
 	-- blank possibly non used options
-	for i = 2, #DialogViewer._heroTexts do
-		DialogViewer._heroTexts[i]:SetText(' ')
+	for i = 2, #self._elements['heroTexts'] do
+		self._elements['heroTexts'][i]:SetText(' ')
 	end
 	
 	if self._currentDialog then		
@@ -206,9 +198,9 @@ function DialogViewer:updateHeroFrame()
 				if self._availableOptions[k] then
 					local text = v.text:gsub(self._currentDialog._hero:name() .. '%-%>','')
 					if k == self._currentOption then
-						DialogViewer._heroTexts[k]:SetText(self:colourText(text,{255,0,0,255}))
+						self._elements['heroTexts'][k]:SetText(self:colourText(text,{255,0,0,255}))
 					else
-						DialogViewer._heroTexts[k]:SetText(self:colourText(text,{255,255,255,255}))
+						self._elements['heroTexts'][k]:SetText(self:colourText(text,{255,255,255,255}))
 					end
 				end
 			end
@@ -216,7 +208,7 @@ function DialogViewer:updateHeroFrame()
 			local text = branch.text
 			if text:find(self._currentDialog._hero:name() .. '%-%>') then	
 				text = text:gsub(self._currentDialog._hero:name() .. '%-%>','')
-				DialogViewer._heroTexts[1]:SetText(self:colourText(text,{255,255,255,255}))
+				self._elements['heroTexts'][1]:SetText(self:colourText(text,{255,255,255,255}))
 			end			
 		end
 	else
@@ -224,9 +216,9 @@ function DialogViewer:updateHeroFrame()
 		for k, v in pairs(self._npc:dialogs()) do
 			if txt == self._currentOption then
 				self._selectedDialog = k
-				DialogViewer._heroTexts[txt]:SetText(self:colourText(k,{255,0,0,255}))
+				self._elements['heroTexts'][txt]:SetText(self:colourText(k,{255,0,0,255}))
 			else
-				DialogViewer._heroTexts[txt]:SetText(self:colourText(k, {255,255,255,255}))
+				self._elements['heroTexts'][txt]:SetText(self:colourText(k, {255,255,255,255}))
 			end
 			txt = txt + 1
 		end	
@@ -234,17 +226,18 @@ function DialogViewer:updateHeroFrame()
 end
 
 -- 
---  Closes the dialog viewer
+--  Closes the DialogViewer
 -- 
 function DialogViewer:close()
-	DialogViewer._npcFrame:SetVisible(false)
-	DialogViewer._heroFrame:SetVisible(false)
-	
-	-- blank the texts
-	for i = 1, #DialogViewer._heroTexts do
-		DialogViewer._heroTexts[i]:SetText(' ')
-	end
-	DialogViewer._npcText:SetText(' ')
+	for k, v in pairs(self._elements) do
+		if not v.Remove then
+			for k2, v2 in pairs(v) do
+				v2:Remove()
+			end
+		else
+			v:Remove()
+		end
+	end	
 
 	if self.on_close then self:on_close() end
 end
@@ -262,14 +255,14 @@ function DialogViewer:keypressed(key, unicode)
 			if self._currentOption then
 				local branch = self._currentDialog:branch()
 				local text = self:colourText(branch.options[self._currentOption].text, {255,0,0,255})
-				DialogViewer._heroTexts[1]:SetText(text)	
+				self._elements['heroTexts'][1]:SetText(text)	
 			end
 			self._currentDialog:viewed(self._currentOption)	
 			
 			self:prepareAvailableOptions()
 		else
 			self:selectDialog(self._selectedDialog)
-			DialogViewer._heroTexts[1]:SetText(' ')			
+			self._elements['heroTexts'][1]:SetText(' ')			
 		end				
 	end
 	
@@ -298,7 +291,7 @@ function DialogViewer:keypressed(key, unicode)
 		end
 	end
 
-	if DialogViewer._npcFrame:GetVisible() then
+	if self._elements['npcFrame']:GetVisible() then
 		self:updateNPCFrame()
 		self:updateHeroFrame()	
 	end

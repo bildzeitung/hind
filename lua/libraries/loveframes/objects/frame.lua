@@ -75,7 +75,7 @@ function frame:update(dt)
 	local children = self.children
 	local internals = self.internals
 	
-	close:SetPos(self.width - 22, 4)
+	close:SetPos(self.width - 16, 0)
 	self:CheckHover()
 	
 	-- dragging check

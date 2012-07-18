@@ -126,6 +126,13 @@ function Collidable:ignoreCollision(item)
 end
 
 --
+--  Removes an item from the collision ignore list
+--
+function Collidable:allowCollision(item)
+	self._ignores[item._id] = nil
+end
+
+--
 --  Resets collision status
 --
 function Collidable:resetCollisions()

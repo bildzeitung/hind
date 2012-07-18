@@ -1,14 +1,14 @@
 {
-	_baseTable = 'content/actors/item.dat',
+	_baseTable = 'content/actors/item.dat',	
 	_stackable = true,
 	_count = 0,
-	_maxCount = 5,	
+	_maxCount = 2,	
 	setType = function(self, strength, effect)
 		self._name = strength .. '_' .. effect
 		self._description = strength .. ' ' .. effect .. ' potion'
 		self._effect = effect
 		self._strength = strength
-		self:animation(self._name .. '_' .. self._imageSuffix)		
+		self:animation(self._name .. '_game')				
 	end,
 	use = function()
 		if self._effect == 'healing' then

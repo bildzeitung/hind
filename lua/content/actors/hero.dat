@@ -2,7 +2,7 @@
 	_baseTable = 'content/actors/male_human.dat',	
 	dead = false,
 	HERO = true,
-	_maxInventoryCount = 10,
+	_maxInventoryCount = 72,
 	_attributes = 
 	{
 		experience = 0, gold = 0, greed = 0,

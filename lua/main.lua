@@ -198,7 +198,7 @@ end
 --
 function dropItem(actor)
 	-- drop an item
-	if math.random() > 0.52 then		
+	if math.random() > 0.25 then		
 		if math.random() > 0.25 then
 			createItem('content/actors/coins.dat', actor:position(),
 				function(item)

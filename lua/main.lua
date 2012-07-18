@@ -173,7 +173,7 @@ function createFloatingText(colour, actor, text)
 		for k2, _ in pairs(floatingTexts) do
 			if k1 ~= k2 and k1._position[1] == k2._position[1] and
 			k1._position[2] == k2._position[2] then
-				k1._position[2] = k1._position[2] + 20
+				k2._position[2] = k2._position[2] + 20
 			end
 		end
 	end
@@ -307,6 +307,7 @@ function love.draw()
 	-- draw info text
 	profiler:profile('drawing info text', 	
 		function()		
+			love.graphics.setColor(255,255,255,255)		
 			love.graphics.setPixelEffect()
 			
 			love.graphics.setFont(largeFont)
@@ -316,8 +317,16 @@ function love.draw()
 			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
 			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
 			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
+			love.graphics.print('INVENTORY', 750, 10)
 			
 			love.graphics.setFont(smallFont)			
+			local y = 35
+			for k, v in ipairs(hero._inventory) do
+				love.graphics.print(v.name, 750, y)
+				y = y + 15
+			end
+			
+			
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
 			
 			if drawInfoText then

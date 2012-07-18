@@ -257,7 +257,7 @@ function DialogViewer:keypressed(key, unicode)
 		self:close()
 	end
 	
-	if key == ' ' then
+	if key == 'lctrl' then
 		if self._currentDialog then
 			if self._currentOption then
 				local branch = self._currentDialog:branch()

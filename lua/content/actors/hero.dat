@@ -86,7 +86,9 @@
 	discardItem = function(self, item)
 		for k, v in ipairs(self._inventory) do
 			if type(item) == 'string' then
-				if v.name == item then self._inventory[k] = nil end
+				if v.name == item then 
+					table.remove(self._inventory, k)
+				end
 			end
 		end
 	end

@@ -2,6 +2,7 @@
 	_baseTable = 'content/actors/male_human.dat',	
 	dead = false,
 	HERO = true,
+	_maxInventoryCount = 10,
 	_attributes = 
 	{
 		experience = 0, gold = 0, greed = 0,
@@ -78,18 +79,62 @@
 	inventoryContains = function(self, item)
 		for k, v in ipairs(self._inventory) do			
 			if type(item) == 'string' then
-				if v.name == item then return true end
+				if v:name() == item then return true end
 			end
 		end
+		return false
+	end,
+	itemFits = function(self, item)
+		if #self._inventory < self._maxInventoryCount then
+			return true
+		end
+		
+		if item:stackable() then
+			for k, v in ipairs(self._inventory) do
+				if v:name() == item:name() and 
+					v:count() < v:maxCount() then
+						return true
+				end
+			end			
+		end
+		
 		return false
 	end,
 	discardItem = function(self, item)
 		for k, v in ipairs(self._inventory) do
 			if type(item) == 'string' then
-				if v.name == item then 
+				if v:name() == item then 
 					table.remove(self._inventory, k)
 				end
 			end
 		end
+	end,
+	addItem = function(self, item)
+		if not self:itemFits(item) then			
+			if self.on_add_item_fail then			
+				self:on_add_item_fail(item)
+			end
+			return nil
+		end
+		
+		local added = false
+
+		if item:stackable() then
+			for k, v in ipairs(self._inventory) do
+				if v:name() == item:name() and 
+					v:count() < v:maxCount() then
+						v:count(1)
+						added = true
+						break				
+				end
+			end			
+		end
+
+		if not added then
+			table.insert(self._inventory, item)
+			item:count(1, true)
+		end
+		
+		return true
 	end
 }

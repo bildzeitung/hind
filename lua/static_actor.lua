@@ -17,7 +17,7 @@ module('objects')
 StaticActor = Object{}
 
 --
---  Actor constructor
+--  StaticActor constructor
 --
 function StaticActor:_clone(values)
 	local o = table.merge(
@@ -27,21 +27,13 @@ function StaticActor:_clone(values)
 			Object._clone(self,values)
 		))
 			
-	o._map = nil
 	o.STATICACTOR = true
 	
 	return o
 end
 
 --
---  Sets the map that the static actor is acting on
---
-function StaticActor:map(m)
-	self._map = m
-end
-
---
---  Update function
+--  Update the StaticActor
 --
 function StaticActor:update(dt)
 	-- update the current animation

@@ -1,0 +1,47 @@
+{
+	_imageSuffix = 'game',
+	_stackable = false,
+	_count = 0,
+	_maxCount = 0,
+	_name = nil,
+	_description = nil,
+	on_collide = function(self, other)	
+		if other.addItem then
+			if other:addItem(self) then
+				removals[self._id] = self
+			end
+		end
+	end,
+	view = function(self, v)
+		self._imageSuffix = v
+		
+		local anim = self._currentAnimation
+		if anim then
+			anim = anim:gsub('game')
+			anim = anim:gsub('inventory')
+			
+			self:animation(anim .. self._imageSuffix)
+		end
+	end,
+	stackable = function(self)
+		return self._stackable
+	end,
+	count = function(self, value, absolute)
+		if not value then return self._count end
+		
+		if absolute then	
+			self._count = value
+		else
+			self._count = self._count + value
+		end		
+	end,
+	maxCount = function(self)
+		return self._maxCount
+	end,
+	name = function(self)
+		return self._name
+	end,
+	description = function(self)
+		return self._description
+	end
+}

@@ -1,0 +1,61 @@
+{
+	_baseTable = 'content/actors/in_game_item.dat',
+	_stackable = true,
+	_count = 0,
+	_maxCount = 5,	
+	setType = function(self, strength, effect)
+		self._name = strength .. '_' .. effect
+		self._description = strength .. ' ' .. effect .. ' potion'
+		self._effect = effect
+		self._strength = strength
+		self:animation(self._name .. '_' .. self._imageSuffix)		
+	end,
+	use = function()
+		if self._effect == 'healing' then
+			other:heal(self._strength)
+		end
+	end,
+	_animations = 
+	{
+		weak_healing_game = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'weak_healing_game',
+			_frameDuration = 1,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		weak_healing_inventory = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'weak_healing_inventory',
+			_frameDuration = 1,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		medium_healing_game = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'medium_healing_game',
+			_frameDuration = 1,
+			_frameStart = 2,
+			_frameEnd = 2,
+			_looping = 'loop'
+		},
+		medium_healing_inventory = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'medium_healing_inventory',
+			_frameDuration = 1,
+			_frameStart = 2,
+			_frameEnd = 2,
+			_looping = 'loop'
+		}
+	}
+}

@@ -42,7 +42,7 @@ function love.load()
 		'outdoor', 'male_human', 
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
 		'plate_pants', 'longsword', 'monster', 'coins', 
-		'magic_firelion', 'magic_iceshield'
+		'magic_firelion', 'magic_iceshield', 'potions'
 	}
 		
 	for _, v in ipairs(load) do
@@ -191,10 +191,21 @@ function dropCoin(actor)
 end
 
 --
+--  Drop a potion
+--
+function dropPotion(actor)
+	local potion = factories.createStaticActor('content/actors/potions.dat')
+	potion:position(actor._position[1], actor._position[2])	
+	potion:setType('weak','healing')
+	potion:update(0)
+	potion:registerBuckets(buckets)	
+end
+
+--
 --  Creates the actors
 --
 function createActors()
-	local numActors = 1000
+	local numActors = 2000
 	local size = daMap:size()
 	
 	actors = {}
@@ -245,10 +256,12 @@ function createActors()
 		createFloatingText({0,255,255,255}, hero, 'Luck: ' .. justSet)
 	end	
 	
+	--[[
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_puppy'})
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_kitten'})
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_mojo'})
 	table.insert(hero._inventory, { name = 'questItem_Bilbo_mind'})
+	]]
 	
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)
@@ -322,7 +335,8 @@ function love.draw()
 			love.graphics.setFont(smallFont)			
 			local y = 35
 			for k, v in ipairs(hero._inventory) do
-				love.graphics.print(v.name, 750, y)
+				love.graphics.print(v:name() .. ' ' .. v:description() .. ' ' .. 
+					v:count(), 750, y)
 				y = y + 15
 			end
 			

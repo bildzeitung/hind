@@ -1,0 +1,14 @@
+{		
+	_name = 'potions',
+	_size = { 32, 32 },
+	_images = {
+		{	_file = '/content/images/items/potions.png',
+			_boundaries = { 
+				{ 0, 0, 31, 32 },
+				{ 0, 0, 31, 32 },
+				{ 0, 0, 31, 32 },
+				{ 0, 0, 31, 32 }
+			}
+		}
+	}
+}

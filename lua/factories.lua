@@ -39,7 +39,7 @@ local function readTableFromFile(filename)
 	while t._baseTable do 
 		local ot = readTableFromFile(t._baseTable)
 		t._baseTable = nil
-		t = table.merge(t,ot)
+		t = table.merge(ot, t)
 	end
 	
 	return t

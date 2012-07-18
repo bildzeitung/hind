@@ -7,7 +7,7 @@
 	_description = 'Uknown Item',
 	on_collide = function(self, other)	
 		if not self._beingRemoved and other.addItem then
-			 if other:addItem(self) then
+			if other:addItem(self) then
 				self._beingRemoved = true
 				removals[self._id] = self
 			end

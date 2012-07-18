@@ -24,10 +24,7 @@ FloatingText = Object{ _init = { '_text', '_font', '_color', '_position', '_velo
 --  FloatingText constructor
 --
 function FloatingText:_clone(values)
-	local o = table.merge(
-		Drawable(values),
-		Object._clone(self,values)
-		)
+	local o = table.merge(Drawable(values), Object._clone(self,values))
 		
 	o._currentTime = 0
 	

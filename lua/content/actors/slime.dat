@@ -1,4 +1,5 @@
 {
+	_name = 'Slime',
 	AI = function(self)
 		if self._currentAction ~= 'die' then
 			if self._currentAction ~= 'attack' and math.random() > 0.95 then

@@ -31,25 +31,15 @@ Actor = Object{}
 --
 function Actor:_clone(values)
 	local o = table.merge(
-		Drawable(values),
-		table.merge(
-			Collidable(values),
-			Object._clone(self,values)
-		))
+		table.merge(Collidable(values), Drawable(values)),
+		Object._clone(self,values))
 			
-	o._itemDrawOrder = { 'weapon', 'hands', 'head', 'belt', 
-		'torso', 'legs', 'feet', 'body', 'behind' }
-  
 	o._dialogs = {}	
-	o._equipped = {}
-	o._inventory = {}
   	o._lastPosUpdate = { 0, 0 }	
 	o._velocity = { 0, 0 }
 	o._map = nil
 	o.ACTOR = true
-	
-	o._currentAction = nil
-	
+	o._currentAction = nil	
 	o._health = 20	
 	
 	return o
@@ -101,10 +91,6 @@ function Actor:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
-	
-	for _, v in pairs(self._equipped) do
-		v:update(dt)
-	end
 end
 
 --
@@ -167,92 +153,6 @@ function Actor:action(name, cancel)
 end
 
 --
---  Equips an item
---
-function Actor:equipItem(slot, item)
-	-- ignore collisions between the items and the actor
-	self:ignoreCollision(item)	
-	item:ignoreCollision(self)	
-	-- ignore collisions between the equipped items
-	for _, i in pairs(self._equipped) do
-		i:ignoreCollision(item)
-		item:ignoreCollision(i)
-	end
-	
-	self._equipped[slot] = item
-	item._actor = self	
-	
-	if self._currentAnimation then
-		item:animation(self._currentAnimation:name())
-	end
-end
-
-
---
---  Unequips an item
---
-function Actor:unequipItem(slot)
-	local item = self._equipped[slot]
-	
-	-- allow collisions between the items and the actor
-	self:allowCollision(item)	
-	item:allowCollision(self)	
-	-- allow collisions between the equipped items
-	for _, i in pairs(self._equipped) do
-		i:allowCollision(item)
-		item:allowCollision(i)
-	end
-	
-	self._equipped[slot] = nil
-	item._actor = nil	
-end
-
---
---  Sets or gets the current animation
---
---  Inputs:
---		a - an animation index or nil
---		r - true if the animation should be reset
---
-function Actor:animation(a, r)	
-	local ret = Drawable.animation(self, a, r)
-	
-	if a then
-		-- set the animations for the equipped items
-		for _, item in pairs(self._equipped) do
-			item:animation(a, r)
-		end
-	end
-	
-	return ret
-end
-
---
---  Draw the actor
---
-function Actor:draw(camera, drawTable)
-	Drawable.draw(self, camera, drawTable)
-	
-	for _, v in ipairs(self._itemDrawOrder) do
-		if self._equipped[v] then
-			self._equipped[v]:draw(camera, drawTable)
-		end
-	end
-end
-
---  Registers the actor in the proper
---     collision buckets
---
-function Actor:registerBuckets(buckets)
-   Collidable.registerBuckets(self, buckets)
-
-   -- register items in the buckets too
-   for k, item in pairs(self._equipped) do
-	   item:registerBuckets(buckets)
-   end
-end
-
---
 --  Called when a collidable collides with
 --  another object
 --
@@ -280,9 +180,6 @@ function Actor:collide(other)
 			end
 			
 			self:calculateBoundary()		
-			for _, item in pairs(self._equipped) do
-				item:update(0)
-			end	
 		end
 	end
 	
@@ -312,12 +209,7 @@ end
 function Actor:doDamage(other)
 	if self._damage then
 		other:takeDamage(self._damage, self)
-	else
-		local weapon = self._equipped['weapon']
-		if weapon then
-			other:takeDamage(weapon._damage, self)
-		end	
-	end
+	end	
 end
 
 --
@@ -352,19 +244,3 @@ end
 function Actor:dialogs()
 	return self._dialogs
 end
-
---
---  Returns the actor's inventory
---
-function Actor:inventory()
-	return self._inventory
-end
-
---
---  Returns the actor's equipped inventory
---
-function Actor:equipped()
-	return self._equipped
-end
-
-

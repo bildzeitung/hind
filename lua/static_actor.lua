@@ -20,12 +20,9 @@ StaticActor = Object{}
 --  StaticActor constructor
 --
 function StaticActor:_clone(values)
-	local o = table.merge(
-		Drawable(values),
-		table.merge(
-			Collidable(values),
-			Object._clone(self,values)
-		))
+	local o = table.merge(		
+		table.merge(Drawable(values),Collidable(values)),
+		Object._clone(self,values))
 			
 	o.STATICACTOR = true
 	

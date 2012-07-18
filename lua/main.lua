@@ -236,7 +236,7 @@ function createActors()
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createActor('content/actors/hero.dat')
+	hero = factories.createInventoryActor('content/actors/hero.dat')
 	
 	for k, v in pairs(hero._attributes) do
 		hero['_'..k] = v

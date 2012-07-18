@@ -113,8 +113,8 @@ skin.controls.multichoicerow_text_font				= smallfont
 
 -- tooltip
 skin.controls.tooltip_border_color					= bordercolor
-skin.controls.tooltip_body_color					= {255, 255, 255, 255}
-skin.controls.tooltip_text_color					= {0, 0, 0, 255}
+skin.controls.tooltip_body_color					= {0, 0, 0, 255}
+skin.controls.tooltip_text_color					= {255, 255, 255, 255}
 skin.controls.tooltip_text_font						= smallfont
 
 -- text input

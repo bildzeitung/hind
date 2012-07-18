@@ -21,11 +21,8 @@ ActorItem = Object{}
 --
 function ActorItem:_clone(values)
 	local o = table.merge(
-		Drawable(values),
-		table.merge(
-			Collidable(values),
-			Object._clone(self,values)
-		))		
+		table.merge(Collidable(values),Drawable(values)),
+		Object._clone(self,values))		
 			
 	return o
 end

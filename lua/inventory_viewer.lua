@@ -67,8 +67,10 @@ function InventoryViewer:_clone(values)
 	o._elements['equippedFrame']:SetSize(250,300)
 	o._elements['equippedFrame']:SetPos(200,10)	
 	
-	o._elements['images'] = {}
-	o._elements['tooltips'] = {}
+	o._elements['equippedImages'] = {}
+	o._elements['equippedTooltips'] = {}
+	o._elements['inventoryImages'] = {}
+	o._elements['inventoryTooltips'] = {}
 	
 	o:updateEquippedFrame()	
 	o:updateInventoryFrame()
@@ -99,15 +101,14 @@ end
 --  
 function createImageForItem(item)
 	local itemImage = itemImage(item)		
-	local image = loveframes.Create('image')
+	local image = loveframes.Create('imagebutton')
 	image:SetImage(itemImage)
-	image.Update = function(self, dt)
-		self:CheckHover()
-	end
+	image:SetText('')
+	image:SizeToImage()  
 	local tooltip = loveframes.Create('tooltip')
 	tooltip:SetObject(image)
 	tooltip:SetPadding(2)
-	tooltip:SetText(item:description())
+	tooltip:SetText{{255,255,255,255},item:description()}
 	
 	return image, tooltip
 end
@@ -116,14 +117,27 @@ end
 --  Updates the equipped frame
 -- 
 function InventoryViewer:updateEquippedFrame()
+	for k, v in ipairs(self._elements['equippedImages']) do
+		v:Remove()
+	end
+	for k, v in ipairs(self._elements['equippedTooltips']) do
+		v:Remove()
+	end
+	
 	for k, v in pairs(self._hero:equipped()) do
 		local i, t = createImageForItem(v)
 		i:SetParent(self._elements['equippedFrame'])			
 		local pos = equipPos[k]
 		i:SetPos(pos[1] - i:GetWidth()/2, pos[2] - i:GetHeight()/2)
 
-		table.insert(self._elements['images'], i)
-		table.insert(self._elements['tooltips'], t)
+		i.OnClick = function()
+			self._hero:unequipItem(k)
+			self:updateEquippedFrame()
+			self:updateInventoryFrame()
+		end
+		
+		table.insert(self._elements['equippedImages'], i)
+		table.insert(self._elements['equippedTooltips'], t)
 	end
 end
 
@@ -138,8 +152,8 @@ function InventoryViewer:updateInventoryFrame()
 		local pos = equipPos[k]
 		i:SetPos(x - i:GetWidth()/2, y - i:GetHeight()/2)
 
-		table.insert(self._elements['images'], i)
-		table.insert(self._elements['tooltips'], t)
+		table.insert(self._elements['inventoryImages'], i)
+		table.insert(self._elements['inventoryTooltips'], t)
 
 		-- show the number of items in the stack
 		if v:stackable() then

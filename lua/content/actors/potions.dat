@@ -2,7 +2,7 @@
 	_baseTable = 'content/actors/item.dat',	
 	_stackable = true,
 	_count = 0,
-	_maxCount = 2,	
+	_maxCount = 25,	
 	setType = function(self, strength, effect)
 		self._name = strength .. '_' .. effect
 		self._description = strength .. ' ' .. effect .. ' potion'

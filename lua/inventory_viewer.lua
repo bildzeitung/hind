@@ -67,6 +67,9 @@ function InventoryViewer:_clone(values)
 	o._elements['equippedFrame']:SetSize(250,300)
 	o._elements['equippedFrame']:SetPos(200,10)	
 	
+	o._elements['images'] = {}
+	o._elements['tooltips'] = {}
+	
 	o:updateEquippedFrame()	
 	o:updateInventoryFrame()
 	
@@ -91,25 +94,36 @@ function itemImage(item)
 	return tq[frame]
 end
 
+--
+--  Creates an image with a tooltip
+--  
+function createImageForItem(item)
+	local itemImage = itemImage(item)		
+	local image = loveframes.Create('image')
+	image:SetImage(itemImage)
+	image.Update = function(self, dt)
+		self:CheckHover()
+	end
+	local tooltip = loveframes.Create('tooltip')
+	tooltip:SetObject(image)
+	tooltip:SetPadding(2)
+	tooltip:SetText(item:description())
+	
+	return image, tooltip
+end
+
 -- 
 --  Updates the equipped frame
 -- 
 function InventoryViewer:updateEquippedFrame()
 	for k, v in pairs(self._hero:equipped()) do
-		local itemImage = itemImage(v)				
-		local image = loveframes.Create('image')
-		image:SetParent(self._elements['equippedFrame'])
-		image:SetImage(itemImage)
-		image.Update = function(self, dt)
-			self:CheckHover()
-		end
-		local tooltip = loveframes.Create('tooltip')
-		tooltip:SetObject(image)
-		tooltip:SetPadding(2)
-		tooltip:SetText(v:description())		
-		
+		local i, t = createImageForItem(v)
+		i:SetParent(self._elements['equippedFrame'])			
 		local pos = equipPos[k]
-		image:SetPos(pos[1] - image:GetWidth()/2, pos[2] - image:GetHeight()/2)
+		i:SetPos(pos[1] - i:GetWidth()/2, pos[2] - i:GetHeight()/2)
+
+		table.insert(self._elements['images'], i)
+		table.insert(self._elements['tooltips'], t)
 	end
 end
 
@@ -119,18 +133,13 @@ end
 function InventoryViewer:updateInventoryFrame()
 	local x, y = 16, 16
 	for k, v in pairs(self._hero:inventory()) do
-		local itemImage = itemImage(v)				
-		local image = loveframes.Create('image')
-		image:SetParent(self._elements['inventoryFrame'])
-		image:SetImage(itemImage)
-		image:SetPos(x - image:GetWidth()/2, y - image:GetHeight()/2)
-		image.Update = function(self, dt)
-			self:CheckHover()
-		end
-		local tooltip = loveframes.Create('tooltip')
-		tooltip:SetObject(image)
-		tooltip:SetPadding(2)
-		tooltip:SetText(v:description())
+		local i, t = createImageForItem(v)
+		i:SetParent(self._elements['inventoryFrame'])			
+		local pos = equipPos[k]
+		i:SetPos(x - i:GetWidth()/2, y - i:GetHeight()/2)
+
+		table.insert(self._elements['images'], i)
+		table.insert(self._elements['tooltips'], t)
 
 		-- show the number of items in the stack
 		if v:stackable() then

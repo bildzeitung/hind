@@ -1,5 +1,6 @@
 {
 	_baseTable = 'content/actors/item.dat',	
+	_slot = 'weapon',	
 	_ignoresHits = true,
 	on_begin_attack = function(self)
 		local sound = 'sword_slash_' .. math.floor(math.random() * 2) + 1

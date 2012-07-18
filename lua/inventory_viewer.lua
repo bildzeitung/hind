@@ -131,9 +131,11 @@ function InventoryViewer:updateEquippedFrame()
 		i:SetPos(pos[1] - i:GetWidth()/2, pos[2] - i:GetHeight()/2)
 
 		i.OnClick = function()
-			self._hero:unequipItem(k)
-			self:updateEquippedFrame()
-			self:updateInventoryFrame()
+			if self._hero:addItem(v) then
+				self._hero:unequipItem(k)
+				self:updateEquippedFrame()
+				self:updateInventoryFrame()
+			end
 		end
 		
 		table.insert(self._elements['equippedImages'], i)
@@ -145,6 +147,13 @@ end
 --  Updates the inventory frame
 -- 
 function InventoryViewer:updateInventoryFrame()
+	for k, v in ipairs(self._elements['inventoryImages']) do
+		v:Remove()
+	end
+	for k, v in ipairs(self._elements['inventoryTooltips']) do
+		v:Remove()
+	end
+	
 	local x, y = 16, 16
 	for k, v in pairs(self._hero:inventory()) do
 		local i, t = createImageForItem(v)
@@ -152,6 +161,14 @@ function InventoryViewer:updateInventoryFrame()
 		local pos = equipPos[k]
 		i:SetPos(x - i:GetWidth()/2, y - i:GetHeight()/2)
 
+		i.OnClick = function()			
+			if self._hero:equipItem(v._slot, v) then
+				self._hero:removeItem(v)
+				self:updateEquippedFrame()
+				self:updateInventoryFrame()
+			end
+		end
+		
 		table.insert(self._elements['inventoryImages'], i)
 		table.insert(self._elements['inventoryTooltips'], t)
 

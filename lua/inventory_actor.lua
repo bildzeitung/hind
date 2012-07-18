@@ -45,47 +45,6 @@ function InventoryActor:update(dt)
 end
 
 --
---  Equips an item
---
-function InventoryActor:equipItem(slot, item)
-	-- ignore collisions between the items and the actor
-	self:ignoreCollision(item)	
-	item:ignoreCollision(self)	
-	-- ignore collisions between the equipped items
-	for _, i in pairs(self._equipped) do
-		i:ignoreCollision(item)
-		item:ignoreCollision(i)
-	end
-	
-	self._equipped[slot] = item
-	item._actor = self	
-	
-	if self._currentAnimation then
-		item:animation(self._currentAnimation:name())
-	end
-end
-
-
---
---  Unequips an item
---
-function InventoryActor:unequipItem(slot)
-	local item = self._equipped[slot]
-	
-	-- allow collisions between the items and the actor
-	self:allowCollision(item)	
-	item:allowCollision(self)	
-	-- allow collisions between the equipped items
-	for _, i in pairs(self._equipped) do
-		i:allowCollision(item)
-		item:allowCollision(i)
-	end
-	
-	self._equipped[slot] = nil
-	item._actor = nil	
-end
-
---
 --  Sets or gets the current animation
 --
 --  Inputs:
@@ -209,7 +168,7 @@ end
 --
 --  Discards an item from the Actor's inventory
 --  
-function InventoryActor:discardItem(item)
+function InventoryActor:removeItem(item)
 	for k, v in ipairs(self._inventory) do
 		if type(item) == 'string' then
 			if v:name() == item then 
@@ -220,7 +179,7 @@ function InventoryActor:discardItem(item)
 				table.remove(self._inventory, k)
 			end
 		elseif item.name then
-			if v:name() == item.name() then
+			if v:name() == item:name() then
 				table.remove(self._inventory, k)
 			end
 		end
@@ -261,4 +220,47 @@ function InventoryActor:addItem(item)
 	return true
 end
 
+--
+--  Equips an item
+--
+function InventoryActor:equipItem(slot, item)
+	-- ignore collisions between the items and the actor
+	self:ignoreCollision(item)	
+	item:ignoreCollision(self)	
+	-- ignore collisions between the equipped items
+	for _, i in pairs(self._equipped) do
+		i:ignoreCollision(item)
+		item:ignoreCollision(i)
+	end
+	
+	self._equipped[slot] = item
+	item._actor = self	
+	
+	if self._currentAnimation then
+		item:animation(self._currentAnimation:name())
+	end
+	
+	return true
+end
 
+
+--
+--  Unequips an item
+--
+function InventoryActor:unequipItem(slot)
+	local item = self._equipped[slot]
+	
+	-- allow collisions between the items and the actor
+	self:allowCollision(item)	
+	item:allowCollision(self)	
+	-- allow collisions between the equipped items
+	for _, i in pairs(self._equipped) do
+		i:allowCollision(item)
+		item:allowCollision(i)
+	end
+	
+	self._equipped[slot] = nil
+	item._actor = nil	
+	
+	return true
+end

@@ -151,7 +151,7 @@
 			text = '',
 			event = function(self) 
 				self._quest:complete()
-				self._hero:discardItem('questItem&&@NPC@&&@_noun##1@')
+				self._hero:removeItem('questItem&&@NPC@&&@_noun##1@')
 				self:finish()
 			end
 		}

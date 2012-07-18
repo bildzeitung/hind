@@ -1,7 +1,8 @@
 {
+	_baseTable = 'content/actors/item.dat',	
+	_slot = 'feet',
 	_name = 'plate_shoes',
 	_description = 'Plate Shoes',
-	_baseTable = 'content/actors/item.dat',	
 	_animations = 
 	{
 		inventory = 

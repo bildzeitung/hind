@@ -1,5 +1,5 @@
 {
-	_baseTable = 'content/actors/in_game_item.dat',
+	_baseTable = 'content/actors/item.dat',
 	_stackable = true,
 	_count = 0,
 	_maxCount = 5,	

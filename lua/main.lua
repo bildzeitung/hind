@@ -180,25 +180,25 @@ function createFloatingText(colour, actor, text)
 end
 
 --
---  Drop a coin
+--  Drop an item
 --
-function dropCoin(actor)
-	local coin = factories.createStaticActor('content/actors/coins.dat')
-	coin:position(actor._position[1], actor._position[2])	
-	coin:value(math.floor(math.random()*100))
-	coin:update(0)
-	coin:registerBuckets(buckets)
-end
-
---
---  Drop a potion
---
-function dropPotion(actor)
-	local potion = factories.createStaticActor('content/actors/potions.dat')
-	potion:position(actor._position[1], actor._position[2])	
-	potion:setType('weak','healing')
-	potion:update(0)
-	potion:registerBuckets(buckets)	
+function dropItem(actor)
+	-- drop an item
+	local item
+	
+	if math.random() > 0.25 then		
+		if math.random() > 0.25 then
+			item = factories.createStaticActor('content/actors/coins.dat')
+			item:value(math.floor(math.random()*100))
+		else
+			item = factories.createStaticActor('content/actors/potions.dat')
+			item:setType('weak','healing')
+		end
+						
+		item:position(actor._position[1], actor._position[2])	
+		item:update(0)
+		item:registerBuckets(buckets)		
+	end
 end
 
 --

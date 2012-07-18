@@ -39,12 +39,7 @@
 	end,		
 	on_end_die = function(self, other)			
 		removals[self._id] = self						
-		dropPotion(self)
-		--[[
-		if math.random() > 0.25 then
-			dropCoin(self)
-		end
-		]]
+		dropItem(self)
 	end,
 	on_begin_attack = function(self)
 	end,

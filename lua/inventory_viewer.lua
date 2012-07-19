@@ -129,8 +129,7 @@ function InventoryViewer:updateEquippedFrame()
 		i:SetParent(self._elements['equippedFrame'])			
 		local pos = equipPos[k]
 		i:SetPos(pos[1] - i:GetWidth()/2, pos[2] - i:GetHeight()/2)
-
-		i.OnClick = function()
+		i.OnClick = function()			
 			if self._hero:addItem(v) then
 				self._hero:unequipItem(k)
 				self:updateEquippedFrame()
@@ -162,10 +161,16 @@ function InventoryViewer:updateInventoryFrame()
 		i:SetPos(x - i:GetWidth()/2, y - i:GetHeight()/2)
 
 		i.OnClick = function()			
-			if self._hero:equipItem(v._slot, v) then
-				self._hero:removeItem(v)
-				self:updateEquippedFrame()
-				self:updateInventoryFrame()
+			-- equip item?
+			if v._slot then
+				if self._hero:equipItem(v._slot, v) then
+					self._hero:removeItem(v)
+					self:updateEquippedFrame()
+					self:updateInventoryFrame()
+				end
+			-- use item?
+			elseif v.use then
+				
 			end
 		end
 		

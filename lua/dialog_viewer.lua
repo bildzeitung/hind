@@ -118,6 +118,7 @@ end
 function DialogViewer:updateNPCFrame()
 	if self._currentDialog then
 		local branch = self._currentDialog:branch()		
+		if not branch then return end
 		local text = branch.text
 		if text then
 			if text:find(self._npc:name() .. '%-%>') then
@@ -193,6 +194,7 @@ function DialogViewer:updateHeroFrame()
 	
 	if self._currentDialog then		
 		local branch = self._currentDialog:branch()
+		if not branch then return end
 		if branch.options then	
 			for k, v in ipairs(branch.options) do
 				if self._availableOptions[k] then

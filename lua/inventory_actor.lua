@@ -173,14 +173,17 @@ function InventoryActor:removeItem(item)
 		if type(item) == 'string' then
 			if v:name() == item then 
 				table.remove(self._inventory, k)
+				return
 			end
 		elseif type(item) == 'number' then
 			if k == item then
 				table.remove(self._inventory, k)
+				return
 			end
 		elseif item.name then
 			if v:name() == item:name() then
 				table.remove(self._inventory, k)
+				return
 			end
 		end
 	end

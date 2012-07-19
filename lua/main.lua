@@ -264,12 +264,22 @@ function createActors()
 	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
 	local longSword = factories.createActorItem('content/actors/longsword.dat')
 
+	hero:addItem(longSword)
+	hero:addItem(platePants)
+	hero:addItem(plateShoes)
+	hero:addItem(chainHelmet)
+	hero:addItem(chainArmour)	
+	
+	hero:animation('standright')	
+	
+	--[[
 	hero:equipItem('weapon',longSword)		
 	hero:equipItem('legs',platePants)	
 	hero:equipItem('head',chainHelmet)	
 	hero:equipItem('torso',chainArmour)	
 	hero:equipItem('feet',plateShoes)	
-	hero:animation('standright')	
+	
+	]]
 	
 	hero.on_set_greed = function(self, newValue, justSet)
 		createFloatingText({0,255,255,255}, hero, 'Greed: ' .. justSet)

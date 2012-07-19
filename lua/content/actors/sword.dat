@@ -25,12 +25,12 @@
 	{
 		inventory = 
 		{	
-			_tileSet = 'longsword',
-			_offset = { 96, 128 },
+			_tileSet = 'inventory_items',
+			_offset = { 16, 16 },
 			_name = 'inventory',
-			_frameDuration = 0.10,
-			_frameStart = 13,
-			_frameEnd = 13,
+			_frameDuration = 1,
+			_frameStart = 1,
+			_frameEnd = 1,
 			_looping = 'loop'
 		},
 		standup = 

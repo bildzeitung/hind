@@ -7,12 +7,12 @@
 	{
 		inventory = 
 		{	
-			_tileSet = 'chain_armour',
-			_offset = { 32, 64.05 },
+			_tileSet = 'inventory_items',
+			_offset = { 16, 16 },
 			_name = 'inventory',
-			_frameDuration = 0.10,
-			_frameStart = 19,
-			_frameEnd = 19,
+			_frameDuration = 1,
+			_frameStart = 2,
+			_frameEnd = 2,
 			_looping = 'loop'
 		},
 		standup = 

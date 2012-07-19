@@ -71,6 +71,7 @@ function InventoryViewer:_clone(values)
 	o._elements['equippedTooltips'] = {}
 	o._elements['inventoryImages'] = {}
 	o._elements['inventoryTooltips'] = {}
+	o._elements['inventoryTexts'] = {}
 	
 	o:updateEquippedFrame()	
 	o:updateInventoryFrame()
@@ -103,8 +104,8 @@ function createImageForItem(item)
 	local itemImage = itemImage(item)		
 	local image = loveframes.Create('imagebutton')
 	image:SetImage(itemImage)
+	image:SizeToImage()
 	image:SetText('')
-	image:SizeToImage()  
 	local tooltip = loveframes.Create('tooltip')
 	tooltip:SetObject(image)
 	tooltip:SetPadding(2)
@@ -152,8 +153,11 @@ function InventoryViewer:updateInventoryFrame()
 	for k, v in ipairs(self._elements['inventoryTooltips']) do
 		v:Remove()
 	end
+	for k, v in ipairs(self._elements['inventoryTexts']) do
+		v:Remove()
+	end	
 	
-	local x, y = 16, 16
+	local x, y = 24, 24
 	for k, v in pairs(self._hero:inventory()) do
 		local i, t = createImageForItem(v)
 		i:SetParent(self._elements['inventoryFrame'])			
@@ -187,6 +191,8 @@ function InventoryViewer:updateInventoryFrame()
 			text:SetPos(x + 16 - font:getWidth(count),
 				y + 16 - font:getHeight(count))
 			text:SetFont(font)
+			
+			table.insert(self._elements['inventoryTooltips'], text)
 		end
 		x = x + 40
 		if x > self._elements['inventoryFrame']:GetWidth() - 32 then

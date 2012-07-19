@@ -26,9 +26,9 @@
 		removals[self._id] = self				
 	end,
 	on_collide = function(self, other)
-		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other.doDamage then	
+		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other.health then	
 			if not self._collidees[other._id] then
-				self:doDamage(other)				
+				other:health(-self._damage, false, self._actor)
 				self._collidees[other._id] = true
 			end
 		end

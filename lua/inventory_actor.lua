@@ -69,9 +69,10 @@ function InventoryActor:animation(a, r)
 			for _, item in pairs(self._equipped) do
 				if item._currentAnimation._frameStart == anim._frameStart and
 					item._currentAnimation._frameEnd == anim._frameEnd then
-					item._currentAnimation._frameCounter = anim._frameCounter
-					item._currentAnimation._frameDir = anim._frameDir
-					item._currentAnimation._currentFrame = anim._currentFrame
+				
+						item._currentAnimation._frameCounter = anim._frameCounter
+						item._currentAnimation._frameDir = anim._frameDir
+						item._currentAnimation._currentFrame = anim._currentFrame
 				end
 			end
 		end
@@ -115,20 +116,6 @@ function InventoryActor:collide(other)
 	for _, item in pairs(self._equipped) do
 		item:update(0)
 	end	
-end
-
---
---  Does damaga
---
-function InventoryActor:doDamage(other)
-	if self._damage then
-		other:takeDamage(self._damage, self)
-	else
-		local weapon = self._equipped['weapon']
-		if weapon then
-			other:takeDamage(weapon._damage, self)
-		end	
-	end
 end
 
 --
@@ -187,7 +174,7 @@ end
 function InventoryActor:removeItem(item)
 	for k, v in ipairs(self._inventory) do
 		if type(item) == 'string' then
-			if v:name() == item then 
+			if v:name() == item and v._count == item._count then 				
 				table.remove(self._inventory, k)
 				return
 			end
@@ -197,7 +184,7 @@ function InventoryActor:removeItem(item)
 				return
 			end
 		elseif item.name then
-			if v:name() == item:name() then
+			if v:name() == item:name() and v._count == item._count then
 				table.remove(self._inventory, k)
 				return
 			end

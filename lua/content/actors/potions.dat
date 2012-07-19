@@ -1,8 +1,19 @@
 {
+	_static = 
+	{
+		potionValues = 
+		{
+			healing = 
+			{
+				weak = 20,
+				medium = 50
+			}
+		}
+	},
 	_baseTable = 'content/actors/item.dat',	
 	_stackable = true,
 	_count = 0,
-	_maxCount = 25,	
+	_maxCount = 25,
 	setType = function(self, strength, effect)
 		self._name = strength .. '_' .. effect
 		self._description = strength .. ' ' .. effect .. ' potion'
@@ -10,10 +21,32 @@
 		self._strength = strength
 		self:animation(self._name .. '_game')				
 	end,
-	use = function()
-		if self._effect == 'healing' then
-			other:heal(self._strength)
+	use = function(self, other)
+		if self._stackable then
+			if self._count < 1 then return nil end
 		end
+		
+		if self._effect == 'healing' then
+			if other:health() == other:maxHealth() then
+				return nil
+			end		
+			other:health(objects.static.potionValues.healing[self._strength])
+		end
+		
+		local remove = not self._stackable
+		
+		if self._stackable then
+			self._count = self._count - 1
+			if self._count == 0 then
+				remove = true
+			end
+		end
+		
+		if remove then
+			other:removeItem(self)
+		end
+		
+		return true
 	end,
 	_animations = 
 	{

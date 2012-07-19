@@ -3,6 +3,8 @@
 	dead = false,
 	HERO = true,
 	_maxInventoryCount = 72,
+	_maxHealth = 50,
+	_health = 50,
 	_attributes = 
 	{
 		experience = 0, gold = 0, greed = 0,
@@ -26,6 +28,15 @@
 			end			
 		end
 	end,
+	on_set_health = function(self, newValue, justset)
+		if justset < 0 then
+			createFloatingText({255,0,0,255},self, -justset)
+			soundEffects['human_hurt_1']:rewind()
+			love.audio.play(soundEffects['human_hurt_1'])		
+		else
+			createFloatingText({0,255,0,255},self, justset)
+		end
+	end,	
 	on_begin_spellcast = function(self)
 		local spell = self._spells[self._currentSpell]
 		if spell[3] > self._mana then return false end
@@ -64,11 +75,6 @@
 		if weapon then
 			weapon:on_end_attack()
 		end
-	end,
-	on_take_damage = function(self, damage)
-		createFloatingText({255,0,0,255},self, damage)
-		soundEffects['human_hurt_1']:rewind()
-		love.audio.play(soundEffects['human_hurt_1'])		
 	end,
 	on_begin_die = function(self, other)		
 		self:velocity(0,0)

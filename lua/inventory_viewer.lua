@@ -174,7 +174,10 @@ function InventoryViewer:updateInventoryFrame()
 				end
 			-- use item?
 			elseif v.use then
-				
+				if v:use(self._hero) then
+					self:updateEquippedFrame()
+					self:updateInventoryFrame()
+				end
 			end
 		end
 		

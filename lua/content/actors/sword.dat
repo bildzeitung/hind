@@ -12,13 +12,13 @@
 	end,
 	on_collide = function(self, other)
 		if self._actor and self._actor._currentAction == 'attack' 
-			and other._currentAction ~= 'die' and other.doDamage then		
-			if not self._collidees[other._id] then	
-				soundEffects['sword_cut_2']:rewind()
-				love.audio.play(soundEffects['sword_cut_2'])			
-				self._actor:doDamage(other)				
-				self._collidees[other._id] = true
-			end
+			and other._currentAction ~= 'die' and other.health then		
+				if not self._collidees[other._id] then	
+					soundEffects['sword_cut_2']:rewind()
+					love.audio.play(soundEffects['sword_cut_2'])			
+					other:health(-self._damage, false, self._actor)
+					self._collidees[other._id] = true
+				end
 		end
 	end,
 	_animations = 

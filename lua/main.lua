@@ -365,7 +365,7 @@ function love.draw()
 			love.graphics.setPixelEffect()
 			
 			love.graphics.setFont(largeFont)
-			love.graphics.print('HEALTH: ' .. hero._health, 10, 10)			
+			love.graphics.print('HEALTH: ' .. hero:health() .. '/' .. hero._maxHealth, 10, 10)			
 			love.graphics.print('GOLD: ' .. hero:gold(), 250, 10)
 			love.graphics.print('EXPERIENCE: ' .. hero:experience(), 500, 10)			
 			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						

@@ -1,5 +1,7 @@
 {
 	_name = 'Slime',
+	_damage = 5,
+	_health = 15,
 	AI = function(self)
 		if self._currentAction ~= 'die' then
 			if self._currentAction ~= 'attack' and math.random() > 0.95 then
@@ -28,8 +30,10 @@
 			end										
 		end				
 	end,
-	on_take_damage = function(self, damage)
-		createFloatingText({255,0,0,255},self, damage)
+	on_set_health = function(self, newValue, justset)
+		if justset < 0 then
+			createFloatingText({255,0,0,255},self, -justset)
+		end
 	end,
 	on_begin_die = function(self)		
 		self:velocity(0,0)
@@ -50,12 +54,11 @@
 	on_collide = function(self, other)
 		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other._id and other.HERO then
 			if not self._collidees[other._id] then
-				self:doDamage(other)				
+				other:health(-self._damage, false, self)
 				self._collidees[other._id] = true
 			end
 		end
 	end,
-	_damage = 5,
 	_animations = 
 	{
 		standup = 

@@ -41,7 +41,17 @@ local function readTableFromFile(filename)
 		local ot = readTableFromFile(t._baseTable)
 		t._baseTable = nil
 		t = table.merge(ot, t)
+		
+		if t._static then
+			if not objects.static then
+				objects.static = {}
+			end
+			objects.static = table.merge(objects.static, t._static)
+			t._static = nil
+		end		
 	end
+	
+	
 	
 	return t
 end

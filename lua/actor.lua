@@ -23,7 +23,7 @@ Actor = Object{}
 --
 --		on_begin_X() - will be called when the actor begins an action
 --		on_end_X() - will be called when the actor begins an action
---		on_take_damage(damage) - will be called when the actor takes damage
+--		on_set_health() - will be called when health is updated
 --
 
 --
@@ -40,7 +40,8 @@ function Actor:_clone(values)
 	o._map = nil
 	o.ACTOR = true
 	o._currentAction = nil	
-	o._health = 20	
+	o._maxHealth = 0
+	o._health = 0
 	
 	return o
 end
@@ -187,32 +188,6 @@ function Actor:collide(other)
 end
 
 --
---  Takes damage
---
-function Actor:takeDamage(damage, other)
-	self._health = self._health - damage	
-
-	if self.on_take_damage then
-		self:on_take_damage(damage)
-	end
-	
-	if self._health <= 0 then
-		self._health = 0
-		self._killer = other
-		self:action('die', true)
-	end
-end
-
---
---  Does damaga
---
-function Actor:doDamage(other)
-	if self._damage then
-		other:takeDamage(self._damage, self)
-	end	
-end
-
---
 --  Sets or gets the actors name
 --
 function Actor:name(n)
@@ -243,4 +218,44 @@ end
 --
 function Actor:dialogs()
 	return self._dialogs
+end
+
+--
+--  Sets or gets the Actor's health
+--
+function Actor:health(value, absolute, other)
+	if not value then return self._health end
+	
+	if absolute then 
+		self._health = value
+	else
+		self._health = self._health + value
+	end
+	
+	if self._health > self._maxHealth then
+		self._health = self._maxHealth		
+	end
+	
+	if self._health <= 0 then
+		self._health = 0
+		self._killer = other
+		self:action('die', true)
+	end	
+	
+	if self.on_set_health then
+		self:on_set_health(self._health, value)
+	end	
+end
+
+--
+--  Sets or gets the Actor's maxHealth
+--
+function Actor:maxHealth(value, absolute)
+	if not value then return self._maxHealth end
+	
+	if absolute then 
+		self._maxHealth = value
+	else
+		self._maxHealth = self._maxHealth + value
+	end
 end

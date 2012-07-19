@@ -364,7 +364,6 @@ function love.draw()
 			love.graphics.setColor(255,255,255,255)		
 			love.graphics.setPixelEffect()
 			
-			--[[
 			love.graphics.setFont(largeFont)
 			love.graphics.print('HEALTH: ' .. hero._health, 10, 10)			
 			love.graphics.print('GOLD: ' .. hero:gold(), 250, 10)
@@ -372,19 +371,18 @@ function love.draw()
 			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
 			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
 			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
-			]]
 			
 			love.graphics.setFont(smallFont)		
 
 			local y = 0
 			for k, v in ipairs(hero._inventory) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 500, y)
+				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 750, y)
 				y=y+20
 			end
 			
 			local y = 0
 			for k, v in pairs(hero._equipped) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 750, y)
+				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 900, y)
 				y=y+20
 			end
 			

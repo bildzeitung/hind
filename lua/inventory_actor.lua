@@ -52,12 +52,28 @@ end
 --		r - true if the animation should be reset
 --
 function InventoryActor:animation(a, r)	
+	if a and self._currentAnimation then
+		self._currentAnimation.on_frame_change = nil
+	end
+	
 	local ret = Drawable.animation(self, a, r)
 	
 	if a then
 		-- set the animations for the equipped items
 		for _, item in pairs(self._equipped) do
 			item:animation(a, r)
+		end
+	
+		-- sync the animations
+		self._currentAnimation.on_frame_change = function(anim)
+			for _, item in pairs(self._equipped) do
+				if item._currentAnimation._frameStart == anim._frameStart and
+					item._currentAnimation._frameEnd == anim._frameEnd then
+					item._currentAnimation._frameCounter = anim._frameCounter
+					item._currentAnimation._frameDir = anim._frameDir
+					item._currentAnimation._currentFrame = anim._currentFrame
+				end
+			end
 		end
 	end
 	

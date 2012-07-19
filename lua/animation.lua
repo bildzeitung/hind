@@ -62,7 +62,11 @@ function Animation:update(dt)
 					self.done_cb(self)
 				end
 			end
-		end		
+		end	
+
+		if self.on_frame_change then
+			self:on_frame_change()
+		end
 	end
 end
 

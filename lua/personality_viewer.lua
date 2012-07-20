@@ -97,29 +97,6 @@ function PersonalityViewer:updatePersonalityFrame()
 		table.insert(self._elements['items'], pb)
 		
 	end
-	
-	--[[
-	for k, v in ipairs(self._elements['equippedTooltips']) do
-		v:Remove()
-	end
-	
-	for k, v in pairs(self._hero:equipped()) do
-		local i, t = createImageForItem(v)
-		i:SetParent(self._elements['equippedFrame'])			
-		local pos = equipPos[k]
-		i:SetPos(pos[1] - i:GetWidth()/2, pos[2] - i:GetHeight()/2)
-		i.OnClick = function()			
-			if self._hero:addItem(v) then
-				self._hero:unequipItem(k)
-				self:updateEquippedFrame()
-				self:updateInventoryFrame()
-			end
-		end
-		
-		table.insert(self._elements['equippedImages'], i)
-		table.insert(self._elements['equippedTooltips'], t)
-	end
-	]]
 end
 
 -- 

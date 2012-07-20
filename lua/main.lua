@@ -12,6 +12,7 @@ require 'libraries.loveframes'
 require 'dialog_generator'
 require 'dialog_viewer'
 require 'inventory_viewer'
+require 'personality_viewer'
 
 function love.load()	
 	profiler = objects.Profiler{}	
@@ -257,7 +258,29 @@ function createActors()
 				return self['on_set_' .. k](self, self['_'..k], value) 
 			end
 		end
+	end	
+	hero._attributes = nil
+	
+	for k, v in pairs(hero._personality) do
+		hero['_'..k] = 0		
+		hero[k] = function(self, value, absolute)
+			if not value then
+				return self['_'..k]
+			end
+			
+			if absolute then
+				self['_'..k] = value
+			else
+				self['_'..k] = self['_'..k] + value
+			end
+			
+			if self['on_set_' .. k]  then
+				return self['on_set_' .. k](self, self['_'..k], value) 
+			end
+		end
 	end
+	hero:social(-500)
+	hero:violence(500)
 	
 	hero:name('Sir Gallahad')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
@@ -545,7 +568,17 @@ function love.update(dt)
 					inventoryViewer.on_close = function(self)
 						overlays[inventoryViewer] = nil
 					end
-				end				
+				end		
+				
+				if love.keyboard.isDown('p') then
+					hero:velocity(0,0)
+					hero:animation('stand' .. hero:direction(), true)
+					personalityViewer = objects.PersonalityViewer{ hero }
+					overlays[personalityViewer] = true
+					personalityViewer.on_close = function(self)
+						overlays[personalityViewer] = nil
+					end
+				end	
 			end
 							
 			if love.keyboard.isDown('q') then

@@ -40,7 +40,7 @@ local equipPos =
 }
 
 --
---  DialogViewer constructor
+--  InventoryViewer constructor
 --
 function InventoryViewer:_clone(values)
 	local o = Object._clone(self,values)
@@ -120,9 +120,11 @@ end
 function InventoryViewer:updateEquippedFrame()
 	for k, v in ipairs(self._elements['equippedImages']) do
 		v:Remove()
+		self._elements['equippedImages'][k] = nil
 	end
 	for k, v in ipairs(self._elements['equippedTooltips']) do
 		v:Remove()
+		self._elements['equippedTooltips'][k] = nil
 	end
 	
 	for k, v in pairs(self._hero:equipped()) do
@@ -149,12 +151,15 @@ end
 function InventoryViewer:updateInventoryFrame()
 	for k, v in ipairs(self._elements['inventoryImages']) do
 		v:Remove()
+		self._elements['inventoryImages'][k] = nil
 	end
 	for k, v in ipairs(self._elements['inventoryTooltips']) do
 		v:Remove()
+		self._elements['inventoryTooltips'][k] = nil
 	end
 	for k, v in ipairs(self._elements['inventoryTexts']) do
 		v:Remove()
+		self._elements['inventoryTexts'][k] = nil
 	end	
 	
 	local x, y = 24, 24
@@ -206,7 +211,7 @@ function InventoryViewer:updateInventoryFrame()
 end
 
 -- 
---  Closes the DialogViewer
+--  Closes the InventoryViewer
 -- 
 function InventoryViewer:close()
 	for k, v in pairs(self._elements) do

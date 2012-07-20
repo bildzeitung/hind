@@ -86,7 +86,7 @@ function progressbar:update(dt)
 			self.lerpvalue = self.max
 		end
 	else
-		self.progress = self.value/self.max * self.width
+		self.progress = (self.value - self.min) / (self.max - self.min) * self.width
 		
 		-- min check
 		if self.value < self.min then

@@ -5,11 +5,40 @@
 	_maxInventoryCount = 72,
 	_maxHealth = 50,
 	_health = 50,
+	_experience = 0,
+	_gold = 0,
 	_attributes = 
 	{
-		experience = 0, gold = 0, greed = 0,
-		likeable = 0, luck = 0, alignment = 0,
-		mana = 200, manaRegen = 100, currentSpell = 1
+		experience = 0, gold = 0, mana = 200, manaRegen = 100, 
+		currentSpell = 1
+	},
+	_personality =
+	{
+		greed = { 'Giving', 'Greedy' },
+		charm = { 'Personable', 'Grumpy' },
+		lawfulness = { 'Lawful', 'Unlawful' },
+		spirituality = { 'Spiritual', 'Athiest' },
+		temperment = { 'Calm', 'Hot Tempered' },
+		luck = { 'Lucky', 'Unlucky' },
+		social = { 'Extrovert', 'Introvert' },
+		compassion = { 'Compassionate', 'Cold Blooded' },
+		violence = { 'Non-violent', 'Violent' },
+		courage = { 'Brave', 'Afraid' },
+		physicality = { 'Strong', 'Weak' },
+		curiousity = { 'Curious', 'Rigid' },
+		nature = { 'Nature Lover', 'Nature Hater' },
+		technology = { 'Technological', 'Simple' },
+		honesty = { 'Honest', 'Dishonest' },
+		racism = { 'Accepting', 'Racist' },
+		sexism = { 'Equal', 'Sexist' },
+		organized = { 'Organized', 'Disorganized' },
+		forgiveness = { 'Forgiving', 'Grudging' },
+		outlook = { 'Optimistic', 'Pessimistic' },
+		wisdom = { 'Wise', 'Foolish' },
+		intelligence = { 'Smart', 'Dumb' },
+		gullable = { 'Naive', 'Street-Smart' },
+		attractiveness = { 'Flirtatious', 'Awkward' },
+		competitiveness = { 'Competitive', 'Uncompetitive' }
 	},
 	_spells = 
 	{

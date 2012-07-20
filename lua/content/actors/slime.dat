@@ -2,6 +2,7 @@
 	_name = 'Slime',
 	_damage = 5,
 	_health = 15,
+	_maxHealth = 15,
 	AI = function(self)
 		if self._currentAction ~= 'die' then
 			if self._currentAction ~= 'attack' and math.random() > 0.95 then

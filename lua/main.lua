@@ -73,6 +73,7 @@ function love.load()
 	
 	npc = factories.createActor('content/actors/male_human.dat')
 	npc._health = 2000
+	npc._maxHealth = 2000
 	npc:animation('standright')
 	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
 	npc:map(daMap)
@@ -357,6 +358,14 @@ function love.draw()
 				end		
 			end
 		end)
+		
+	--[[
+	for v, _ in pairs(visibleActors) do
+		if v._health then
+			love.graphics.print(tostring(v._health), v._screenPos[1], v._screenPos[2])
+		end		
+	end
+	]]
 
 	-- draw info text
 	profiler:profile('drawing info text', 	

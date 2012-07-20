@@ -40,8 +40,8 @@ function Actor:_clone(values)
 	o._map = nil
 	o.ACTOR = true
 	o._currentAction = nil	
-	o._maxHealth = 0
-	o._health = 0
+	o._health = values._health or 0
+	o._maxHealth = values._maxHealth or o._health
 	
 	return o
 end

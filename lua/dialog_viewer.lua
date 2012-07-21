@@ -87,7 +87,7 @@ function DialogViewer:_clone(values)
 		o:selectDialog(k)
 	end
 	
-	if o._elements['npcName']:GetVisible() then
+	if o._elements['npcName'] then
 		o._elements['npcName']:SetText{{255, 255, 0, 255}, dialog._npc:name()}
 		o._elements['heroName']:SetText{{255, 255, 0, 255},dialog._hero:name()}
 		o:updateNPCFrame()
@@ -235,9 +235,11 @@ function DialogViewer:close()
 		if not v.Remove then
 			for k2, v2 in pairs(v) do
 				v2:Remove()
+				v[k2] = nil
 			end
 		else
 			v:Remove()
+			self._elements[k] = nil
 		end
 	end	
 
@@ -293,7 +295,7 @@ function DialogViewer:keypressed(key, unicode)
 		end
 	end
 
-	if self._elements['npcFrame']:GetVisible() then
+	if self._elements['npcFrame'] then
 		self:updateNPCFrame()
 		self:updateHeroFrame()	
 	end

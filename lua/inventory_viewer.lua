@@ -218,9 +218,11 @@ function InventoryViewer:close()
 		if not v.Remove then
 			for k2, v2 in pairs(v) do
 				v2:Remove()
+				v[k2] = nil
 			end
 		else
 			v:Remove()
+			self._elements[k] = nil
 		end
 	end	
 

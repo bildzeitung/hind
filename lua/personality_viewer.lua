@@ -81,7 +81,7 @@ function PersonalityViewer:updatePersonalityFrame()
 		pb:SetParent(self._elements['frame'])
 		pb:SetSize(200, 15)
 		pb:SetLerp(false)
-		pb:SetMinMax(-1000,1000)
+		pb:SetMinMax(-575,575)
 		pb:SetValue(self._hero[k](self._hero))
 		pb:SetPos(x - pb:GetWidth() / 2, y)
 		

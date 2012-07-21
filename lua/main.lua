@@ -279,8 +279,6 @@ function createActors()
 			end
 		end
 	end
-	hero:social(-500)
-	hero:violence(500)
 	
 	hero:name('Sir Gallahad')
 	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')

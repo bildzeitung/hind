@@ -244,39 +244,24 @@ end
 			direction, color, colormod)
 	- desc: draws a gradient
 --]]---------------------------------------------------------
-function skin.DrawGradient(x, y, width, height, direction, color, colormod, totalWidth)
+function skin.DrawGradient(x, y, width, height, direction, color, colormod)
 
 	local color = color
 	local colormod = colormod or 0
 	local percent = 0
 	local once = false
 		
-	if direction == "up" then	
+	if direction == "up" then
+	
 		for i=1, height - 1 do
 			percent = i/height * 255
 			color = {color[1], color[2], color[3], loveframes.util.Round(percent)}
 			love.graphics.setColor(unpack(color))
 			love.graphics.rectangle("fill", x, y + i, width, 1)
-		end	
-	elseif direction == "left" then	
-		local r = color[1]
-		local g = color[2]
-		local b = color[3]
-		local a = color[4]
-		local dr = (colormod[1] - color[1]) / totalWidth
-		local dg = (colormod[2] - color[2]) / totalWidth
-		local db = (colormod[3] - color[3]) / totalWidth
-		local da = (colormod[4] - color[4]) / totalWidth
-		
-		for i = 0, width - 1 do
-			love.graphics.setColor(r,g,b,a)
-			love.graphics.line(x + i, y + 1, x + i, y + height - 2)
-			r = r + dr
-			g = g + dg
-			b = b + db
-			a = a + da
-		end	
+		end
+	
 	end
+	
 end
 
 --[[---------------------------------------------------------
@@ -534,7 +519,7 @@ function skin.DrawImageButton(object)
 
 end
 
---[[---------------------------------------------------------
+--[[--------------------------------------------------------
 	- func: DrawProgressBar(object)
 	- desc: draws the progress bar object
 --]]---------------------------------------------------------
@@ -546,23 +531,15 @@ function skin.DrawProgressBar(object)
 	local gradientcolor = {}
 	
 	-- progress bar body
-	--[[
 	love.graphics.setColor(unpack(skin.controls.progressbar_body_color))
-	love.graphics.rectangle("fill", object:GetX(), object:GetY(), object:GetWidth(), object:GetHeight())	
+	love.graphics.rectangle("fill", object:GetX(), object:GetY(), object:GetWidth(), object:GetHeight())
 	love.graphics.setColor(unpack(skin.controls.progressbar_bar_color))
 	love.graphics.rectangle("fill", object:GetX(), object:GetY(), object.progress, object:GetHeight())
-	]]
-	
-	if object.StartColor and object.EndColor then
-		skin.DrawGradient(object:GetX(), object:GetY(), object.progress, object:GetHeight(), "left", object.StartColor, object.EndColor, object:GetWidth())
-	else
-		gradientcolor = {skin.controls.progressbar_bar_color[1], skin.controls.progressbar_bar_color[2] - 20, skin.controls.progressbar_bar_color[3], 255}
-		skin.DrawGradient(object:GetX(), object:GetY(), object.progress, object:GetHeight(), "up", gradientcolor)
-	end
-	
-	--love.graphics.setFont(font)
-	--love.graphics.setColor(unpack(skin.controls.progressbar_text_color))
-	--love.graphics.print(object.value .. "/" ..object.max, object:GetX() + object:GetWidth()/2 - twidth/2, object:GetY() + object:GetHeight()/2 - theight/2)
+	gradientcolor = {skin.controls.progressbar_bar_color[1], skin.controls.progressbar_bar_color[2] - 20, skin.controls.progressbar_bar_color[3], 255}
+	skin.DrawGradient(object:GetX(), object:GetY(), object.progress, object:GetHeight(), "up", gradientcolor)
+	love.graphics.setFont(font)
+	love.graphics.setColor(unpack(skin.controls.progressbar_text_color))
+	love.graphics.print(object.value .. "/" ..object.max, object:GetX() + object:GetWidth()/2 - twidth/2, object:GetY() + object:GetHeight()/2 - theight/2)
 	
 	-- progress bar border
 	love.graphics.setColor(unpack(skin.controls.progressbar_border_color))

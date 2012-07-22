@@ -6,6 +6,8 @@
 
 local Object = (require 'object').Object
 
+local log = require 'log'
+
 local pairs, table, print
 	= pairs, table, print
 	
@@ -112,8 +114,10 @@ function Collidable:registerBuckets(buckets)
 	-- calculates the spatial buckets
 	self._bucketIds = self:spatialBuckets(buckets)
 	
+	log.log('===== BUCKET IDS! ======')		
 	-- register the new buckets ids
 	for k, _ in pairs(self._bucketIds) do
+		log.log(k)
 		buckets[k][self._id] = self
 	end	
 end

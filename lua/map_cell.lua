@@ -10,8 +10,8 @@ local Object = (require 'object').Object
 
 local log = require 'log'
 
-local string, love 
-	= string, love
+local string, pairs, love 
+	= string, pairs, love
 
 module('objects')
 
@@ -115,4 +115,55 @@ end
 --
 function MapCell:size()
 	return self._size
+end
+
+--
+--  Returns the spatial buckets 
+--  that the object currently occupies
+--
+function MapCell:spatialBuckets(buckets)
+	local tss = self._tileSet:size()
+	
+	local ids = {}
+
+	for y = self._extents[2] * tss[2], self._extents[4] * tss[2], Map.bucketCellSize do
+		for x = self._extents[1] * tss[1], self._extents[3] * tss[1], Map.bucketCellSize do
+			ids[buckets.hash(x, y)] = true
+		end
+	end
+	
+	return ids
+end
+
+--
+--  Registers the map cell in the proper
+--	collision buckets - creating them if necessary
+--
+function MapCell:registerBuckets(buckets)
+	-- calculates the spatial buckets
+	self._bucketIds = self:spatialBuckets(buckets)
+	
+	-- register the new buckets ids
+	for k, _ in pairs(self._bucketIds) do
+		if not buckets[k] then
+			buckets[k] = {}
+			buckets['count' .. k] = 1
+		else
+			buckets['count' .. k] = buckets['count' .. k] + 1
+		end		
+	end	
+end
+
+--
+--  Unregisters the map cell from the proper 
+--	collision buckets - removing them if necessary
+--
+function MapCell:unregisterBuckets(buckets)
+	-- unregister the buckets ids
+	for k, _ in pairs(self._bucketIds) do
+		buckets['count' .. k] = buckets['count' .. k] - 1
+		if buckets['count' .. k] == 0 then
+			buckets[k] = nil
+		end		
+	end	
 end

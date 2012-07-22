@@ -82,7 +82,7 @@ function DialogGenerator:dialog(params)
 	-- replace && with _
 	dialogScript = dialogScript:gsub('%&%&', '_')
 	
-	log.log(dialogScript)
+	--log.log(dialogScript)
 	
 	-- generate a table from the dialog script
 	local t = loadstring('return ' .. dialogScript)()
@@ -181,7 +181,7 @@ function DialogGenerator:dialog(params)
 		end
 	end
 	
-	log.log(table.dump(t))
+	--log.log(table.dump(t))
 	
 	local d = Dialog(t)
 	

@@ -56,18 +56,27 @@ function love.load()
 	-- the size of the world
 	local worldX = 500 * 32
 	local worldY = 500 * 32
-	buckets = createBuckets(250, worldX, worldY)
+
+	daCamera = factories.createCamera()
+	daCamera:window(500000*32,500000*32,screenWidth,screenHeight)
+	daCamera:viewport(0,0,screenWidth,screenHeight)
 		
-	daMap = factories.createMap('outdoor')--[[, { worldX / 32, worldY / 32 })]]
-	daMap:generate(500000,500000,640,640)
+	daMap = factories.createMap('outdoor')
+	daMap:generate(499900,499900,1024,1024)
 	--[[
 	daMap:transitions()
-	daMap:createColliders(buckets)
-	]]
-	
-	daCamera = factories.createCamera()
-	daCamera:window(2000,2000,screenWidth,screenHeight)
-	daCamera:viewport(0,0,screenWidth,screenHeight)
+	daMap:createColliders()
+	]]	
+	daMap:calculateMinMax(daCamera, {1,1,1,1})
+	daMap:visibleCells()
+		
+	log.log('===============================')
+	for k, v in pairs(daMap._buckets) do
+		if type(v) == 'table' then
+			log.log(k)
+		end
+	end
+	log.log('===============================')
 	
 	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
 	
@@ -77,7 +86,6 @@ function love.load()
 	npc._health = 2000
 	npc._maxHealth = 2000
 	npc:animation('standright')
-	--npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
 	npc:position(500000*32,500000*32)
 	npc:map(daMap)
 	actors[npc._id] = npc
@@ -111,10 +119,11 @@ function love.load()
 	-- add the actors to the collision buckets
 	for k, v in pairs(actors) do
 		v:update(0.16)
-		--v:registerBuckets(buckets)
-	end	
+		v:registerBuckets(daMap._buckets)
+	end		
+	
 	-- add the map collision items
-	--daMap:registerBuckets(buckets)	
+	--daMap:registerBuckets()	
 	
 	--@TODO in a cave with a flashlight or similar
 	--[[
@@ -140,28 +149,8 @@ function love.load()
 	state = 'normalGame'
 	
 	overlays = {}
-end
-
---
---  Creates and returns the collision buckets
---
-function createBuckets(cellSize, worldX, worldY)
-	local b = {}
-
-	b.cellSize = cellSize
-	b.columns = math.floor(worldX / b.cellSize)
-	b.rows = math.floor(worldY / b.cellSize)	
-	b.hash = function(x,y)
-		return math.floor(math.floor(x / b.cellSize) +
-				(math.floor(y / b.cellSize) * b.columns)) + 1
-	end		
 	
-	-- create new collision buckets
-	for i = 1, b.columns * b.rows do
-		b[i] = {}
-	end
-	
-	return b
+	firstTime = true
 end
 
 --
@@ -195,7 +184,7 @@ function createItem(description, position, cb)
 	item:position(position[1], position[2])
 	if cb then cb(item) end
 	item:update(0)
-	--item:registerBuckets(buckets)			
+	item:registerBuckets(daMap._buckets)
 end
 
 --
@@ -328,12 +317,12 @@ function createActors()
 	
 	-- put the hero in the middle of the map for fun
 	--hero:position(size[1]/2,size[2]/2)
-	hero:position(500004*32, 500000*32)
+	hero:position(500008*32, 500000*32)
 	hero:map(daMap)
 	table.insert(actors, hero)
 
 	--createBunchOPotions(hero:position())
-				
+--[[				
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
@@ -344,6 +333,7 @@ function createActors()
 		a:map(daMap)
 		actors[a._id] = a
 	end	
+	]]
 	
 	print()
 end
@@ -366,7 +356,7 @@ function love.draw()
 			if showCollisionBoundaries then
 				local cw = daCamera:window()
 				for k, _ in pairs(visibleIds) do
-					for _, v in pairs(buckets[k]) do
+					for _, v in pairs(daMap._buckets[k]) do
 						if v._boundary then
 							local b = v._boundary
 							love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
@@ -424,13 +414,24 @@ function love.draw()
 			if drawInfoText then
 				local y = 85
 				for k, v in pairs(hero._bucketIds) do
-					local count = table.count(buckets[k])
-					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
+					local count = table.count(daMap._buckets[k])
+					love.graphics.print('HERO BUCKET ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
 					y = y + 20
 				end
+
+				--for k, v in pairs(visibleIds) do
+					love.graphics.print('VISIBLE ID: '..table.count(visibleIds), 10, y)		
+					y = y + 20
+					
+					love.graphics.print('CELLS IN MEMORY '..table.count(daMap._cellsInMemory), 10, y)		
+					y = y + 20					
+				--end
+
 				
-				love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
-				y=y+20		
+				if hero._latestDt then
+					love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
+					y=y+20		
+				end
 				
 				love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
 					hero._position[2], 10, y)		
@@ -610,6 +611,8 @@ function love.update(dt)
 				zoom = zoom - 0.01
 			end	
 			
+			if zoom < 0.2 then zoom = 0.2 end
+			
 			if love.keyboard.isDown('h') then
 				showCollisionBoundaries = true
 			end		
@@ -716,7 +719,7 @@ function love.update(dt)
 	for k, v in pairs(removals) do		
 		-- unregister the actor from the buckets
 		for b, _ in pairs(v._bucketIds) do
-			buckets[b][v._id] = nil
+			daMap._buckets[b][v._id] = nil
 		end				
 		-- remove actor from actor list
 		actors[k] = nil
@@ -754,7 +757,7 @@ function love.update(dt)
 	profiler:profile('updating collision buckets', 
 		function()			
 			for a, _ in pairs(visibleActors) do
-				--a:registerBuckets(buckets)
+				a:registerBuckets(daMap._buckets)
 			end	
 	end)
 	
@@ -762,7 +765,7 @@ function love.update(dt)
 	profiler:profile('testing collisions', 
 		function()				
 			for a, _ in pairs(visibleActors) do
-				a:checkCollision(buckets)
+				a:checkCollision(daMap._buckets)
 			end	
 		end)
 		
@@ -773,13 +776,11 @@ function love.update(dt)
 			daCamera:center(hero._position[1], hero._position[2])
 		end)
 	
-	--[[
 	-- get the list of visible ids
 	profiler:profile('getting list of ids near map centre', 
 		function()
-			visibleIds = daMap:nearIds(daCamera, buckets, 2)
+			visibleIds = daMap:visibleIds(daCamera, buckets, 2)
 		end)
-	]]
 	
 	-- clear the list of visible items
 	profiler:profile('wiping out old visible items',
@@ -796,15 +797,17 @@ function love.update(dt)
 	profiler:profile('generating list of visible items',
 		function()				
 			for k, _ in pairs(visibleIds) do
-				for _, v in pairs(buckets[k]) do
-					if v.ACTOR or v.STATICACTOR then
-						visibleActors[v] = true
+				for _, v in pairs(daMap._buckets[k]) do
+					if type(v) == 'table' then
+						if v.ACTOR or v.STATICACTOR then
+							visibleActors[v] = true
+						end
+						-- map objects that you can collide with but
+						-- never interact with
+						if v._image then
+							visibleObjects[v] = true
+						end	
 					end
-					-- map objects that you can collide with but
-					-- never interact with
-					if v._image then
-						visibleObjects[v] = true
-					end	
 				end
 			end	
 		end)

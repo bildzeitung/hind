@@ -121,25 +121,7 @@ function Map:update(dt, camera, profiler)
 	--[[
 	profiler:profile('Map first part of update',
 		function()		
-			local cw = camera:window()
-			local cv = camera:viewport()
-			
-			self._zoom[1] = cv[3] / cw[3]
-			self._zoom[2] = cv[3] / cw[3]
-			
-			local ts = self._tileSet:size()	
-			
-			-- get the left, top, right, and bottom
-			-- tiles that the camera can see plus some value that looks for further tiles
-			self._minMax[1] = math.floor(cw[1] / ts[1]) - Map.lookAhead
-			self._minMax[2] = math.floor(cw[2] / ts[2])	- Map.lookAhead
-			self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + Map.lookAhead
-			self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + Map.lookAhead
-			-- convert these to the tiles that correspond to map cell boundaries
-			self._cellMinMax[1] = math.floor(self._minMax[1] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[2] = math.floor(self._minMax[2] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[3] = math.floor(self._minMax[3] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[4] = math.floor(self._minMax[4] / Map.cellSize) * Map.cellSize	
+			self:calculateMinMax(camera, {Map.lookAhead,  Map.lookAhead,  Map.lookAhead,  Map.lookAhead})
 		end)
 	]]
 	
@@ -197,6 +179,8 @@ function Map:visibleCells()
 				mc._visible = true
 				mc._framesNotUsed = 0
 				cells[#cells+1] = mc
+			else
+				cells[#cells+1] = false
 			end
 		end		
 	end
@@ -215,21 +199,7 @@ function Map:draw(camera, profiler)
 			local ts = self._tileSet:size()		
 			
 			self:calculateMinMax(camera, {1,1,1,1})
-			--[[
-			-- get the left, top, right, and bottom
-			-- tiles that the camera can see plus one tile
-			-- so that no black spaces occur due to fine scrolling
-			self._minMax[1] = math.floor(cw[1] / ts[1]) - 1
-			self._minMax[2] = math.floor(cw[2] / ts[2])	- 1
-			self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + 1
-			self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + 1
-			-- convert these to the tiles that correspond to map cell boundaries
-			self._cellMinMax[1] = math.floor(self._minMax[1] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[2] = math.floor(self._minMax[2] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[3] = math.floor(self._minMax[3] / Map.cellSize) * Map.cellSize
-			self._cellMinMax[4] = math.floor(self._minMax[4] / Map.cellSize) * Map.cellSize		
-			]]
-			
+
 			-- set all map cells to not visible
 			for k, mc in pairs(self._cellsInMemory) do
 				mc._visible = false
@@ -260,7 +230,7 @@ function Map:draw(camera, profiler)
 				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
 					-- draw the cell if it exists
 					local cell = cells[currentCell]
-					if cell then
+					if cell ~= false then
 						local canvas = cells[currentCell]:canvas()
 						love.graphics.draw(canvas, screenX, screenY, 
 							0, self._zoom[1], self._zoom[2])				
@@ -355,6 +325,11 @@ function Map:disposeMapCell(mc)
 	--log.log('Disposing map cell: ' .. mc._hash)	
 	-- save the map cell to disk
 	self:saveMapCell(mc)
+	
+	if self.on_cell_dispose then
+		self:on_cell_dispose(mc)
+	end
+	
 	-- unregister the map cell from the collision buckets
 	mc:unregisterBuckets(self._buckets)
 	-- remove the references to all resources
@@ -634,7 +609,6 @@ function Map:generate(xpos, ypos, sx, sy)
 		end
 	end
 		
-	--[[
 	-- start with all water	
 	for y = 1, sy do
 		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / sy) * 100) .. '%             \r')
@@ -646,9 +620,10 @@ function Map:generate(xpos, ypos, sx, sy)
 		end
 	end			
 	print()
-	]]
-	for y = 1, sy - 1, Map.cellSize do
-		for x = 1, sx - 1, Map.cellSize do
+	
+	-- now add some land
+	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
+		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do
 			local tt = math.floor(math.random(3)) + 3
 			for yy = y, y + Map.cellSize - 1 do
 				for xx = x, x + Map.cellSize - 1 do
@@ -836,22 +811,6 @@ function Map:createColliders(b)
 	end
 	
 	print()
-end
-]]
-
---[[
---
---  Registers the map in the proper
---	collision buckets
---
-function Map:registerBuckets(buckets)
-	for _, v in pairs(self._colliders) do
-		for k, _ in pairs(v._ids) do	
-			if buckets[k] then				
-				table.insert(buckets[k], v)
-			end
-		end
-	end
 end
 ]]
 

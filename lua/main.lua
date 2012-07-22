@@ -62,7 +62,7 @@ function love.load()
 	daCamera:viewport(0,0,screenWidth,screenHeight)
 		
 	daMap = factories.createMap('outdoor')
-	daMap:generate(499900,499900,1024,1024)
+	daMap:generate(499932,499932,256,256)
 	--[[
 	daMap:transitions()
 	daMap:createColliders()
@@ -70,14 +70,6 @@ function love.load()
 	daMap:calculateMinMax(daCamera, {1,1,1,1})
 	daMap:visibleCells()
 		
-	log.log('===============================')
-	for k, v in pairs(daMap._buckets) do
-		if type(v) == 'table' then
-			log.log(k)
-		end
-	end
-	log.log('===============================')
-	
 	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
 	
 	createActors()
@@ -87,7 +79,6 @@ function love.load()
 	npc._maxHealth = 2000
 	npc:animation('standright')
 	npc:position(500000*32,500000*32)
-	npc:map(daMap)
 	actors[npc._id] = npc
 	npc:name('Bilbo')
 	
@@ -115,6 +106,19 @@ function love.load()
 	visibleIds = {}
 	visibleActors = {}	
 	visibleObjects = {}
+	
+	daMap.on_cell_dispose = function(self, mc)
+		-- look at the ids that are going to be removed
+		for k, _ in pairs(mc._bucketIds) do
+			if self._buckets['count' .. k] == 1 then
+				-- get rid of visible actors and objects that were in 
+				-- the buckets that will be destroyed
+				for _, v in pairs(self._buckets[k]) do
+					removeObject(v)
+				end
+			end		
+		end			
+	end
 
 	-- add the actors to the collision buckets
 	for k, v in pairs(actors) do
@@ -151,6 +155,22 @@ function love.load()
 	overlays = {}
 	
 	firstTime = true
+	
+	actors = nil
+end
+
+--
+--  Removes an object or actor from the game world
+--
+function removeObject(object)
+	-- unregister the actor from the buckets
+	for b, _ in pairs(object._bucketIds) do
+		daMap._buckets[b][object._id] = nil
+	end				
+	-- remove actor from list of visible actors
+	visibleActors[object] = nil
+	-- remove obejct from list of visible objects
+	visibleObjects[object] = nil
 end
 
 --
@@ -318,7 +338,6 @@ function createActors()
 	-- put the hero in the middle of the map for fun
 	--hero:position(size[1]/2,size[2]/2)
 	hero:position(500008*32, 500000*32)
-	hero:map(daMap)
 	table.insert(actors, hero)
 
 	--createBunchOPotions(hero:position())
@@ -330,7 +349,6 @@ function createActors()
 		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
 		a:position(math.random() * (200*32) + 500000 * 32, math.random() * (200*32) + 500000 * 32)
-		a:map(daMap)
 		actors[a._id] = a
 	end	
 	]]
@@ -424,9 +442,13 @@ function love.draw()
 					y = y + 20
 					
 					love.graphics.print('CELLS IN MEMORY '..table.count(daMap._cellsInMemory), 10, y)		
-					y = y + 20					
-				--end
+					y = y + 20				
 
+					love.graphics.print('visibleActors '..table.count(visibleActors), 10, y)		
+					y = y + 20				
+					
+			
+				--end
 				
 				if hero._latestDt then
 					love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
@@ -466,7 +488,7 @@ function love.draw()
 				y=y+20
 		
 				local total = 0	
-				y = 200
+				y = y + 30
 				love.graphics.print('=== PROFILES ===', 10, y)
 				y = y + 20
 				
@@ -611,7 +633,7 @@ function love.update(dt)
 				zoom = zoom - 0.01
 			end	
 			
-			if zoom < 0.2 then zoom = 0.2 end
+			if zoom < 0.1 then zoom = 0.1 end
 			
 			if love.keyboard.isDown('h') then
 				showCollisionBoundaries = true
@@ -717,14 +739,7 @@ function love.update(dt)
 	
 	-- remove all entities that were scheduled for removal
 	for k, v in pairs(removals) do		
-		-- unregister the actor from the buckets
-		for b, _ in pairs(v._bucketIds) do
-			daMap._buckets[b][v._id] = nil
-		end				
-		-- remove actor from actor list
-		actors[k] = nil
-		-- remove actor from list of visible actors
-		visibleActors[v] = nil
+		removeObject(v)
 	end	
 	
 	-- do the actor's AI updates

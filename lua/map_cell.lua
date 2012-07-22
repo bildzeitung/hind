@@ -152,6 +152,17 @@ function MapCell:registerBuckets(buckets)
 			buckets['count' .. k] = buckets['count' .. k] + 1
 		end		
 	end	
+	
+
+	--[[
+	for _, v in pairs(self._colliders) do
+		for k, _ in pairs(v._ids) do	
+			if buckets[k] then				
+				table.insert(buckets[k], v)
+			end
+		end
+	end
+	]]
 end
 
 --

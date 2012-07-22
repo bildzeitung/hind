@@ -37,20 +37,12 @@ function Actor:_clone(values)
 	o._dialogs = {}	
   	o._lastPosUpdate = { 0, 0 }	
 	o._velocity = { 0, 0 }
-	o._map = nil
 	o.ACTOR = true
 	o._currentAction = nil	
 	o._health = values._health or 0
 	o._maxHealth = values._maxHealth or o._health
 	
 	return o
-end
-
---
---  Sets the map that the actor is acting on
---
-function Actor:map(m)
-	self._map = m
 end
 
 --
@@ -76,18 +68,6 @@ function Actor:update(dt)
 	
 	self._position[1] = self._position[1] + self._lastPosUpdate[1]		
 	self._position[2] = self._position[2] + self._lastPosUpdate[2]
-
-	--[[
-	-- @TODO do we want to do bounds checking on position
-	-- or just let map boundaries handle that by
-	-- not letting the character go past a certain point
-	local x, y = 800, 600
-	local ms = self._map:size()
-	if self._position[1] < x then self._position[1] = x end
-	if self._position[1] > ms[1] - x then self._position[1] = ms[1] - x end
-	if self._position[2] < y then self._position[2] = y end
-	if self._position[2] > ms[2] - y then self._position[2] = ms[2] - y end	
-	]]
 	
 	-- update the current animation
 	self._currentAnimation:update(dt)

@@ -84,7 +84,7 @@
 		magic:animation('attack'..self:direction())				
 		magic:position(self._position[1], self._position[2])
 		magic:update(0)
-		magic:registerBuckets(buckets)				
+		magic:registerBuckets(daMap._buckets)				
 		magic:action('attack')
 	end,
 	on_begin_attack = function(self)

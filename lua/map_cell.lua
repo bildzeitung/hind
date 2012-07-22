@@ -72,8 +72,11 @@ function MapCell:render()
 				for y = 0, height, sizeY do
 					for x = 0, width, sizeX do
 						local tile = self._tiles[currentTile]
-						if tile > 0 then										
-							love.graphics.drawq(tq[tile]._image, tq[tile]._quad, x, y)
+						if tile > 0 then				
+							-- @TODO we should be using quads for map rendering with one BIG sprite atlas
+							-- it is WAY faster
+							--love.graphics.drawq(tq[tile]._image, tq[tile]._quad, x, y)
+							love.graphics.draw(tq[tile], x, y)
 						end
 						currentTile = currentTile + 1
 					end

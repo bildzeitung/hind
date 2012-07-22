@@ -58,11 +58,12 @@ function love.load()
 	local worldY = 500 * 32
 	buckets = createBuckets(250, worldX, worldY)
 		
-	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
-	daMap:generate()
+	daMap = factories.createMap('outdoor')--[[, { worldX / 32, worldY / 32 })]]
+	daMap:generate(500000,500000,640,640)
+	--[[
 	daMap:transitions()
-
 	daMap:createColliders(buckets)
+	]]
 	
 	daCamera = factories.createCamera()
 	daCamera:window(2000,2000,screenWidth,screenHeight)
@@ -76,7 +77,8 @@ function love.load()
 	npc._health = 2000
 	npc._maxHealth = 2000
 	npc:animation('standright')
-	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
+	--npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
+	npc:position(500000*32,500000*32)
 	npc:map(daMap)
 	actors[npc._id] = npc
 	npc:name('Bilbo')
@@ -109,10 +111,10 @@ function love.load()
 	-- add the actors to the collision buckets
 	for k, v in pairs(actors) do
 		v:update(0.16)
-		v:registerBuckets(buckets)
+		--v:registerBuckets(buckets)
 	end	
 	-- add the map collision items
-	daMap:registerBuckets(buckets)	
+	--daMap:registerBuckets(buckets)	
 	
 	--@TODO in a cave with a flashlight or similar
 	--[[
@@ -193,7 +195,7 @@ function createItem(description, position, cb)
 	item:position(position[1], position[2])
 	if cb then cb(item) end
 	item:update(0)
-	item:registerBuckets(buckets)			
+	--item:registerBuckets(buckets)			
 end
 
 --
@@ -236,7 +238,7 @@ end
 --
 function createActors()
 	local numActors = 2000
-	local size = daMap:size()
+	--local size = daMap:size()
 	
 	actors = {}
 	hero = factories.createInventoryActor('content/actors/hero.dat')
@@ -325,7 +327,8 @@ function createActors()
 	]]
 	
 	-- put the hero in the middle of the map for fun
-	hero:position(size[1]/2,size[2]/2)
+	--hero:position(size[1]/2,size[2]/2)
+	hero:position(500004*32, 500000*32)
 	hero:map(daMap)
 	table.insert(actors, hero)
 
@@ -337,7 +340,7 @@ function createActors()
 		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
 		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
-		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
+		a:position(math.random() * (200*32) + 500000 * 32, math.random() * (200*32) + 500000 * 32)
 		a:map(daMap)
 		actors[a._id] = a
 	end	
@@ -751,7 +754,7 @@ function love.update(dt)
 	profiler:profile('updating collision buckets', 
 		function()			
 			for a, _ in pairs(visibleActors) do
-				a:registerBuckets(buckets)
+				--a:registerBuckets(buckets)
 			end	
 	end)
 	
@@ -770,11 +773,13 @@ function love.update(dt)
 			daCamera:center(hero._position[1], hero._position[2])
 		end)
 	
+	--[[
 	-- get the list of visible ids
 	profiler:profile('getting list of ids near map centre', 
 		function()
 			visibleIds = daMap:nearIds(daCamera, buckets, 2)
 		end)
+	]]
 	
 	-- clear the list of visible items
 	profiler:profile('wiping out old visible items',
@@ -804,6 +809,8 @@ function love.update(dt)
 			end	
 		end)
 		
+	daMap:update(dt, daCamera, profiler)
+	
 	loveframes.update(dt)
 end
 

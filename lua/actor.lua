@@ -76,7 +76,8 @@ function Actor:update(dt)
 	
 	self._position[1] = self._position[1] + self._lastPosUpdate[1]		
 	self._position[2] = self._position[2] + self._lastPosUpdate[2]
-	
+
+	--[[
 	-- @TODO do we want to do bounds checking on position
 	-- or just let map boundaries handle that by
 	-- not letting the character go past a certain point
@@ -86,6 +87,7 @@ function Actor:update(dt)
 	if self._position[1] > ms[1] - x then self._position[1] = ms[1] - x end
 	if self._position[2] < y then self._position[2] = y end
 	if self._position[2] > ms[2] - y then self._position[2] = ms[2] - y end	
+	]]
 	
 	-- update the current animation
 	self._currentAnimation:update(dt)

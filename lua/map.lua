@@ -6,16 +6,49 @@
 
 local Object = (require 'object').Object
 
-require 'table_ext'
+require 'map_cell'
+
+local ffi = require 'ffi'	
 
 local log = require 'log'
 
-local table, pairs, ipairs, math, io, print
-	= table, pairs, ipairs, math, io, print
+local table, pairs, ipairs, math, io, print, love, 	collectgarbage
+	= table, pairs, ipairs, math, io, print, love, 	collectgarbage
 	
 module('objects')
 
 Map = Object{}
+
+-- the size in tiles of the individual map cells
+Map.cellSize = 32
+-- the number of maximum layers in the map
+Map.layers = 4
+-- the number of uint16s in a map cell
+Map.cellTileShorts = Map.cellSize * Map.cellSize * Map.layers
+-- the number of bytes in one cell
+Map.cellTileBytes = Map.cellTileShorts * 2
+-- the number of frames to keep a map cell around for before it is disposed
+Map.unusedFrames = 1200
+-- the number of tile to generate ahead
+Map.lookAhead = Map.cellSize * 4
+
+--
+--  Returns a hash value of the supplied coordinates
+--  to the nearest coordinates in the map cell structure
+--
+--  Also returns the x and y coordinates that are the
+--	the closest cell coordinates to the ones requested
+--
+--  n.b. very naive implementation
+--  assumes that coordinates will never be bigger than
+--  1000000 in the first dimension... which is hopefully
+--  true for now
+--
+function Map.hash(coords)
+	local x = math.floor(coords[1] / Map.cellSize) * Map.cellSize
+	local y = math.floor(coords[2] / Map.cellSize) * Map.cellSize
+	return y * 1000000 + x, x, y
+end
 
 --
 --  Map constructor
@@ -23,31 +56,270 @@ Map = Object{}
 function Map:_clone(values)
 	local o = Object._clone(self,values)
 			
-	o._tiles = {
-		base = {},
-		overlay = {},
-		roof = {}	
-	}
-	o._objects = {}
-	o._colliders = {}
+	-- the cells this map contains
+	o._cellsInMemory = {}
+	o._generated = {}
+	o._minMax = {}
+	o._cellMinMax = {} 
+	o._zoom = {}	
 	
-	-- center the map by default
-	local tileSize = o._tileSet:size()
-	o._size = { o._sizeInTiles[1] * tileSize[1],
-				o._sizeInTiles[2] * tileSize[2] }
-	
-	-- the canvases the will hold the 
-	-- rendered map
-	o._canvases = {}
-	--[[
-	for i = 1, 25 do
-		o._canvases[i] = love.graphics.newCanvas( 2048, 2048 )
-	end
-	]]
-		
 	return o
 end
 
+--
+--  Update map
+--
+function Map:update(dt, camera, profiler)
+	profiler:profile('Map first part of update',
+		function()		
+			local cw = camera:window()
+			local cv = camera:viewport()
+			
+			self._zoom[1] = cv[3] / cw[3]
+			self._zoom[2] = cv[3] / cw[3]
+			
+			local ts = self._tileSet:size()	
+			
+			-- get the left, top, right, and bottom
+			-- tiles that the camera can see plus some value that looks for further tiles
+			self._minMax[1] = math.floor(cw[1] / ts[1]) - Map.lookAhead
+			self._minMax[2] = math.floor(cw[2] / ts[2])	- Map.lookAhead
+			self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + Map.lookAhead
+			self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + Map.lookAhead
+			-- convert these to the tiles that correspond to map cell boundaries
+			self._cellMinMax[1] = math.floor(self._minMax[1] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[2] = math.floor(self._minMax[2] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[3] = math.floor(self._minMax[3] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[4] = math.floor(self._minMax[4] / Map.cellSize) * Map.cellSize	
+		end)
+		
+		--[[
+	profiler:profile('Map second part of update',
+		function()				
+			local generate = {}	
+			-- check to see if the cells we may need shortly have been generated
+			for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
+					local coords = {x,y}
+					local hash = Map.hash(coords)								
+					-- check if the cell exists
+					if not self._cellsInMemory[hash] and not self._generated[hash] then
+						if not self:cellExists(coords,hash) then
+							log.log('Cell doesnt exist: ' .. hash)
+							generate[#generate+1] = coords			
+						end													
+						self._generated[hash] = true
+					end														
+				end		
+			end
+					
+			if #generate > 0 then
+				log.log('Number of cells to generate: ' .. #generate)
+				self:generateMapCells(generate)
+			end
+		end)
+			]]
+			
+	profiler:profile('Map third part of update',	
+		function()
+			-- go through all cells and get rid of ones that are no longer required
+			for k, v in pairs(self._cellsInMemory) do
+				if not v._visible then
+					v._framesNotUsed = v._framesNotUsed + 1
+					if v._framesNotUsed > Map.unusedFrames then
+						self:disposeMapCell(v)
+					end
+				end
+			end	
+		end)
+end
+
+--
+--  Draw map
+--
+function Map:draw(camera, profiler)	
+	--[[profiler:profile('Map draw',
+		function()]]
+			local cw = camera:window()
+			local cv = camera:viewport()
+			local ts = self._tileSet:size()		
+			
+			-- get the left, top, right, and bottom
+			-- tiles that the camera can see plus one tile
+			-- so that no black spaces occur due to fine scrolling
+			self._minMax[1] = math.floor(cw[1] / ts[1]) - 1
+			self._minMax[2] = math.floor(cw[2] / ts[2])	- 1
+			self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + 1
+			self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + 1
+			-- convert these to the tiles that correspond to map cell boundaries
+			self._cellMinMax[1] = math.floor(self._minMax[1] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[2] = math.floor(self._minMax[2] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[3] = math.floor(self._minMax[3] / Map.cellSize) * Map.cellSize
+			self._cellMinMax[4] = math.floor(self._minMax[4] / Map.cellSize) * Map.cellSize		
+			
+			-- set all map cells to not visible
+			for k, mc in pairs(self._cellsInMemory) do
+				mc._visible = false
+			end
+				
+			-- get all of the cells we need to draw
+			local cells = {}		
+			for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do			
+					local mc = self:mapCell{x,y}
+					if mc then
+						mc._visible = true
+						mc._framesNotUsed = 0
+						cells[#cells+1] = mc
+					end
+				end		
+			end
+			
+			-- coarse adjustment
+			local diffX = (self._minMax[1] - self._cellMinMax[1]) + 1
+			local diffY = (self._minMax[2] - self._cellMinMax[2]) + 1
+			local fineX = math.floor((cw[1] % 32) * self._zoom[1])
+			local fineY = math.floor((cw[2] % 32) * self._zoom[2])
+			-- the starting positions so the cells will be centered in the proper location
+			local startX = (-diffX * ts[1] * self._zoom[1]) - 
+				fineX - (ts[1] / 2 * self._zoom[1])
+			local startY = (-diffY * ts[2] * self._zoom[2]) 
+				- fineY - (ts[2] / 2 * self._zoom[2])
+			-- the current screen position for the cells
+			local screenX = startX
+			local screenY = startY
+			-- the amount to move on the screen after each cell
+			local screenIncX = Map.cellSize * ts[1] * self._zoom[1]
+			local screenIncY = Map.cellSize * ts[2]	* self._zoom[2]
+			-- draw the cells
+			local currentCell = 1
+			for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+				screenX = startX
+				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
+					-- draw the cell if it exists
+					local cell = cells[currentCell]
+					if cell then
+						local canvas = cells[currentCell]:canvas()
+						love.graphics.draw(canvas, screenX, screenY, 
+							0, self._zoom[1], self._zoom[2])				
+					end
+					currentCell = currentCell + 1
+					screenX = screenX + screenIncX
+				end		
+				screenY = screenY + screenIncY
+			end
+		--[[end)]]
+end
+
+--
+--  Returns the map cell that starts at the given
+--  top left coordinates
+--
+--  Inputs:
+--		coords - an indexed table
+--			[1] - horizontal coordinate of leftmost tile
+--			[2] - vertcial coordinate of topmost tile
+--
+--	Outputs:
+--		the map cell that is closest to the coordinates
+--
+function Map:mapCell(coords)
+	local hash, x, y = Map.hash(coords)
+	local mc = self._cellsInMemory[hash]
+	
+	if not mc then
+		mc = self:loadMapCell({x,y}, hash)
+	end
+	
+	if mc then
+		mc._hash = hash
+		self._cellsInMemory[hash] = mc
+		self._generated[hash] = nil
+	end
+	
+	return mc
+end
+
+--
+--  Does a cell exist?
+--
+function Map:cellExists(coords, hash)
+	log.log('Checking if cell exists: ' .. hash)
+	local hash = hash or Map.hash(coords)	
+	
+	local exists = false	
+	local f = io.open('map/' .. hash .. '.dat', 'rb')
+	if f then 
+		exists = true
+		f:close()
+	end
+	return exists	
+end
+
+--
+--  Loads a map cell from disk
+--	
+function Map:loadMapCell(coords, hash)
+	log.log('Loading map cell: ' .. hash)	
+	local hash = hash or Map.hash(coords)
+	
+	local f = io.open('map/' .. hash .. '.dat', 'rb')
+	if not f then 
+		-- cell does not yet exist!
+		return nil
+	end
+	-- read cell from file
+	local tileData = f:read('*all')
+	f:close()
+	
+	local mc = MapCell{ self._tileSet, 
+		{Map.cellSize, Map.cellSize}, 
+		{coords[1], coords[2]}, 
+		Map.layers }
+		
+	-- store the tile data
+	mc:setTileData(tileData, Map.cellTileBytes)	
+	
+	return mc	
+end
+
+--
+--  Disposes of a map cell
+--	
+function Map:disposeMapCell(mc)
+	log.log('Disposing map cell: ' .. mc._hash)	
+	-- save the map cell to disk
+	self:saveMapCell(mc)
+	-- remove the references to all resources
+	self._cellsInMemory[mc._hash] = nil	
+	collectgarbage('collect')
+end
+
+--
+--  Saves a map cell to disk
+--	
+function Map:saveMapCell(mc)
+	log.log('Saving map cell: ' .. mc._hash)
+	local bytes = ffi.string(mc._tiles, Map.cellTileBytes)
+	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
+	f:write(bytes)
+	f:close()
+end
+
+--
+--  Generates a list of map cells
+--
+function Map:generateMapCells(cells)
+	local cmd = 'generate#'	
+	for k, v in ipairs(cells) do	
+		log.log('Signalling generating thread to generate: ' .. v[1] .. ',' .. v[2])
+		cmd = cmd .. v[1] .. '#' .. v[2] .. '#'
+	end	
+	local thread = love.thread.getThread('terrainGenerator')	
+	thread:set('cmd',cmd)
+end
+
+--[[
 --
 --  Adds transition (overlay tiles)
 --  between base terrain types
@@ -233,7 +505,9 @@ function Map:transitions()
 	
 	print()
 end
+]]
 
+--[[
 function Map:createObject(name, x, y)
 	local ts = self._tileSet:size()
 		
@@ -275,12 +549,87 @@ function Map:createObject(name, x, y)
 	
 	return o
 end	
+]]
 
 --
 --  Generates a map
 --
-function Map:generate()
+function Map:generate(xpos, ypos, sx, sy)
+
+	-- create a table to hold all of the tiles
+	local tiles = {}
+	for i = 1, Map.layers do
+		tiles[i] = {}
+	end
+	for y = 1, sy do		
+		for i = 1, Map.layers do
+			tiles[i][y] = {}
+		end
+	end
 		
+	-- start with all water	
+	for y = 1, sy do
+		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / sy) * 100) .. '%             \r')
+		for x = 1, sx do
+			tiles[1][y][x] = 11
+			if math.random() > 0.5 then
+				tiles[1][y][x] = math.floor(math.random() * 3) + 16
+			end
+		end
+	end			
+	print()
+
+	local cellTiles = {}
+	for i = 1, Map.layers do
+		cellTiles[i] = {}
+	end
+	for y = 1, Map.cellSize do
+		for i = 1, Map.layers do
+			cellTiles[i][y] = {}
+		end
+	end
+	
+	local hash, xcoord, ycoord = Map.hash{xpos,ypos}
+	
+	local cx = xcoord
+	local cy = ycoord
+	
+	for y = 1, sy - 1, Map.cellSize do
+		cx = xcoord
+		for x = 1, sx - 1, Map.cellSize do
+			log.log('Creating map cell at coords: ' .. cx .. ', ' .. cy)
+			log.log('Creating map cell at generated tile coords: ' .. x .. ', ' .. y)
+			
+			local mc = {}
+
+			log.log('Made new map cell table')
+			
+			local currentTile = 0
+			local tileShorts = ffi.new('uint16_t[?]', Map.cellTileShorts)
+			for i = 1, Map.layers do
+				for yy = y, y + Map.cellSize - 1 do
+					for xx = x, x + Map.cellSize - 1 do
+						tileShorts[currentTile] = tiles[i][yy][xx] or 0
+						currentTile = currentTile + 1
+					end
+				end
+			end
+			
+			log.log('Current tile: ' .. currentTile)
+			
+			mc._tiles = tileShorts
+			local hash = Map.hash{cx,cy}
+			mc._hash = hash
+			
+			self:saveMapCell(mc)
+			cx = cx + Map.cellSize
+		end
+		cy = cy + Map.cellSize
+	end
+	
+	log.log('Finished creating map cells!')
+		
+		--[[
 	for y = 1, self._sizeInTiles[2] do		
 		self._tiles.base[y] = {}
 		self._tiles.overlay[y] = {}
@@ -289,7 +638,7 @@ function Map:generate()
 
 	-- start with all water	
 	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
+		io.write('MAP WATER TILES ARE BEING GENERATEGENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
 		for x = 1, self._sizeInTiles[1] do		
 			self._tiles.base[y][x] = 11
 			if math.random() > 0.5 then
@@ -333,7 +682,9 @@ function Map:generate()
 		end
 		print()
 	end
+	]]
 	
+	--[[	
 	-- add random objects
 	local current = 1
 	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
@@ -352,9 +703,10 @@ function Map:generate()
 		end
 	end		
 	print()
+	]]
 end
 
-
+--[[
 --
 --  Create colliders
 --
@@ -411,7 +763,9 @@ function Map:createColliders(b)
 	
 	print()
 end
+]]
 
+--[[
 --
 --  Registers the map in the proper
 --	collision buckets
@@ -425,7 +779,9 @@ function Map:registerBuckets(buckets)
 		end
 	end
 end
+]]
 
+--[[
 --
 --  Returns a table with the ids for the bucket cells
 --	that surround the camera.
@@ -470,7 +826,9 @@ function Map:nearIds(camera, b, padding)
 	
 	return ids
 end
+]]
 
+--[[
 --
 --  Draw the map
 --
@@ -532,7 +890,9 @@ function Map:draw(camera, drawTable)
 		cy = cy + zty
 	end
 end
+]]
 
+--[[
 -- 
 --  Returns the map size
 --
@@ -546,3 +906,4 @@ end
 function Map:sizeInTiles()
 	return self._sizeInTiles
 end
+]]

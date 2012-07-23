@@ -136,6 +136,46 @@ function MapCell:spatialBuckets(buckets)
 end
 
 --
+--  Register the collidable tiles
+--
+function MapCell:registerCollidableTiles(buckets)	
+	-- register any collidable tiles
+	local bs = self._tileSet:boundaries()
+	local ts = self._tileSet:size()
+	local currentTile = 0
+	for z = 1, self._layers do
+		for y = 1, Map.cellSize do
+			for x = 1, Map.cellSize do
+				local tile = self._tiles[currentTile]
+				if tile > 0 then				
+					local boundary = bs[tile]
+					if boundary and (boundary[3] > 0 or boundary[4] > 0) then
+					local tx = x * ts[1]
+					local ty = y * ts[2]
+					local o = {}				
+					o._position = { x * ts[1], y * ts[2] }
+				
+					o._boundary = {}
+					o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
+					o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
+					o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
+					o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)
+				
+					o._ids = {}				
+					o._ids[b.hash(o._boundary[1], o._boundary[2])] = true
+					o._ids[b.hash(o._boundary[1], o._boundary[4])] = true
+					o._ids[b.hash(o._boundary[3], o._boundary[2])] = true
+					o._ids[b.hash(o._boundary[3], o._boundary[4])] = true
+													
+					table.insert(self._colliders, o)
+				end
+				currentTile = currentTile + 1
+			end
+		end
+	end	
+end
+
+--
 --  Registers the map cell in the proper
 --	collision buckets - creating them if necessary
 --
@@ -153,16 +193,7 @@ function MapCell:registerBuckets(buckets)
 		end		
 	end	
 	
-
-	--[[
-	for _, v in pairs(self._colliders) do
-		for k, _ in pairs(v._ids) do	
-			if buckets[k] then				
-				table.insert(buckets[k], v)
-			end
-		end
-	end
-	]]
+	self:registerCollidableTiles(buckets)
 end
 
 --

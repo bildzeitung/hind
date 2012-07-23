@@ -5,13 +5,22 @@
 ]]
 
 local ffi = require 'ffi'
+ffi.cdef
+[[
+	typedef struct 
+	{
+		char name[20];
+		int64_t x;
+		int64_t y;
+	} map_object;
+]]
 
 local Object = (require 'object').Object
 
 local log = require 'log'
 
-local string, pairs, love 
-	= string, pairs, love
+local string, pairs, table, ipairs, tonumber, math, love 
+	= string, pairs, table, ipairs, tonumber, math, love
 
 module('objects')
 
@@ -50,6 +59,7 @@ function MapCell:_clone(values)
 	o._hash = false
 	
 	o._colliders = {}
+	o._objects = {}	
 	
 	return o
 end
@@ -86,7 +96,7 @@ function MapCell:render()
 			end
 		end)
 	local e = love.timer.getMicroTime()		
-	log.log('Rendering the map cell canvas took: ' .. e-s)
+	--log.log('Rendering the map cell canvas took: ' .. e-s)
 	
 	self._rendered = true
 end
@@ -94,14 +104,19 @@ end
 --
 --  Sets the tile data for this map cell
 --
-function MapCell:setTileData(data, bytes)
-	ffi.copy(self._tiles, data, bytes)
-	
-	-- @todo reconstruct the tiles as necessary
-	-- esp. collision boundaries
-	
-	-- @todo reconstruct the map objects
-	-- including collision boundaries
+function MapCell:setTileData(tiles, objs)
+	ffi.copy(self._tiles, tiles, Map.cellTileBytes)	
+
+	if objs then
+		local objCount = #objs / ffi.sizeof('map_object')	
+		if objCount > 0 then
+			self._objectData = ffi.new('map_object[?]', objCount)
+			ffi.copy(self._objectData, objs, #objs)					
+			for i = 0, objCount - 1 do
+				table.insert(self._objects, self:createObject(self._objectData[i]))
+			end
+		end	
+	end
 end
 
 --
@@ -141,17 +156,17 @@ end
 --  Creates the collidable objects 
 --
 function MapCell:createColliders(buckets)
-	log.log('==== CREATING COLLIDERS! ====')		
+	--log.log('==== CREATING COLLIDERS! ====')		
 	-- register any collidable tiles
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
 	
 	local currentTile = 0
 	for z = 1, self._layers do
-		local sx = self._extents[1]
-		local sy = self._extents[2]
+		local sx = self._extents[1] * ts[1]
+		local sy = self._extents[2] * ts[2]
 		for y = 1, Map.cellSize do	
-		sx = self._extents[1]
+		sx = self._extents[1] * ts[1]
 			for x = 1, Map.cellSize do
 				local tile = self._tiles[currentTile]
 				if tile > 0 then				
@@ -160,18 +175,18 @@ function MapCell:createColliders(buckets)
 						-- @TODO fix this, should just be able to use a collidable object, but
 						-- collidables currently require an animation :-(
 						local o = {}				
-						o._position = { x, y }		
+						o._position = { sx, sy }		
 						o._boundary = {}
 						o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
 						o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
 						o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
 						o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)		
-						o._ids = {}				
-						o._ids[buckets.hash(o._boundary[1], o._boundary[2])] = true
-						o._ids[buckets.hash(o._boundary[1], o._boundary[4])] = true
-						o._ids[buckets.hash(o._boundary[3], o._boundary[2])] = true
-						o._ids[buckets.hash(o._boundary[3], o._boundary[4])] = true	
-						self._colliders[#self._colliders+1] = o
+						o._bucketIds = {}				
+						o._bucketIds[buckets.hash(o._boundary[1], o._boundary[2])] = true
+						o._bucketIds[buckets.hash(o._boundary[1], o._boundary[4])] = true
+						o._bucketIds[buckets.hash(o._boundary[3], o._boundary[2])] = true
+						o._bucketIds[buckets.hash(o._boundary[3], o._boundary[4])] = true	
+						self._colliders[#self._colliders + 1] = o
 					end
 				end
 				currentTile = currentTile + 1				
@@ -180,8 +195,20 @@ function MapCell:createColliders(buckets)
 			sy = sy + ts[2]
 		end
 	end	
-	log.log('COUNT: ' .. #self._colliders)
-	log.log('==== CREATING COLLIDERS! ====')
+	
+	-- add colliders for objects
+	for k, v in ipairs(self._objects) do
+		v._bucketIds = {}
+		v._bucketIds[buckets.hash(v._boundary[1], v._boundary[2])] = true
+		v._bucketIds[buckets.hash(v._boundary[1], v._boundary[4])] = true
+		v._bucketIds[buckets.hash(v._boundary[3], v._boundary[2])] = true
+		v._bucketIds[buckets.hash(v._boundary[3], v._boundary[4])] = true
+				
+		self._colliders[#self._colliders + 1] = v
+	end
+	
+	--log.log('COUNT: ' .. #self._colliders)
+	--log.log('==== CREATING COLLIDERS! ====')
 end
 
 --
@@ -203,7 +230,7 @@ function MapCell:registerBuckets(buckets)
 	end	
 	
 	self:createColliders(buckets)
-	self:registerColliders(buckets)
+	self:registerColliders(buckets)	
 end
 
 --
@@ -212,10 +239,11 @@ end
 --
 function MapCell:registerColliders(buckets)
 	for _, v in pairs(self._colliders) do
-		-- register the new buckets ids
-		for k, _ in pairs(self._bucketIds) do
-			buckets[k][self._id] = self
-		end	
+		for k, _ in pairs(v._bucketIds) do	
+			if buckets[k] then		
+				table.insert(buckets[k], v)
+			end
+		end
 	end
 end
 
@@ -231,4 +259,53 @@ function MapCell:unregisterBuckets(buckets)
 			buckets[k] = nil
 		end		
 	end	
+end
+
+--
+--  Creates a static object from
+--  a name and a position
+-- 
+function MapCell:createObject(obj)
+	local name = ffi.string(obj.name)
+	
+	--log.log('CreateObject')
+	--log.log('name')
+	--log.log(name)
+	
+	local o = table.clone(self._tileSet._objects[name], { deep = true })
+	o._position = { tonumber(obj.x), tonumber(obj.y) }
+
+	local b = { }
+	b[1] = o._position[1] + o._boundary[1] - o._offset[1]
+	b[2] = o._position[2] + o._boundary[2] - o._offset[2]
+	b[3] = o._position[1] + o._boundary[3] - o._offset[1]
+	b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
+	o._boundary = b
+	
+	--
+	--  Draw the object
+	--
+	function o:draw(camera, drawTable)
+		local cw, cv, zoomX, zoomY, cwzx, cwzy =
+			drawTable.cw, drawTable.cv, 
+			drawTable.zoomX, drawTable.zoomY,
+			drawTable.cwzx, drawTable.cwzy	
+			
+		local sx = math.floor((self._position[1] * zoomX) - cwzx)
+		local sy = math.floor((self._position[2] * zoomY) - cwzy)
+		local z = self._position[2] + 
+			self._height - (self._position[1] * 0.0000000001)
+		
+		table.insert(drawTable.object, 
+			{ z, self._image[1], 
+			sx, sy, 
+			zoomX, zoomY, self._offset[1], self._offset[2] })
+			
+		table.insert(drawTable.roof, 
+			{ z, self._image[2], 
+			sx, sy, 
+			zoomX, zoomY, self._offset[1], self._offset[2] })			
+	end
+	
+	return o
 end

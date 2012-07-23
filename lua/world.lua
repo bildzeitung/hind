@@ -69,7 +69,9 @@ function World:initialize()
 				-- get rid of visible actors and objects that were in 
 				-- the buckets that will be destroyed
 				for _, v in pairs(map._buckets[k]) do
-					self:removeObject(v)
+					if v._id then
+						self:removeObject(v)
+					end
 				end
 			end		
 		end			
@@ -322,7 +324,10 @@ function World:draw(profiler)
 				y = y + 20				
 
 				love.graphics.print('self._visibleActors '..table.count(self._visibleActors), 10, y)		
-				y = y + 20											
+				y = y + 20		
+
+				love.graphics.print('self._visibleObjects '..table.count(self._visibleObjects), 10, y)		
+				y = y + 20		
 				
 				if self._hero._latestDt then
 					love.graphics.print('DT: ' .. self._hero._latestDt, 10, y)		
@@ -558,16 +563,14 @@ function World:update(dt, profiler)
 		function()				
 			for k, _ in pairs(self._visibleIds) do
 				for _, v in pairs(self._map._buckets[k]) do
-					if type(v) == 'table' then
-						if v.ACTOR or v.STATICACTOR then
-							self._visibleActors[v] = true
-						end
-						-- map objects that you can collide with but
-						-- never interact with
-						if v._image then
-							self._visibleObjects[v] = true
-						end	
+					if v.ACTOR or v.STATICACTOR then
+						self._visibleActors[v] = true
 					end
+					-- map objects that you can collide with but
+					-- never interact with
+					if v._image then
+						self._visibleObjects[v] = true
+					end	
 				end
 			end	
 		end)

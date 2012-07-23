@@ -6,8 +6,8 @@
 
 local Object = (require 'object').Object
 
-local love, pairs, ipairs, type, table, unpack
-	= love, pairs, ipairs, type, table, unpack
+local love, pairs, ipairs, type, table, unpack, log
+	= love, pairs, ipairs, type, table, unpack, log
 	
 module('objects')
 
@@ -198,7 +198,7 @@ function Renderer:draw(camera, drawables, profiler)
 		end)
 	
 	-- pre draw the drawable items
-	for k, t in pairs(drawables) do			
+	for k, t in pairs(drawables) do		
 		profiler:profile('pre-drawing ' .. k .. ' drawables', 	
 			function()	
 				if type(t) == 'table' and t.draw then

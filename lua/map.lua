@@ -9,11 +9,20 @@ local Object = (require 'object').Object
 require 'map_cell'
 
 local ffi = require 'ffi'	
+ffi.cdef
+[[
+	typedef struct 
+	{
+		char name[20];
+		int64_t x;
+		int64_t y;
+	} map_object;
+]]
 
 local log = require 'log'
 
-local table, pairs, ipairs, math, io, print, love, 	collectgarbage
-	= table, pairs, ipairs, math, io, print, love, 	collectgarbage
+local table, pairs, ipairs, math, io, print, love, tostring, collectgarbage
+	= table, pairs, ipairs, math, io, print, love, tostring, collectgarbage
 	
 module('objects')
 
@@ -293,6 +302,7 @@ end
 --	
 function Map:loadMapCell(coords, hash)
 	--log.log('Loading map cell: ' .. hash)	
+	
 	local hash = hash or Map.hash(coords)
 	
 	local f = io.open('map/' .. hash .. '.dat', 'rb')
@@ -301,7 +311,16 @@ function Map:loadMapCell(coords, hash)
 		return nil
 	end
 	-- read cell from file
-	local tileData = f:read('*all')
+	local tileData = f:read(Map.cellTileBytes)
+	local objBytes = f:read('*number')
+
+	--log.log('objBytes')
+	--log.log(tostring(objBytes))	
+	local objs 
+	if objBytes > 0 then		
+		objs = f:read(objBytes)
+	end
+	
 	f:close()
 	
 	local mc = MapCell{ self._tileSet, 
@@ -310,7 +329,7 @@ function Map:loadMapCell(coords, hash)
 		Map.layers }
 		
 	-- store the tile data
-	mc:setTileData(tileData, Map.cellTileBytes)	
+	mc:setTileData(tileData, objs)	
 	
 	return mc	
 end
@@ -341,7 +360,18 @@ function Map:saveMapCell(mc)
 	--log.log('Saving map cell: ' .. mc._hash)
 	local bytes = ffi.string(mc._tiles, Map.cellTileBytes)
 	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
-	f:write(bytes)
+	f:write(bytes)	
+	
+	if mc._objectData then
+		f:write(ffi.sizeof(mc._objectData))
+		local bytes = ffi.string(mc._objectData, ffi.sizeof(mc._objectData))	
+		--log.log('ffi.sizeof(mc._objectData)')
+		--log.log(ffi.sizeof(mc._objectData))		
+		f:write(bytes)	
+	else
+		f:write(0)
+	end
+	
 	f:close()
 end
 
@@ -610,7 +640,7 @@ function Map:generate(xpos, ypos, sx, sy)
 	for y = 1, sy do
 		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / sy) * 100) .. '%             \r')
 		for x = 1, sx do
-			tiles[1][y][x] = 1
+			tiles[1][y][x] = 11
 			if math.random() > 0.5 then
 				tiles[1][y][x] = math.floor(math.random() * 3) + 16
 			end
@@ -618,27 +648,61 @@ function Map:generate(xpos, ypos, sx, sy)
 	end			
 	print()
 	
+	-- make a box surrounding the water as a barrier
+	-- N.B. this should be done automatically by tile transitions
+	for y = Map.cellSize - 1, sy - Map.cellSize do
+		tiles[1][y][Map.cellSize - 1] = 1
+		tiles[1][y][sx - Map.cellSize] = 1
+	end
+	for x = Map.cellSize - 1, sx - Map.cellSize - 1 do
+		tiles[1][Map.cellSize - 1][x] = 1
+		tiles[1][sx - Map.cellSize][x] = 1
+	end	
+	
 	-- now add some land
 	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do
-			local tt = math.floor(math.random(3)) + 3
+			local tt = math.floor(math.random(2)) + 4
 			for yy = y, y + Map.cellSize - 1 do
 				for xx = x, x + Map.cellSize - 1 do
 					tiles[1][yy][xx] = 11 + (tt*18)
-					--[[
 					if math.random() > 0.5 then
 						tiles[1][yy][xx] = math.floor(math.random() * 3) + 16 + (tt*18)
 					end
-					]]
 				end
 			end
 		end
 	end
-			
+	
+	-- add random objects
+	local current = 1
+	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
+	
+	-- create a table to hold all of the objects
+	local objects = {}
+	for y = 1, sy do		
+		objects[y] = {}
+	end	
+	
+	local ts = self._tileSet:size()
+	
 	local hash, xcoord, ycoord = Map.hash{xpos,ypos}
+	
+	for y = Map.cellSize, sy - Map.cellSize do
+		for x = Map.cellSize, sx - Map.cellSize do
+			if math.random() > 0.99 and math.floor(tiles[1][y][x] / 18) == 5 then
+				objects[y][x] = { name = tree_cycle[(current % 3) + 1], 
+					x = xcoord * ts[1] + x * ts[1], y = ycoord * ts[1] + y * ts[2] }
+				current = current + 1
+			end
+		end
+	end
+	print()	
 	
 	local cx = xcoord
 	local cy = ycoord
+	
+	local cells = {}
 	
 	for y = 1, sy - 1, Map.cellSize do
 		cx = xcoord
@@ -647,7 +711,8 @@ function Map:generate(xpos, ypos, sx, sy)
 			--log.log('Creating map cell at generated tile coords: ' .. x .. ', ' .. y)
 			
 			local mc = {}
-
+			mc._objects = {}
+			
 			--log.log('Made new map cell table')
 			
 			local currentTile = 0
@@ -657,6 +722,10 @@ function Map:generate(xpos, ypos, sx, sy)
 					for xx = x, x + Map.cellSize - 1 do
 						tileShorts[currentTile] = tiles[i][yy][xx] or 0
 						currentTile = currentTile + 1
+						
+						if i == 1 and objects[yy][xx] then
+							table.insert(mc._objects, objects[yy][xx])
+						end
 					end
 				end
 			end
@@ -666,150 +735,29 @@ function Map:generate(xpos, ypos, sx, sy)
 			mc._tiles = tileShorts
 			local hash = Map.hash{cx,cy}
 			mc._hash = hash
-			
-			self:saveMapCell(mc)
+
+			mc._objectData = ffi.new('map_object[?]', #mc._objects)
+			local objectBytes = 0
+			for k, v in ipairs(mc._objects) do
+				mc._objectData[k-1].name = v.name
+				mc._objectData[k-1].x = v.x
+				mc._objectData[k-1].y = v.y
+			end	
+			mc._objects = nil	
+	
+			cells[#cells+1] = mc
 			cx = cx + Map.cellSize
 		end
 		cy = cy + Map.cellSize
 	end
-	
-	--log.log('Finished creating map cells!')
 		
-		--[[
-	for y = 1, self._sizeInTiles[2] do		
-		self._tiles.base[y] = {}
-		self._tiles.overlay[y] = {}
-		self._tiles.roof[y] = {}
-	end		
-
-	-- start with all water	
-	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP WATER TILES ARE BEING GENERATEGENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		for x = 1, self._sizeInTiles[1] do		
-			self._tiles.base[y][x] = 11
-			if math.random() > 0.5 then
-				self._tiles.base[y][x] = math.floor(math.random() * 3) + 16
-			end
-		end
-	end			
-	print()
-	
-
-	local terrain = 
-	{
-		{ name = 'GRASS', tile = 6, maxRadius = 10, minRadius = 3, numPatches = 1500, variations = true},	
-		{ name = 'DIRT', tile = 5, maxRadius = 6, minRadius = 3, numPatches = 750, variations = true },		
-		{ name = 'SAND', tile = 7, maxRadius = 50, minRadius = 20, numPatches = 5, variations = true }		
-	}
-		
-	-- generate terrain
-	for k, v in ipairs(terrain) do
-		local maxRadius = v.maxRadius
-		local minRadius = v.minRadius
-		local numPatches = v.numPatches
-		local tile = v.tile
-		for i = 1, numPatches do
-			io.write(v.name .. ' PATCHES ARE BEING GENERATED... ' .. (i / numPatches * 100) .. '%             \r')
-			local x = math.floor(math.random() * (self._sizeInTiles[1] - (maxRadius * 2))) + maxRadius + 1
-			local y = math.floor(math.random()* (self._sizeInTiles[2] - (maxRadius * 2))) + maxRadius + 1
-			local w = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-			local h = math.floor(math.random() * (maxRadius-minRadius)) + minRadius
-			for yy = y - h, y + h do 
-				for xx = x - w, x + w do
-					self._tiles.base[yy][xx] = 18 * (tile-1) + 11
-					if v.variations then
-						if math.random() > 0.5 then
-							self._tiles.base[yy][xx] = math.floor(math.random() * 3) + (18 * tile) - 2
-						end
-						
-					end
-				end
-			end
-		end
-		print()
+	for k, v in ipairs(cells) do
+		self:saveMapCell(v)
 	end
-	]]
+
 	
-	--[[	
-	-- add random objects
-	local current = 1
-	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
-	
-	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP OBJECTS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		for x = 1, self._sizeInTiles[1] do
-			if y > 5 and y < self._sizeInTiles[2] - 5 and 
-				x > 5 and x < self._sizeInTiles[1] - 5 and 
-				math.random() > 0.99 and 
-				math.floor(self._tiles.base[y][x] / 18) == 5 then
-					local o = self:createObject(tree_cycle[(current % 3) + 1],x,y)
-					table.insert(self._objects, o)
-					current = current + 1
-			end
-		end
-	end		
-	print()
-	]]
+	--log.log('Finished creating map cells!')		
 end
-
---[[
---
---  Create colliders
---
-function Map:createColliders(b)
-	local bs = self._tileSet:boundaries()
-	local ts = self._tileSet:size()
-	
-	local function addCollider(layer, x, y)
-		local tile = self._tiles[layer][y][x]
-		if tile then
-			local boundary = bs[tile]
-			if boundary and (boundary[3] > 0 or boundary[4] > 0) then
-				local tx = x * ts[1]
-				local ty = y * ts[2]
-				local o = {}				
-				o._position = { x * ts[1], y * ts[2] }
-				
-				o._boundary = {}
-				o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
-				o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
-				o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
-				o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)
-				
-				o._ids = {}				
-				o._ids[b.hash(o._boundary[1], o._boundary[2])] = true
-				o._ids[b.hash(o._boundary[1], o._boundary[4])] = true
-				o._ids[b.hash(o._boundary[3], o._boundary[2])] = true
-				o._ids[b.hash(o._boundary[3], o._boundary[4])] = true
-												
-				table.insert(self._colliders, o)
-			end	
-		end
-	end
-	
-	-- add colliders for base and roof tiles
-	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP COLLIDERS ARE BEING GENERATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		for x = 1, self._sizeInTiles[1] do
-			addCollider('base', x, y)
-			addCollider('overlay', x, y)
-		end
-	end	
-	
-	-- add colliders for objects
-	for k, v in ipairs(self._objects) do
-		v._ids = {}
-		v._ids[b.hash(v._boundary[1], v._boundary[2])] = true
-		v._ids[b.hash(v._boundary[1], v._boundary[4])] = true
-		v._ids[b.hash(v._boundary[3], v._boundary[2])] = true
-		v._ids[b.hash(v._boundary[3], v._boundary[4])] = true
-				
-		table.insert(self._colliders, v)
-	end
-	
-	print()
-end
-]]
 
 --
 --  Returns a table with the ids for the bucket cells

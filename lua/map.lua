@@ -310,7 +310,7 @@ end
 --  Loads a map cell from disk
 --	
 function Map:loadMapCell(coords, hash)
-	--log.log('Loading map cell: ' .. hash)	
+	log.log('Loading map cell: ' .. hash)	
 	
 	local hash = hash or Map.hash(coords)
 	
@@ -341,6 +341,12 @@ function Map:loadMapCell(coords, hash)
 		acts = f:read(actorDataBytes)
 	end
 	
+	if acts then
+		log.log('Actor info:')
+		log.log(tostring(actorDataBytes))
+		log.log(tostring(acts))
+	end
+	
 	f:close()
 	
 	local mc = MapCell{ self._tileSet, 
@@ -350,7 +356,7 @@ function Map:loadMapCell(coords, hash)
 	
 	mc:data(tileData, objs, acts)
 	
-	--log.log('Loading map cell complete!')
+	log.log('Loading map cell complete!')
 	
 	return mc	
 end
@@ -359,7 +365,8 @@ end
 --  Saves a map cell to disk
 --	
 function Map:saveMapCell(mc)
-	--log.log('Saving map cell: ' .. mc._hash)
+	log.log('Saving map cell: ' .. mc._hash)
+	
 	-- open file
 	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
 		
@@ -395,7 +402,7 @@ function Map:saveMapCell(mc)
 	
 	f:close()
 	
-	--log.log('Saving map cell complete!')
+	log.log('Saving map cell complete!')
 end
 
 --

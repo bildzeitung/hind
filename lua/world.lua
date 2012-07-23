@@ -57,6 +57,14 @@ function World:loadActor(id)
 end
 
 --
+--  Returns true if an actor exists in the game world
+--	false otherwise
+--
+function World:actorExists(id)
+	return self._visibleActors[id] ~= nil
+end
+
+--
 --  Initialize the world
 --
 --	@TODO replace this with actual procedural generation
@@ -85,7 +93,7 @@ function World:initialize()
 				for _, v in pairs(map._buckets[k]) do
 					if v._id then
 						self:saveActor(v)
-						self:removeObject(v)
+						self:removeActor(v)
 					end
 				end
 			end		
@@ -96,9 +104,12 @@ function World:initialize()
 		-- load all of the actors saved in this map cell
 		local actorCount = mc:actorCount()
 		for i = 0, actorCount - 1 do
+			local id = tonumber(mc._actorData[i])
+			if not self:actorExists(i) then
+				self:loadActor(i)
+			end
 		end
-	end
-	
+	end	
 	
 	self:createHero()
 	self:createActors()
@@ -408,7 +419,7 @@ end
 --
 --  Removes an object or actor from the game world
 --
-function World:removeObject(object)
+function World:removeActor(object)
 	-- unregister the actor from the buckets
 	for b, _ in pairs(object._bucketIds) do
 		if self._map._buckets[b] then
@@ -416,9 +427,7 @@ function World:removeObject(object)
 		end
 	end				
 	-- remove actor from list of visible actors
-	self._visibleActors[object] = nil
-	-- remove obejct from list of visible objects
-	self._visibleObjects[object] = nil
+	self._visibleActors[object._id] = nil
 end
 
 --
@@ -428,17 +437,18 @@ function World:createFloatingText(colour, actor, text)
 	local ft = factories.createFloatingText( text, World.largeFont,
 		colour, { actor._position[1], actor._position[2] },
 		{ 0, -120 }, 1 )
-	ft.on_expired = function(text)
-		self._floatingTexts[text] = nil
+	ft.on_expired = function(ft)
+		self._floatingTexts[ft._id] = nil
 	end
-	self._floatingTexts[ft] = true
+	self._floatingTexts[#self._floatingTexts + 1] = ft
+	ft._id = #self._floatingTexts
 	
 	-- @TODO find a better way to seperate floating texts!
-	for k1, _ in pairs(self._floatingTexts) do
-		for k2, _ in pairs(self._floatingTexts) do
-			if k1 ~= k2 and k1._position[1] == k2._position[1] and
-			k1._position[2] == k2._position[2] then
-				k2._position[2] = k2._position[2] + 20
+	for _, txt1 in pairs(self._floatingTexts) do
+		for _, txt2 in pairs(self._floatingTexts) do
+			if txt1 ~= txt2 and txt1._position[1] == txt2._position[1] and
+			txt1._position[2] == txt2._position[2] then
+				txt2._position[2] = txt2._position[2] + 20
 			end
 		end
 	end
@@ -514,13 +524,13 @@ function World:update(dt, profiler)
 	
 	-- remove all entities that were scheduled for removal
 	for k, v in pairs(self._removals) do		
-		self:removeObject(v)
+		self:removeActor(v)
 	end	
 	
 	-- do the actor's AI updates
 	profiler:profile('updating AI', 
 		function()
-			for a, _ in pairs(self._visibleActors) do
+			for _, a in pairs(self._visibleActors) do
 				if a.AI then
 					a:AI()
 				end					
@@ -538,7 +548,7 @@ function World:update(dt, profiler)
 	-- update only the visible actors
 	profiler:profile('updating actors', 
 		function()		
-			for a, _ in pairs(self._visibleActors) do
+			for _, a in pairs(self._visibleActors) do
 				a:update(dt)
 			end
 		end)	
@@ -546,7 +556,7 @@ function World:update(dt, profiler)
 	-- update the collision buckets
 	profiler:profile('updating collision buckets', 
 		function()			
-			for a, _ in pairs(self._visibleActors) do
+			for _, a in pairs(self._visibleActors) do
 				a:registerBuckets(self._map._buckets)
 			end	
 	end)
@@ -554,7 +564,7 @@ function World:update(dt, profiler)
 	-- test collistions for all visible actors
 	profiler:profile('testing collisions', 
 		function()				
-			for a, _ in pairs(self._visibleActors) do
+			for _, a in pairs(self._visibleActors) do
 				a:checkCollision(self._map._buckets)
 			end	
 		end)
@@ -589,12 +599,12 @@ function World:update(dt, profiler)
 			for k, _ in pairs(self._visibleIds) do
 				for _, v in pairs(self._map._buckets[k]) do
 					if v.ACTOR or v.STATICACTOR then
-						self._visibleActors[v] = true
+						self._visibleActors[v._id] = v
 					end
 					-- map objects that you can collide with but
 					-- never interact with
 					if v._image then
-						self._visibleObjects[v] = true
+						self._visibleObjects[#self._visibleObjects + 1] = v
 					end	
 				end
 			end	

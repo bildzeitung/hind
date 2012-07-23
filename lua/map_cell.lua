@@ -9,6 +9,11 @@ ffi.cdef
 [[
 	typedef struct 
 	{
+		int64_t id;
+	} map_actor;
+	
+	typedef struct 
+	{
 		char name[20];
 		int64_t x;
 		int64_t y;

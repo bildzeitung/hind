@@ -204,7 +204,7 @@ function Renderer:draw(camera, drawables, profiler)
 				if type(t) == 'table' and t.draw then
 					t:draw(camera, drawTable)
 				else
-					for i, _ in pairs(t) do
+					for _, i in pairs(t) do
 						i:draw(camera, drawTable)
 					end
 				end

@@ -214,7 +214,7 @@ function Map:draw(camera)
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()		
 	
-	self:calculateMinMax(camera, {1,1,1,1})
+	self:calculateMinMax(camera, {Map.cellSize,Map.cellSize,Map.cellSize,Map.cellSize})
 
 	-- set all map cells to not visible
 	for k, mc in pairs(self._cellsInMemory) do

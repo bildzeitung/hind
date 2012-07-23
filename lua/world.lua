@@ -108,6 +108,43 @@ function World:actorExists(id)
 end
 
 --
+--  Returns a table of actors that are close to the
+--	supplied actor
+--
+function World:closeActors(actor)
+	local as = {}
+	
+	for k, v in pairs(actor._bucketIds) do
+		for id, other in pairs(self._map._buckets[k]) do
+			if other._id and other._id ~= actor._id then
+				as[#as+1] = other
+			end
+		end
+	end
+	
+	return as
+end
+
+--
+--  Returns the actor that is closest to the
+--	supplied actor and the distance to the closest actor
+--
+function World:closestActor(actor)
+	local as = self:closeActors(actor)
+	local closestActor
+	local minDistance = math.huge
+	for k, v in ipairs(as) do
+		local distance = actor:distanceFrom(v)
+		if distance < minDistance then
+			minDistance = distance
+			closestActor = v
+		end
+	end
+	
+	return closestActor, minDistance
+end
+
+--
 --  Initialize the world
 --
 --	@TODO replace this with actual procedural generation
@@ -286,31 +323,39 @@ function World:createActors()
 
 	--self:createBunchOPotions(self._hero:position())
 
+	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
-		--local a = Actor.create('content/actors/slime.dat')
-		local a = Actor.create('content/actors/male_human.dat')	
+		local a = Actor.create('content/actors/slime.dat')
+		--local a = Actor.create('content/actors/male_human.dat')	
 		a:animation('standright')
 		a:position(math.random() * (20*32) + (500000*32), math.random() * (20*32) + (500000 * 32))
 		actors[a._id] = a
 	end	
+	]]
 
-	npc = Actor.create('content/actors/male_human.dat')
+	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
 	npc:animation('standright')
 	npc:position(500000*32,500000*32)
-	actors[npc._id] = npc
 	npc:name('Bilbo')
-	
-	self._npc = npc
+	actors[npc._id] = npc	
 	
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
 	local d = dg:dialog{ npc = npc, hero = self._hero }	
 	d.on_finish = function(self)
 		self._npc:removeDialog(self)
 	end
+	
+	local npc = Actor.create('content/actors/male_human.dat')
+	npc._health = 2000
+	npc._maxHealth = 2000
+	npc:animation('standright')
+	npc:position(499990*32,500000*32)
+	npc:name('Larry')
+	actors[npc._id] = npc	
 	
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
 	local d = dg:dialog{ npc = npc, hero = self._hero }	
@@ -318,6 +363,14 @@ function World:createActors()
 		self._npc:removeDialog(self)
 	end
 
+	local npc = Actor.create('content/actors/male_human.dat')
+	npc._health = 2000
+	npc._maxHealth = 2000
+	npc:animation('standright')
+	npc:position(499980*32,500000*32)
+	npc:name('Jimbo')
+	actors[npc._id] = npc	
+	
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
 	local d = dg:dialog{ npc = npc, hero = self._hero }	
 	d.on_finish = function(self)

@@ -172,10 +172,11 @@ function love.update(dt)
 				end
 				
 				if love.keyboard.isDown('lctrl') then
-					if world._hero:distanceFrom(world._npc) < 100 and table.count(world._npc:dialogs()) > 0 then
+					local closest, distance = world:closestActor(world._hero)
+					if closest and closest.dialogs and distance < 100 and table.count(closest:dialogs()) > 0 then
 						world._hero:velocity(0,0)
 						world._hero:animation('stand' .. world._hero:direction(), true)
-						local dialogViewer = objects.DialogViewer{ world._npc }
+						local dialogViewer = objects.DialogViewer{ closest }
 						overlays[dialogViewer] = true
 						dialogViewer.on_close = function(self)
 							overlays[dialogViewer] = nil

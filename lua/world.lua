@@ -49,6 +49,9 @@ function World:_clone(values)
 	o._showCollisionBoundaries = false	
 	o._drawInfoText = true			
 
+	o._actorsToSave = {}
+	o._actorsToLoad = {}
+	
 	return o
 end
 
@@ -132,7 +135,7 @@ function World:initialize()
 				-- the buckets that will be destroyed
 				for _, v in pairs(map._buckets[k]) do
 					if v._id then
-						self:saveActor(v)
+						self._actorsToSave[v._id] = v
 						self:removeActor(v)
 					end
 				end
@@ -156,11 +159,7 @@ function World:initialize()
 			log.log('self:actorExists(id)')
 			log.log(tostring(self:actorExists(id)))
 			
-			if not self:actorExists(id) then
-				local a = self:loadActor(id)
-				a:update(0)
-				a:registerBuckets(self._map._buckets, true)
-			end
+			self._actorsToLoad[id] = true
 		end
 		
 		log.log('=== on cell load complete ===')
@@ -281,22 +280,21 @@ end
 --	@TODO replace this with actual procedural generation
 --
 function World:createActors()
-	local numActors = 20
+	local numActors = 10
 	
 	local actors = {}
 
 	--self:createBunchOPotions(self._hero:position())
 
-	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
-		local a = Actor.create('content/actors/slime.dat')
+		--local a = Actor.create('content/actors/slime.dat')
+		local a = Actor.create('content/actors/male_human.dat')	
 		a:animation('standright')
 		a:position(math.random() * (20*32) + (500000*32), math.random() * (20*32) + (500000 * 32))
 		actors[a._id] = a
 	end	
-	]]
 
 	npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
@@ -556,6 +554,24 @@ end
 --  Updates the World
 ---
 function World:update(dt)
+	-- save one actor per frame
+	for k, v in pairs(self._actorsToSave) do
+		self:saveActor(v)
+		self._actorsToSave[k] = nil
+		break
+	end
+	
+	-- load one actor per frame
+	for id, _ in pairs(self._actorsToLoad) do
+		if not self:actorExists(id) then
+			local a = self:loadActor(id)
+			a:update(0)
+			a:registerBuckets(self._map._buckets, true)
+			self._actorsToLoad[id] = nil
+			break
+		end
+	end
+	
 	self._profiler:profile('updating lighting', 
 		function()
 			-- @TODO proper day / night cycles with changing colour

@@ -56,7 +56,7 @@ function World:initialize()
 	self._camera:viewport(0,0,width,height)
 		
 	self._map = factories.createMap('outdoor')
-	self._map:generate(499832,499832,512,512)
+	self._map:generate(499808,499808,512,512)
 	self._map:calculateMinMax(self._camera, {1,1,1,1})
 	self._map:visibleCells()
 	-- force the map to load the cells
@@ -390,7 +390,9 @@ end
 function World:removeObject(object)
 	-- unregister the actor from the buckets
 	for b, _ in pairs(object._bucketIds) do
-		self._map._buckets[b][object._id] = nil
+		if self._map._buckets[b] then
+			self._map._buckets[b][object._id] = nil
+		end
 	end				
 	-- remove actor from list of visible actors
 	self._visibleActors[object] = nil

@@ -6,21 +6,29 @@
 
 local Object = (require 'object').Object
 
+require 'inventory_actor'
+require 'static_actor'
+require 'actor_item'
+require 'actor'
+
 local factories = require 'factories'
+
 require 'renderer'
 
 --	@TODO this is required only because we aren't doing
 --  real procedural generation yet!
 require 'dialog_generator'
 
+local marshal = require 'marshal'
+
 local log = require 'log'
 
-local pairs, ipairs, type, table, math, tostring, love
-	= pairs, ipairs, type, table, math, tostring, love
+local pairs, ipairs, type, table, math, tostring, tonumber, io, love
+	= pairs, ipairs, type, table, math, tostring, tonumber, io, love
 	
 module('objects')
 
-World = Object{}
+World = Object{ _init = { '_profiler' } }
 
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
@@ -48,12 +56,44 @@ end
 --  Saves an actor to disk
 --
 function World:saveActor(actor)
+	log.log('Saving actor: ' .. actor._id)
+	
+	self._profiler:profile('Save actor', 
+		function()
+			local s = marshal.encode(actor)
+			local f = io.open('map/act_' .. actor._id .. '.act', 'wb')	
+			if not f then 			
+				return nil, 'There was a problem saving the actor #' .. actor._id
+			end	
+			f:write(s)	
+			f:close()
+		end)	
+	
+	log.log('Saving actor complete')
 end
 
 --
 --  Loads an actor from disk
 --
 function World:loadActor(id)
+	log.log('Loading actor: ' .. id)
+	
+	local actor
+	
+	self._profiler:profile('Load actor', 
+		function()
+			local f = io.open('map/act_' .. id .. '.act', 'rb')	
+			if not f then 			
+				return nil, 'There was a problem saving the actor #' .. actor._id
+			end	
+			local s = f:read('*all')
+			f:close()		
+			actor = marshal.decode(s)
+		end)		
+	
+	log.log('Loading actor complete')
+	
+	return actor
 end
 
 --
@@ -101,14 +141,29 @@ function World:initialize()
 	end
 	
 	self._map.on_cell_load = function(map, mc)
+		log.log('=== on cell load ===')
 		-- load all of the actors saved in this map cell
 		local actorCount = mc:actorCount()
+		
+		log.log('actorCount')
+		log.log(tostring(actorCount))
+		
 		for i = 0, actorCount - 1 do
-			local id = tonumber(mc._actorData[i])
-			if not self:actorExists(i) then
-				self:loadActor(i)
+			local id = tonumber(mc._actorData[i].id)
+			
+			log.log('id')
+			log.log(tostring(id))
+			log.log('self:actorExists(id)')
+			log.log(tostring(self:actorExists(id)))
+			
+			if not self:actorExists(id) then
+				local a = self:loadActor(id)
+				a:update(0)
+				a:registerBuckets(self._map._buckets, true)
 			end
 		end
+		
+		log.log('=== on cell load complete ===')
 	end	
 	
 	self:createHero()
@@ -127,7 +182,7 @@ end
 --  Create a hero
 --  
 function World:createHero()
-	local hero = factories.createInventoryActor('content/actors/hero.dat')
+	local hero = InventoryActor.create('content/actors/hero.dat')
 	
 	for k, v in pairs(hero._attributes) do
 		hero['_'..k] = v
@@ -169,11 +224,11 @@ function World:createHero()
 	end
 	
 	hero:name('Sir Gallahad')
-	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
-	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
-	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
-	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
-	local longSword = factories.createActorItem('content/actors/longsword.dat')
+	local chainArmour = ActorItem.create('content/actors/chain_armour.dat')
+	local chainHelmet = ActorItem.create('content/actors/chain_helmet.dat')
+	local plateShoes = ActorItem.create('content/actors/plate_shoes.dat')
+	local platePants = ActorItem.create('content/actors/plate_pants.dat')
+	local longSword = ActorItem.create('content/actors/longsword.dat')
 
 	hero:addItem(longSword)
 	hero:addItem(platePants)
@@ -232,17 +287,18 @@ function World:createActors()
 
 	--self:createBunchOPotions(self._hero:position())
 
-
+	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
-		local a = factories.createActor('content/actors/slime.dat')
+		local a = Actor.create('content/actors/slime.dat')
 		a:animation('standright')
 		a:position(math.random() * (20*32) + (500000*32), math.random() * (20*32) + (500000 * 32))
 		actors[a._id] = a
 	end	
+	]]
 
-	npc = factories.createActor('content/actors/male_human.dat')
+	npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
 	npc:animation('standright')
@@ -280,17 +336,17 @@ end
 --
 --  Draw the world
 --
-function World:draw(profiler)
+function World:draw()
 	self._renderer:draw( 
 		self._camera, 
 		{ 	
 			floatingTexts = self._floatingTexts, map = self._map,
 			actors = self._visibleActors, objects = self._visibleObjects 
 		}, 
-		profiler )
+		self._profiler )
 		
 	-- draw collision boundaries?		
-	profiler:profile('drawing collision boundaries',
+	self._profiler:profile('drawing collision boundaries',
 		function()
 			if self._showCollisionBoundaries then
 				local cw = self._camera:window()
@@ -313,7 +369,7 @@ function World:draw(profiler)
 		end)
 		
 	-- draw info text
-	profiler:profile('drawing info text', 	
+	self._profiler:profile('drawing info text', 	
 		function()		
 			love.graphics.setColor(255,255,255,255)		
 			love.graphics.setPixelEffect()
@@ -403,12 +459,6 @@ function World:draw(profiler)
 end
 
 --
---  Update the world
---
-function World:update(dt, profiler)
-end
-
---
 --  Schedule an item for removal
 --
 function World:scheduleRemoval(item)
@@ -457,7 +507,7 @@ end
 --  Creates an item
 --
 function World:createItem(description, position, cb)
-	item = factories.createStaticActor(description)
+	item = StaticActor.create(description)
 	item:position(position[1], position[2])
 	if cb then cb(item) end
 	item:update(0)
@@ -505,8 +555,8 @@ end
 --
 --  Updates the World
 ---
-function World:update(dt, profiler)
-	profiler:profile('updating lighting', 
+function World:update(dt)
+	self._profiler:profile('updating lighting', 
 		function()
 			-- @TODO proper day / night cycles with changing colour
 			-- and direction of light
@@ -527,7 +577,7 @@ function World:update(dt, profiler)
 	end	
 	
 	-- do the actor's AI updates
-	profiler:profile('updating AI', 
+	self._profiler:profile('updating AI', 
 		function()
 			for _, a in pairs(self._visibleActors) do
 				if a.AI then
@@ -537,7 +587,7 @@ function World:update(dt, profiler)
 		end)
 
 	-- update the floating texts
-	profiler:profile('updating floating texts', 
+	self._profiler:profile('updating floating texts', 
 		function()		
 			for _, t in pairs(self._floatingTexts) do
 				t:update(dt)
@@ -545,7 +595,7 @@ function World:update(dt, profiler)
 		end)
 		
 	-- update only the visible actors
-	profiler:profile('updating actors', 
+	self._profiler:profile('updating actors', 
 		function()		
 			for _, a in pairs(self._visibleActors) do
 				a:update(dt)
@@ -553,7 +603,7 @@ function World:update(dt, profiler)
 		end)	
 
 	-- update the collision buckets
-	profiler:profile('updating collision buckets', 
+	self._profiler:profile('updating collision buckets', 
 		function()			
 			for _, a in pairs(self._visibleActors) do
 				a:registerBuckets(self._map._buckets)
@@ -561,7 +611,7 @@ function World:update(dt, profiler)
 	end)
 	
 	-- test collistions for all visible actors
-	profiler:profile('testing collisions', 
+	self._profiler:profile('testing collisions', 
 		function()				
 			for _, a in pairs(self._visibleActors) do
 				a:checkCollision(self._map._buckets)
@@ -569,20 +619,20 @@ function World:update(dt, profiler)
 		end)
 		
 	-- zoom and center the map on the main character
-	profiler:profile('updating camera', 
+	self._profiler:profile('updating camera', 
 		function()
 			self._camera:zoom(self._zoom )
 			self._camera:center(self._hero._position[1], self._hero._position[2])
 		end)
 	
 	-- get the list of visible ids
-	profiler:profile('getting list of ids near map centre', 
+	self._profiler:profile('getting list of ids near map centre', 
 		function()
 			self._visibleIds = self._map:visibleIds(self._camera)
 		end)
 	
 	-- clear the list of visible items
-	profiler:profile('wiping out old visible items',
+	self._profiler:profile('wiping out old visible items',
 		function()
 			for k, _ in pairs(self._visibleObjects) do
 				self._visibleObjects[k] = nil
@@ -593,7 +643,7 @@ function World:update(dt, profiler)
 		end)
 		
 	-- generate a list of visible items
-	profiler:profile('generating list of visible items',
+	self._profiler:profile('generating list of visible items',
 		function()				
 			for k, _ in pairs(self._visibleIds) do
 				for _, v in pairs(self._map._buckets[k]) do

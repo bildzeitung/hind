@@ -51,6 +51,6 @@ end
 --
 function Profiler:reset()
 	for k, _ in pairs(self._profiles) do
-		self._profiles[k] = { sum = 0, count = 0 }
+		self._profiles[k] = nil
 	end
 end		

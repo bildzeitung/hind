@@ -11,12 +11,30 @@ require 'collidable'
 
 local log = require 'log'
 
+local factories = require 'factories'
+
 local table, pairs, ipairs, type, love
 	= table, pairs, ipairs, type, love
 	
 module('objects')
 
 Actor = Object{}
+
+--
+--  Returns a new actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--		existing - a table with existing information to merge into
+--		the actor (for deserialization)
+--
+function Actor.create(filename, existing)
+	local t = factories.prepareActor(filename, existing)
+	local a = Actor(t)
+	return a
+end
 
 --
 --  Actors support the following Events:
@@ -239,5 +257,31 @@ function Actor:maxHealth(value, absolute)
 		self._maxHealth = value
 	else
 		self._maxHealth = self._maxHealth + value
+	end
+end
+
+--
+--  Defines serialization / deserialization
+--
+function Actor:__persist()
+	local t =
+	{
+		_filename = self._filename,
+		_id = self._id,
+		_name = self._name,
+		_health = self._health,
+		_maxHealth = self._maxHealth,
+		_currentAnimation = self._currentAnimation._name,
+		_lastPosUpdate = { self._lastPosUpdate[1], self._lastPosUpdate[2] },
+		_position = { self._position[1], self._position[2] },
+		_velocity = { self._velocity[1], self._velocity[2] },
+		--_ignores,
+		--_dialogs,
+		--_collidees
+	}
+	return function()
+		local a = objects.Actor.create(t._filename, t)		
+		a:animation(a._currentAnimation)		
+		return a
 	end
 end

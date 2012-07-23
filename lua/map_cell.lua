@@ -24,8 +24,8 @@ local Object = (require 'object').Object
 
 local log = require 'log'
 
-local string, pairs, table, ipairs, tonumber, math, love 
-	= string, pairs, table, ipairs, tonumber, math, love
+local string, pairs, table, ipairs, tonumber, math, tostring, love 
+	= string, pairs, table, ipairs, tonumber, math, tostring, love
 
 module('objects')
 
@@ -110,7 +110,11 @@ end
 --  Sets the tile data for this map cell
 --
 function MapCell:data(tiles, objs, acts)
-	ffi.copy(self._tiles, tiles, Map.cellTileBytes)	
+	log.log('=== MapCell:data ===')
+	log.log('acts')
+	log.log(tostring(acts))
+	
+	ffi.copy(self._tiles, tiles, #tiles)	
 
 	if objs then
 		local objCount = #objs / ffi.sizeof('map_object')	
@@ -124,10 +128,15 @@ function MapCell:data(tiles, objs, acts)
 	end
 	
 	if acts then
-		local actorCount = self:actorCount()
+		local actorCount = #acts / ffi.sizeof('map_actor')	
 		self._actorData = ffi.new('map_actor[?]', actorCount)
 		ffi.copy(self._actorData, acts, #acts)					
+		
+		log.log('self._actorData')
+		log.log(tostring(self._actorData))		
 	end	
+	
+	log.log('=== MapCell:data complete ===')
 end
 
 --
@@ -143,24 +152,6 @@ end
 --
 function MapCell:size()
 	return self._size
-end
-
---
---  Returns the spatial buckets 
---  that the object currently occupies
---
-function MapCell:spatialBuckets(buckets)
-	local tss = self._tileSet:size()
-	
-	local ids = {}
-
-	for y = self._extents[2] * tss[2], self._extents[4] * tss[2], Map.bucketCellSize do
-		for x = self._extents[1] * tss[1], self._extents[3] * tss[1], Map.bucketCellSize do
-			ids[buckets.hash(x, y)] = true
-		end
-	end
-	
-	return ids
 end
 
 --
@@ -223,6 +214,24 @@ function MapCell:createColliders(buckets)
 end
 
 --
+--  Returns the spatial buckets 
+--  that the object currently occupies
+--
+function MapCell:spatialBuckets(buckets)
+	local tss = self._tileSet:size()
+	
+	local ids = {}
+
+	for y = self._extents[2] * tss[2], self._extents[4] * tss[2], Map.bucketCellSize do
+		for x = self._extents[1] * tss[1], self._extents[3] * tss[1], Map.bucketCellSize do
+			ids[buckets.hash(x, y)] = true
+		end
+	end
+	
+	return ids
+end
+
+--
 --  Registers the map cell in the proper
 --	collision buckets - creating them if necessary
 --
@@ -267,6 +276,7 @@ function MapCell:unregisterBuckets(buckets)
 	for k, _ in pairs(self._bucketIds) do
 		buckets['count' .. k] = buckets['count' .. k] - 1
 		if buckets['count' .. k] == 0 then
+			buckets['count' .. k] = nil
 			buckets[k] = nil
 		end		
 	end	

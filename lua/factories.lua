@@ -6,10 +6,6 @@
 
 require 'tileset'
 require 'map'
-require 'actor'
-require 'inventory_actor'
-require 'static_actor'
-require 'actor_item'
 require 'animation'
 require 'camera'
 
@@ -20,7 +16,7 @@ local actorID = 1000000
 --
 --  Reads in a lua table from a file
 --
-local function readTableFromFile(filename)
+function readTableFromFile(filename)
 	local f = io.open(filename, 'r')
 	if not f then 
 		return nil, 'There was an error loading the table from filename "' 
@@ -51,8 +47,6 @@ local function readTableFromFile(filename)
 		end		
 	end
 	
-	
-	
 	return t
 end
 
@@ -69,6 +63,19 @@ function createTileset(filename)
 		
 	local ts = tileset:new(t)	
 	return ts	
+end
+
+--
+--  Returns a new animation
+--	from the provided table
+--
+--  Inputs:
+--		table that describes the animation
+--
+function createAnimation(t)
+	t._tileSet = tileSets[t._tileSet]
+	local a = objects.Animation(t)
+	return a
 end
 
 --
@@ -90,99 +97,26 @@ function createMap(ts, size)
 end
 
 --
---  Returns a new actor loaded
---	from the provided data file
+--	Returns a table suitable for creating an actor
 --
---  Inputs:
---		filename - the name of the data file
---		that describes the actor
---
-function createActor(filename)
+function prepareActor(filename, existing)
 	local t = readTableFromFile(filename)
 	for k, v in pairs(t._animations) do
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
 	t._filename = filename
-	t._id = actorID
-	actorID = actorID + 1	
-	local a = objects.Actor(t)
-	return a
-end
-
---
---  Returns a new inventory actor loaded
---	from the provided data file
---
---  Inputs:
---		filename - the name of the data file
---		that describes the actor
---
-function createInventoryActor(filename)
-	local t = readTableFromFile(filename)
-	for k, v in pairs(t._animations) do
-		local a = createAnimation(v)
-		t._animations[k] = a		
+	
+	if not existing or not existing._id then
+		t._id = actorID
+		actorID = actorID + 1	
 	end
-	t._id = actorID
-	actorID = actorID + 1	
-	local a = objects.InventoryActor(t)
-	return a
-end
-
---
---  Returns a new static actor loaded
---	from the provided data file
---
---  Inputs:
---		filename - the name of the data file
---		that describes the actor
---
-function createStaticActor(filename)
-	local t = readTableFromFile(filename)
-	for k, v in pairs(t._animations) do
-		local a = createAnimation(v)
-		t._animations[k] = a		
+	
+	if existing then
+		t = table.merge(t, existing)
 	end
-	t._filename = filename
-	t._id = actorID
-	actorID = actorID + 1	
-	local sa = objects.StaticActor(t)
-	return sa
-end
-
---
---  Returns a new actor loaded
---	from the provided data file
---
---  Inputs:
---		filename - the name of the data file
---		that describes the actor
---
-function createActorItem(filename)
-	local t = readTableFromFile(filename)
-	for k, v in pairs(t._animations) do
-		local a = createAnimation(v)
-		t._animations[k] = a		
-	end
-	t._filename = filename
-	t._id = actorID
-	actorID = actorID + 1		
-	local ai = objects.ActorItem(t)
-	return ai
-end
-
---
---  Returns a new animation
---	from the provided table
---
---  Inputs:
---		table that describes the animation
---
-function createAnimation(t)
-	t._tileSet = tileSets[t._tileSet]
-	local a = objects.Animation(t)
-	return a
+	
+	return t
 end
 
 --

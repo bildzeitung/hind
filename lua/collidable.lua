@@ -8,8 +8,8 @@ local Object = (require 'object').Object
 
 local log = require 'log'
 
-local pairs, table, print
-	= pairs, table, print
+local pairs, table, tostring
+	= pairs, table, tostring
 	
 module('objects')
 
@@ -105,10 +105,13 @@ end
 --  Registers the actor in the proper
 --	collision buckets
 --
-function Collidable:registerBuckets(buckets)	
+function Collidable:registerBuckets(buckets, dbug)	
 	-- unregister the old bucket ids
 	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = nil
+		local bucket = buckets[k]
+		if bucket then
+			bucket[self._id] = nil
+		end
 	end	
 	
 	-- calculates the spatial buckets
@@ -116,7 +119,12 @@ function Collidable:registerBuckets(buckets)
 	
 	-- register the new buckets ids
 	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = self
+		local bucket = buckets[k]
+		if bucket then
+			bucket[self._id] = self
+		else
+			self._bucketIds[k] = nil
+		end
 	end	
 end
 

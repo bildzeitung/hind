@@ -9,12 +9,30 @@ local Object = (require 'object').Object
 require 'drawable'
 require 'collidable'
 
+local factories = require 'factories'
+
 local table, pairs, ipairs, print
 	= table, pairs, ipairs, print
 	
 module('objects')
 
 StaticActor = Object{}
+
+--
+--  Returns a new static actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--		existing - a table with existing information to merge into
+--		the actor (for deserialization)
+--
+function StaticActor.create(filename, existing)
+	local t = factories.prepareActor(filename, existing)
+	local a = StaticActor(t)
+	return a
+end
 
 --
 --  StaticActor constructor

@@ -67,7 +67,7 @@ function love.load()
 	state = 'normalGame'	
 	overlays = {}	
 	
-	world = objects.World{}
+	world = objects.World{ profiler }
 	world:initialize()
 	world._hero.on_end_die = function(self, other)			
 		state = 'herodead'
@@ -92,21 +92,28 @@ function love.draw()
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
 			
 			if drawProfileText then
-				local y = 400
+				local y = 300
 				local total = 0	
 				love.graphics.print('=== PROFILES ===', 10, y)
 				y = y + 20
 				
+				local avgs = {}
+				
 				for k, v in pairs(profiler:profiles()) do
-					local avg = v.sum / v.count
-					if avg > 0.0009 then
-						love.graphics.print(k,10, y)				
+					avgs[#avgs+1] = { name = k, avg = v.sum / v.count, count = v.count }
+				end
+				
+				table.sort(avgs, function(a,b) return a.avg > b.avg end)
+				
+				for _, v in pairs(avgs) do
+					if v.avg > 0.00009 then
+						love.graphics.print(v.name,10, y)				
 						love.graphics.print(v.count, 280, y)				
-						love.graphics.print(string.format('%.5f', v.sum / v.count),
+						love.graphics.print(string.format('%.5f', v.avg),
 							330, y)		
 						y=y+15		
 					end
-					total = total + avg
+					total = total + v.avg
 				end	
 				
 				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
@@ -134,23 +141,28 @@ function love.update(dt)
 		function()
 			if not world._hero._currentAction and table.count(overlays) == 0 then
 				local vx, vy = 0, 0
-			
+				-- @ TODO put this into the actor definition file!!!!
+				-- n.b. this is a good value for testing but makes the hero 
+				-- walk very fast
+				local speed = 400
+				-- @ TODO put this into the actor definition file!!!!
+				
 				if love.keyboard.isDown('up') then
 					world._hero:animation('walkup')		
-					vy = -125
+					vy = -speed
 				elseif
 					love.keyboard.isDown('down') then
 					world._hero:animation('walkdown')		
-					vy = 125
+					vy = speed
 				end
 				
 				if love.keyboard.isDown('left') then
 					world._hero:animation('walkleft')
-					vx = -125
+					vx = -speed
 				elseif
 					love.keyboard.isDown('right') then
 					world._hero:animation('walkright')		
-					vx = 125
+					vx = speed
 				end
 				
 				world._hero:velocity(vx, vy)
@@ -226,7 +238,7 @@ function love.update(dt)
 				world._zoom  = world._zoom  - 0.01
 			end	
 			
-			if world._zoom < 0.2 then world._zoom  = 0.2 end
+			if world._zoom < 0.1 then world._zoom  = 0.1 end
 			
 			if love.keyboard.isDown('h') then
 				world._showCollisionBoundaries = true

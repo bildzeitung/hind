@@ -74,7 +74,7 @@
 	on_end_spellcast = function(self)
 		local spell = self._spells[self._currentSpell]
 		local magic = 
-			factories.createActor('content/actors/magic_'..
+			objects.Actor.create('content/actors/magic_'..
 			spell[1] .. '.dat')			
 		magic._actor = self
 		self:ignoreCollision(magic)

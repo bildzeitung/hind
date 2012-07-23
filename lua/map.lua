@@ -42,7 +42,7 @@ Map.cellTileShorts = Map.cellSize * Map.cellSize * Map.layers
 -- the number of bytes in one cell
 Map.cellTileBytes = Map.cellTileShorts * 2
 -- the number of frames to keep a map cell around for before it is disposed
-Map.unusedFrames = 1200
+Map.unusedFrames = 60
 -- the number of tile to generate ahead
 Map.lookAhead = Map.cellSize * 4
 -- the size of a bucket cell
@@ -184,9 +184,12 @@ function Map:update(dt, camera, profiler)
 			self._generated[k] = nil
 			mc:registerBuckets(self._buckets)
 			self._cellsToLoad[k] = nil
+			
+			log.log('Calling on_cell_load callback')
 			if self.on_cell_load then
 				self:on_cell_load(mc)
 			end		
+			
 			break
 		end
 	end
@@ -354,7 +357,12 @@ function Map:loadMapCell(coords, hash)
 		{coords[1], coords[2]}, 
 		Map.layers }
 	
+	log.log('Setting map cell data')
+	
 	mc:data(tileData, objs, acts)
+	
+	log.log('mc:actorCount()')
+	log.log(tostring(mc:actorCount()))
 	
 	log.log('Loading map cell complete!')
 	
@@ -409,7 +417,9 @@ end
 --  Disposes of a map cell
 --	
 function Map:disposeMapCell(mc)
-	--log.log('Disposing map cell: ' .. mc._hash)	
+	log.log('Disposing map cell: ' .. mc._hash)	
+	
+	log.log('Updating cell actor data')
 	
 	-- update actor data
 	local actors = {}
@@ -421,7 +431,7 @@ function Map:disposeMapCell(mc)
 					actors[#actors+1] = v._id
 				end
 			end
-		end		
+		end
 	end
 	
 	mc._actorData = ffi.new('map_actor[?]', #actors)
@@ -432,15 +442,23 @@ function Map:disposeMapCell(mc)
 	-- save the map cell to disk
 	self:saveMapCell(mc)
 	
+	log.log('Calling on_dispose callback')
+	
 	if self.on_cell_dispose then
 		self:on_cell_dispose(mc)
 	end
+	
+	log.log('Unregistering cell buckets')
 	
 	-- unregister the map cell from the collision buckets
 	mc:unregisterBuckets(self._buckets)
 	-- remove the references to all resources
 	self._cellsInMemory[mc._hash] = nil	
-	collectgarbage('collect')
+
+	log.log('Collecting garbage')	
+	collectgarbage('collect')	
+		
+	log.log('Disposing map cell complete!')
 end
 
 --
@@ -664,7 +682,7 @@ function Map:generate(xpos, ypos, sx, sy)
 	-- now add some land
 	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do
-			local tt = math.floor(math.random(2)) + 4
+			local tt = math.floor(math.random(3)) + 3
 			for yy = y, y + Map.cellSize - 1 do
 				for xx = x, x + Map.cellSize - 1 do
 					tiles[1][yy][xx] = 11 + (tt*18)

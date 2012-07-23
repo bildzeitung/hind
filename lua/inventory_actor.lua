@@ -10,12 +10,30 @@ require 'actor'
 
 local log = require 'log'
 
+local factories = require 'factories'
+
 local table, pairs, ipairs, type, love
 	= table, pairs, ipairs, type, love
 	
 module('objects')
 
 InventoryActor = Object{}
+
+--
+--  Returns a new inventory actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--		existing - a table with existing information to merge into
+--		the actor (for deserialization)
+--
+function InventoryActor.create(filename, existing)
+	local t = factories.prepareActor(filename, existing)
+	local a = InventoryActor(t)
+	return a
+end
 
 --
 --  InventoryActor constructor

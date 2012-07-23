@@ -21,8 +21,8 @@ ffi.cdef
 
 local log = require 'log'
 
-local table, pairs, ipairs, math, io, print, love, tostring, collectgarbage
-	= table, pairs, ipairs, math, io, print, love, tostring, collectgarbage
+local table, pairs, ipairs, math, io, love, tostring, collectgarbage
+	= table, pairs, ipairs, math, io, love, tostring, collectgarbage
 	
 module('objects')
 
@@ -197,56 +197,53 @@ end
 --
 --  Draw map
 --
-function Map:draw(camera, profiler)	
-	--[[profiler:profile('Map draw',
-		function()]]
-			local cw = camera:window()
-			local cv = camera:viewport()
-			local ts = self._tileSet:size()		
-			
-			self:calculateMinMax(camera, {1,1,1,1})
+function Map:draw(camera)
+	local cw = camera:window()
+	local cv = camera:viewport()
+	local ts = self._tileSet:size()		
+	
+	self:calculateMinMax(camera, {1,1,1,1})
 
-			-- set all map cells to not visible
-			for k, mc in pairs(self._cellsInMemory) do
-				mc._visible = false
+	-- set all map cells to not visible
+	for k, mc in pairs(self._cellsInMemory) do
+		mc._visible = false
+	end
+	
+	local cells = self:visibleCells()
+	
+	-- coarse adjustment
+	local diffX = (self._minMax[1] - self._cellMinMax[1]) + 1
+	local diffY = (self._minMax[2] - self._cellMinMax[2]) + 1
+	local fineX = math.floor((cw[1] % 32) * self._zoom[1])
+	local fineY = math.floor((cw[2] % 32) * self._zoom[2])
+	-- the starting positions so the cells will be centered in the proper location
+	local startX = (-diffX * ts[1] * self._zoom[1]) - 
+		fineX - (ts[1] / 2 * self._zoom[1])
+	local startY = (-diffY * ts[2] * self._zoom[2]) 
+		- fineY - (ts[2] / 2 * self._zoom[2])
+	-- the current screen position for the cells
+	local screenX = startX
+	local screenY = startY
+	-- the amount to move on the screen after each cell
+	local screenIncX = Map.cellSize * ts[1] * self._zoom[1]
+	local screenIncY = Map.cellSize * ts[2]	* self._zoom[2]
+	-- draw the cells
+	local currentCell = 1
+	for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+		screenX = startX
+		for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
+			-- draw the cell if it exists
+			local cell = cells[currentCell]
+			if cell ~= false then
+				local canvas = cells[currentCell]:canvas()
+				love.graphics.draw(canvas, screenX, screenY, 
+					0, self._zoom[1], self._zoom[2])				
 			end
-			
-			local cells = self:visibleCells()
-			
-			-- coarse adjustment
-			local diffX = (self._minMax[1] - self._cellMinMax[1]) + 1
-			local diffY = (self._minMax[2] - self._cellMinMax[2]) + 1
-			local fineX = math.floor((cw[1] % 32) * self._zoom[1])
-			local fineY = math.floor((cw[2] % 32) * self._zoom[2])
-			-- the starting positions so the cells will be centered in the proper location
-			local startX = (-diffX * ts[1] * self._zoom[1]) - 
-				fineX - (ts[1] / 2 * self._zoom[1])
-			local startY = (-diffY * ts[2] * self._zoom[2]) 
-				- fineY - (ts[2] / 2 * self._zoom[2])
-			-- the current screen position for the cells
-			local screenX = startX
-			local screenY = startY
-			-- the amount to move on the screen after each cell
-			local screenIncX = Map.cellSize * ts[1] * self._zoom[1]
-			local screenIncY = Map.cellSize * ts[2]	* self._zoom[2]
-			-- draw the cells
-			local currentCell = 1
-			for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
-				screenX = startX
-				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
-					-- draw the cell if it exists
-					local cell = cells[currentCell]
-					if cell ~= false then
-						local canvas = cells[currentCell]:canvas()
-						love.graphics.draw(canvas, screenX, screenY, 
-							0, self._zoom[1], self._zoom[2])				
-					end
-					currentCell = currentCell + 1
-					screenX = screenX + screenIncX
-				end		
-				screenY = screenY + screenIncY
-			end
-		--[[end)]]
+			currentCell = currentCell + 1
+			screenX = screenX + screenIncX
+		end		
+		screenY = screenY + screenIncY
+	end
 end
 
 --
@@ -388,7 +385,6 @@ function Map:generateMapCells(cells)
 	thread:set('cmd',cmd)
 end
 
---[[
 --
 --  Adds transition (overlay tiles)
 --  between base terrain types
@@ -398,7 +394,7 @@ end
 --	types start at index 1 and are contiguous in 
 --	a tileset
 --  
-function Map:transitions()
+function Map:transitions(tiles)
 	local tilesPerType = 18
 	
 	--  a table that maps the edge number
@@ -505,35 +501,36 @@ function Map:transitions()
 	-- top left inner edge
 	edgeToTileIndex[256] = 7
 	
-	self._tiles.edges = {}
-	for y = 1, self._sizeInTiles[2] do
-		self._tiles.edges[y] = {}
-		for x = 1, self._sizeInTiles[1] do	
-			self._tiles.edges[y][x]	= {}
+	local sy = #tiles[1]
+	local sx = #tiles[1][1]
+	
+	local edges = {}
+	for y = 1, sy do
+		edges[y] = {}
+		for x = 1, sx do	
+			edges[y][x]	= {}
 		end
 	end
 			
-	for y = 1, self._sizeInTiles[2] do
-		io.write('MAP TILE TRANSITIONS ARE BEING CALCULATED... ' .. ((y / self._sizeInTiles[2]) * 100) .. '%             \r')
-		for x = 1, self._sizeInTiles[1] do			
-			local tile = self._tiles.base[y][x]
+	for y = 1, sy do
+		for x = 1, sx do			
+			local tile = tiles[1][y][x]
 			local thisType = math.floor((tile - 1)/tilesPerType)
 
-			local edges = 0			
 			local count = 8
 			-- considsr all neighbouring tiles
 			for yy = y - 1, y + 1 do
 				for xx = x - 1, x + 1 do
 					-- only work to edge of map
-					if yy >= 1 and yy <= self._sizeInTiles[2] and
-						xx >= 1 and xx <= self._sizeInTiles[1] and
+					if yy >= 1 and yy <= sy and
+						xx >= 1 and xx <= sx and
 						not (y == yy and x == xx) then
-							local neighbourTile = self._tiles.base[yy][xx]
+							local neighbourTile = tiles[1][yy][xx]
 							local neighbourType = math.floor((neighbourTile-1)/tilesPerType)							
 							if neighbourType > thisType then								
-								local edgeType = self._tiles.edges[yy][xx][2 ^ count]
+								local edgeType = edges[yy][xx][2 ^ count]
 								if (not edgeType) or (edgeType > thisType) then
-									self._tiles.edges[yy][xx][2 ^ count] = thisType
+									edges[yy][xx][2 ^ count] = thisType
 								end
 							end
 							count = count - 1
@@ -543,13 +540,13 @@ function Map:transitions()
 		end	
 	end
 	
-	for y = 1, self._sizeInTiles[2] do
-		for x = 1, self._sizeInTiles[1] do	
-			local edges = self._tiles.edges[y][x]	
+	for y = 1, sy do
+		for x = 1, sx do	
+			local edgeList = edges[y][x]	
 			local sum = 0
 			local edgeType = 0
 			local minEdgeType = 99
-			for k, v in pairs(edges) do
+			for k, v in pairs(edgeList) do
 				sum = sum + k
 				if v < minEdgeType then
 					edgeType = v
@@ -559,66 +556,13 @@ function Map:transitions()
 			
 			if sum > 0 then
 				local idx = edgeToTileIndex[sum] or 4
-				self._tiles.overlay[y][x] = (edgeType * tilesPerType) + idx
+				tiles[2][y][x] = (edgeType * tilesPerType) + idx
 			end
 		end	
 	end	
-	
-	for y = 1, self._sizeInTiles[2] do
-		for x = 1, self._sizeInTiles[1] do	
-			self._tiles.edges[y][x] = nil
-		end
-		self._tiles.edges[y] = nil
-	end
-	self._tiles.edges = nil
-	
-	print()
+
+	edges = nil
 end
-]]
-
---[[
-function Map:createObject(name, x, y)
-	local ts = self._tileSet:size()
-		
-	-- insert objet
-	local o = table.clone(self._tileSet._objects[name], { deep = true })
-
-	o._position = { x * ts[1], y * ts[2] }
-	local b = { }
-	b[1] = o._position[1] + o._boundary[1] - o._offset[1]
-	b[2] = o._position[2] + o._boundary[2] - o._offset[2]
-	b[3] = o._position[1] + o._boundary[3] - o._offset[1]
-	b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
-	o._boundary = b
-	
-	--
-	--  Draw the object
-	--
-	function o:draw(camera, drawTable)
-		local cw, cv, zoomX, zoomY, cwzx, cwzy =
-			drawTable.cw, drawTable.cv, 
-			drawTable.zoomX, drawTable.zoomY,
-			drawTable.cwzx, drawTable.cwzy	
-			
-		local sx = math.floor((self._position[1] * zoomX) - cwzx)
-		local sy = math.floor((self._position[2] * zoomY) - cwzy)
-		local z = self._position[2] + 
-			self._height - (self._position[1] * 0.0000000001)
-		
-		table.insert(drawTable.object, 
-			{ z, self._image[1], 
-			sx, sy, 
-			zoomX, zoomY, self._offset[1], self._offset[2] })
-			
-		table.insert(drawTable.roof, 
-			{ z, self._image[2], 
-			sx, sy, 
-			zoomX, zoomY, self._offset[1], self._offset[2] })			
-	end
-	
-	return o
-end	
-]]
 
 --
 --  Generates a map
@@ -638,7 +582,6 @@ function Map:generate(xpos, ypos, sx, sy)
 		
 	-- start with all water	
 	for y = 1, sy do
-		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / sy) * 100) .. '%             \r')
 		for x = 1, sx do
 			tiles[1][y][x] = 11
 			if math.random() > 0.5 then
@@ -646,8 +589,8 @@ function Map:generate(xpos, ypos, sx, sy)
 			end
 		end
 	end			
-	print()
 	
+	--[[
 	-- make a box surrounding the water as a barrier
 	-- N.B. this should be done automatically by tile transitions
 	for y = Map.cellSize - 1, sy - Map.cellSize do
@@ -658,6 +601,7 @@ function Map:generate(xpos, ypos, sx, sy)
 		tiles[1][Map.cellSize - 1][x] = 1
 		tiles[1][sx - Map.cellSize][x] = 1
 	end	
+	]]
 	
 	-- now add some land
 	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
@@ -673,6 +617,9 @@ function Map:generate(xpos, ypos, sx, sy)
 			end
 		end
 	end
+	
+	-- generate tile transitions
+	self:transitions(tiles)
 	
 	-- add random objects
 	local current = 1
@@ -697,7 +644,6 @@ function Map:generate(xpos, ypos, sx, sy)
 			end
 		end
 	end
-	print()	
 	
 	local cx = xcoord
 	local cy = ycoord
@@ -754,7 +700,6 @@ function Map:generate(xpos, ypos, sx, sy)
 	for k, v in ipairs(cells) do
 		self:saveMapCell(v)
 	end
-
 	
 	--log.log('Finished creating map cells!')		
 end

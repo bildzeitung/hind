@@ -57,8 +57,6 @@ function World:initialize()
 		
 	self._map = factories.createMap('outdoor')
 	self._map:generate(499932,499932,256,256)
-	--self._map:transitions()
-	--self._map:createColliders()
 	self._map:calculateMinMax(self._camera, {1,1,1,1})
 	self._map:visibleCells()
 	

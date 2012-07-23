@@ -57,9 +57,9 @@ function love.load()
 	drawProfileText = true
 	
 	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
-	music:setVolume(0.15)
-	music:setLooping( true )
-	music:play()	
+	--music:setVolume(0.15)
+	--music:setLooping( true )
+	--music:play()	
 	
 	loveframes.config['DEBUG'] = false
 	loveframes.util.SetActiveSkin('Hind')

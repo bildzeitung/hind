@@ -594,19 +594,6 @@ function Map:generate(xpos, ypos, sx, sy)
 		end
 	end			
 	
-	--[[
-	-- make a box surrounding the water as a barrier
-	-- N.B. this should be done automatically by tile transitions
-	for y = Map.cellSize - 1, sy - Map.cellSize do
-		tiles[1][y][Map.cellSize - 1] = 1
-		tiles[1][y][sx - Map.cellSize] = 1
-	end
-	for x = Map.cellSize - 1, sx - Map.cellSize - 1 do
-		tiles[1][Map.cellSize - 1][x] = 1
-		tiles[1][sx - Map.cellSize][x] = 1
-	end	
-	]]
-	
 	-- now add some land
 	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do

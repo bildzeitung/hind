@@ -59,6 +59,10 @@ function World:initialize()
 	self._map:generate(499932,499932,256,256)
 	self._map:calculateMinMax(self._camera, {1,1,1,1})
 	self._map:visibleCells()
+	-- force the map to load the cells
+	for i = 0, 20 do
+		self._map:update(0, self._camera)
+	end
 	
 	self._map.on_cell_dispose = function(map, mc)
 		-- look at the ids that are going to be removed

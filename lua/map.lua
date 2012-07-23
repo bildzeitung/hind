@@ -73,6 +73,8 @@ function Map:_clone(values)
 	o._minMax = {}
 	o._cellMinMax = {} 
 	o._zoom = {}	
+	o._cellsToDispose = {}
+	o._cellsToLoad = {}
 	
 	o:createBuckets()
 	
@@ -124,52 +126,62 @@ end
 --  Update map
 --
 function Map:update(dt, camera, profiler)
+	
 	--[[
-	profiler:profile('Map first part of update',
-		function()		
-			self:calculateMinMax(camera, {Map.lookAhead,  Map.lookAhead,  Map.lookAhead,  Map.lookAhead})
-		end)
+	self:calculateMinMax(camera, {Map.lookAhead,  Map.lookAhead,  Map.lookAhead,  Map.lookAhead})
+
+	local generate = {}	
+	-- check to see if the cells we may need shortly have been generated
+	for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+		for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
+			local coords = {x,y}
+			local hash = Map.hash(coords)								
+			-- check if the cell exists
+			if not self._cellsInMemory[hash] and not self._generated[hash] then
+				if not self:cellExists(coords,hash) then
+					log.log('Cell doesnt exist: ' .. hash)
+					generate[#generate+1] = coords			
+				end													
+				self._generated[hash] = true
+			end														
+		end		
+	end
+			
+	if #generate > 0 then
+		log.log('Number of cells to generate: ' .. #generate)
+		self:generateMapCells(generate)
+	end
 	]]
 	
-		--[[
-	profiler:profile('Map second part of update',
-		function()				
-			local generate = {}	
-			-- check to see if the cells we may need shortly have been generated
-			for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
-				for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
-					local coords = {x,y}
-					local hash = Map.hash(coords)								
-					-- check if the cell exists
-					if not self._cellsInMemory[hash] and not self._generated[hash] then
-						if not self:cellExists(coords,hash) then
-							log.log('Cell doesnt exist: ' .. hash)
-							generate[#generate+1] = coords			
-						end													
-						self._generated[hash] = true
-					end														
-				end		
+	-- go through all cells and get rid of ones that are no longer required
+	for k, v in pairs(self._cellsInMemory) do
+		if not v._visible then
+			v._framesNotUsed = v._framesNotUsed + 1
+			if v._framesNotUsed > Map.unusedFrames then
+				self._cellsToDispose[v._hash] = v
 			end
-					
-			if #generate > 0 then
-				log.log('Number of cells to generate: ' .. #generate)
-				self:generateMapCells(generate)
-			end
-		end)
-			]]
-			
-	profiler:profile('Map third part of update',	
-		function()
-			-- go through all cells and get rid of ones that are no longer required
-			for k, v in pairs(self._cellsInMemory) do
-				if not v._visible then
-					v._framesNotUsed = v._framesNotUsed + 1
-					if v._framesNotUsed > Map.unusedFrames then
-						self:disposeMapCell(v)
-					end
-				end
-			end	
-		end)
+		end
+	end	
+
+	-- dispose one cell per frame
+	for k, v in pairs(self._cellsToDispose) do
+		self:disposeMapCell(v)
+		self._cellsToDispose[k] = nil
+		break
+	end
+	
+	-- load one cell per frame
+	for k, v in pairs(self._cellsToLoad) do
+		local mc = self:loadMapCell(v, k)
+		if mc then
+			mc._hash = k
+			self._cellsInMemory[k] = mc
+			self._generated[k] = nil
+			mc:registerBuckets(self._buckets)
+			self._cellsToLoad[k] = nil
+			break
+		end
+	end
 end
 
 --
@@ -265,17 +277,9 @@ function Map:mapCell(coords)
 	if mc then 
 		return mc 
 	else
-		mc = self:loadMapCell({x,y}, hash)
+		self._cellsToDispose[hash] = nil
+		self._cellsToLoad[hash] = {x,y}
 	end
-	
-	if mc then
-		mc._hash = hash
-		self._cellsInMemory[hash] = mc
-		self._generated[hash] = nil
-		mc:registerBuckets(self._buckets)
-	end
-	
-	return mc
 end
 
 --

@@ -218,6 +218,7 @@ function Renderer:draw(camera, drawables, profiler)
 			self:updateLightEffect(camera)
 		end)
 
+	--[[
 	profiler:profile('drawing base tiles', 
 		function()						
 			for k, v in ipairs(drawTable.base) do
@@ -235,6 +236,7 @@ function Renderer:draw(camera, drawables, profiler)
 					v[7], v[8])
 			end
 		end)
+	]]
 	
 	profiler:profile('z-sorting', 
 		function()	

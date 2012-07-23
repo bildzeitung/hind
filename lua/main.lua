@@ -229,11 +229,11 @@ function love.update(dt)
 			if world._zoom < 0.1 then world._zoom  = 0.1 end
 			
 			if love.keyboard.isDown('h') then
-				showCollisionBoundaries = true
+				world._showCollisionBoundaries = true
 			end		
 
 			if love.keyboard.isDown('n') then
-				showCollisionBoundaries = false
+				world._showCollisionBoundaries = false
 			end	
 			
 			if love.keyboard.isDown('=') then

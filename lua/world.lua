@@ -190,20 +190,22 @@ end
 --	@TODO replace this with actual procedural generation
 --
 function World:createActors()
-	local numActors = 100
+	local numActors = 50
 	
 	local actors = {}
 
-	self:createBunchOPotions(self._hero:position())
+	--self:createBunchOPotions(self._hero:position())
 
+	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
 		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
-		a:position(math.random() * (30*32) + (499990*32), math.random() * (30*32) + (499990 * 32))
+		a:position(math.random() * (50*32) + (499980*32), math.random() * (50*32) + (499980 * 32))
 		actors[a._id] = a
 	end	
+	]]
 
 	npc = factories.createActor('content/actors/male_human.dat')
 	npc._health = 2000

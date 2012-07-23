@@ -9,7 +9,7 @@
 		if not self._beingRemoved and other.addItem then
 			if other:addItem(self) then
 				self._beingRemoved = true
-				removals[self._id] = self
+				world:scheduleRemoval(self)
 			end
 		end
 	end,

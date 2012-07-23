@@ -93,9 +93,6 @@ function Map:calculateMinMax(camera, padding)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	
-	local cw = camera:window()
-	local cv = camera:viewport()
-	
 	self._zoom[1] = cv[3] / cw[3]
 	self._zoom[2] = cv[3] / cw[3]
 	

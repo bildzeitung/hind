@@ -37,7 +37,7 @@ end
 --  Sets or gets  the camera viewport
 --
 function _M:viewport(x, y, w, h)
-	if not w then
+	if not x then
 		return self._viewport
 	end
 	
@@ -51,7 +51,7 @@ end
 --  Sets or gets  the camera window
 --
 function _M:window(x, y, w, h)
-	if not w then
+	if not x then
 		return self._window
 	end
 	

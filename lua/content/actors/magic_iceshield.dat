@@ -13,7 +13,7 @@
 			self._actor._position[2])	
 	end,
 	on_end_attack = function(self)
-		removals[self._id] = self				
+		world:scheduleRemoval(self)
 	end,
 	_animations = 
 	{

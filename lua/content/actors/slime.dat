@@ -33,19 +33,19 @@
 	end,
 	on_set_health = function(self, newValue, justset)
 		if justset < 0 then
-			createFloatingText({255,0,0,255},self, -justset)
+			world:createFloatingText({255,0,0,255},self, -justset)
 		end
 	end,
 	on_begin_die = function(self)		
 		self:velocity(0,0)
 		if self._killer.experience then
 			self._killer:experience(100)			
-			createFloatingText({0,255,255,255},self._killer, 100)
+			world:createFloatingText({0,255,255,255},self._killer, 100)
 		end
 	end,		
 	on_end_die = function(self, other)			
-		removals[self._id] = self						
-		dropItem(self)
+		world:scheduleRemoval(self)
+		world:dropItem(self)
 	end,
 	on_begin_attack = function(self)
 	end,

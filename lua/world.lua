@@ -111,12 +111,16 @@ end
 --  Returns a table of actors that are close to the
 --	supplied actor
 --
-function World:closeActors(actor)
+function World:closeActors(actor, filter)
 	local as = {}
+	
+	local filter = filter or function(v)
+		return v._id and v._id ~= actor._id and not v._actor
+	end
 	
 	for k, v in pairs(actor._bucketIds) do
 		for id, other in pairs(self._map._buckets[k]) do
-			if other._id and other._id ~= actor._id then
+			if filter(other) then
 				as[#as+1] = other
 			end
 		end

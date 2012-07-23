@@ -610,7 +610,7 @@ function Map:generate(xpos, ypos, sx, sy)
 	for y = 1, sy do
 		io.write('MAP WATER TILES ARE BEING GENERATED... ' .. ((y / sy) * 100) .. '%             \r')
 		for x = 1, sx do
-			tiles[1][y][x] = 11
+			tiles[1][y][x] = 1
 			if math.random() > 0.5 then
 				tiles[1][y][x] = math.floor(math.random() * 3) + 16
 			end

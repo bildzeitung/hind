@@ -124,7 +124,9 @@ end
 --  Adds an item to the collision ignore list
 --
 function Collidable:ignoreCollision(item)
-	self._ignores[item._id] = true
+	if item._id then
+		self._ignores[item._id] = true
+	end
 end
 
 --
@@ -145,6 +147,8 @@ end
 --  Performs a collision calculation
 --
 function Collidable:calculateBoundary()	
+	-- @TODO fix this, a collider shouldn't need to have an animation
+	-- :-(
 	-- update the boundary box 
 	local ts = self._currentAnimation:tileSet()
 	local bs = ts:boundaries()

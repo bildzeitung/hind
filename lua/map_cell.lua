@@ -24,8 +24,8 @@ function MapCell:_clone(values)
 	local o = Object._clone(self,values)
 				
 	-- create memory to hold the tiles
-	local totalTiles = o._size[1] * o._size[2] * o._layers	
-	o._tiles = ffi.new('uint16_t[?]', totalTiles)
+	o._totalTiles = o._size[1] * o._size[2] * o._layers	
+	o._tiles = ffi.new('uint16_t[?]', o._totalTiles)
 	
 	o._extents = { o._coords[1], o._coords[2],
 		o._coords[1] + o._size[1] - 1,
@@ -48,6 +48,8 @@ function MapCell:_clone(values)
 	o._visible = false
 	o._framesNotUsed = 0	
 	o._hash = false
+	
+	o._colliders = {}
 	
 	return o
 end
@@ -136,43 +138,50 @@ function MapCell:spatialBuckets(buckets)
 end
 
 --
---  Register the collidable tiles
+--  Creates the collidable objects 
 --
-function MapCell:registerCollidableTiles(buckets)	
+function MapCell:createColliders(buckets)
+	log.log('==== CREATING COLLIDERS! ====')		
 	-- register any collidable tiles
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
+	
 	local currentTile = 0
 	for z = 1, self._layers do
-		for y = 1, Map.cellSize do
+		local sx = self._extents[1]
+		local sy = self._extents[2]
+		for y = 1, Map.cellSize do	
+		sx = self._extents[1]
 			for x = 1, Map.cellSize do
 				local tile = self._tiles[currentTile]
 				if tile > 0 then				
 					local boundary = bs[tile]
 					if boundary and (boundary[3] > 0 or boundary[4] > 0) then
-					local tx = x * ts[1]
-					local ty = y * ts[2]
-					local o = {}				
-					o._position = { x * ts[1], y * ts[2] }
-				
-					o._boundary = {}
-					o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
-					o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
-					o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
-					o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)
-				
-					o._ids = {}				
-					o._ids[b.hash(o._boundary[1], o._boundary[2])] = true
-					o._ids[b.hash(o._boundary[1], o._boundary[4])] = true
-					o._ids[b.hash(o._boundary[3], o._boundary[2])] = true
-					o._ids[b.hash(o._boundary[3], o._boundary[4])] = true
-													
-					table.insert(self._colliders, o)
+						-- @TODO fix this, should just be able to use a collidable object, but
+						-- collidables currently require an animation :-(
+						local o = {}				
+						o._position = { x, y }		
+						o._boundary = {}
+						o._boundary[1] = o._position[1] + boundary[1] - (ts[1] / 2)
+						o._boundary[2] = o._position[2] + boundary[2] - (ts[2] / 2)
+						o._boundary[3] = o._position[1] + boundary[3] - (ts[1] / 2)
+						o._boundary[4] = o._position[2] + boundary[4] - (ts[2] / 2)		
+						o._ids = {}				
+						o._ids[buckets.hash(o._boundary[1], o._boundary[2])] = true
+						o._ids[buckets.hash(o._boundary[1], o._boundary[4])] = true
+						o._ids[buckets.hash(o._boundary[3], o._boundary[2])] = true
+						o._ids[buckets.hash(o._boundary[3], o._boundary[4])] = true	
+						self._colliders[#self._colliders+1] = o
+					end
 				end
-				currentTile = currentTile + 1
+				currentTile = currentTile + 1				
+				sx = sx + ts[1]
 			end
+			sy = sy + ts[2]
 		end
 	end	
+	log.log('COUNT: ' .. #self._colliders)
+	log.log('==== CREATING COLLIDERS! ====')
 end
 
 --
@@ -193,7 +202,21 @@ function MapCell:registerBuckets(buckets)
 		end		
 	end	
 	
-	self:registerCollidableTiles(buckets)
+	self:createColliders(buckets)
+	self:registerColliders(buckets)
+end
+
+--
+--  Registers the map cells collidable objects in the proper
+--	collision buckets
+--
+function MapCell:registerColliders(buckets)
+	for _, v in pairs(self._colliders) do
+		-- register the new buckets ids
+		for k, _ in pairs(self._bucketIds) do
+			buckets[k][self._id] = self
+		end	
+	end
 end
 
 --

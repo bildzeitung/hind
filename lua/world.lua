@@ -56,7 +56,7 @@ function World:initialize()
 	self._camera:viewport(0,0,width,height)
 		
 	self._map = factories.createMap('outdoor')
-	self._map:generate(499932,499932,256,256)
+	self._map:generate(499832,499832,512,512)
 	self._map:calculateMinMax(self._camera, {1,1,1,1})
 	self._map:visibleCells()
 	-- force the map to load the cells
@@ -194,7 +194,7 @@ end
 --	@TODO replace this with actual procedural generation
 --
 function World:createActors()
-	local numActors = 50
+	local numActors = 100
 	
 	local actors = {}
 
@@ -206,7 +206,7 @@ function World:createActors()
 	for i = 1, numActors do		
 		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
-		a:position(math.random() * (50*32) + (499980*32), math.random() * (50*32) + (499980 * 32))
+		a:position(math.random() * (100*32) + (499900*32), math.random() * (100*32) + (499900 * 32))
 		actors[a._id] = a
 	end	
 	]]

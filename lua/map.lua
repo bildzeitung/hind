@@ -271,13 +271,14 @@ end
 --		the map cell that is closest to the coordinates
 --
 function Map:mapCell(coords)
-	local hash, x, y = Map.hash(coords)
-	local mc = self._cellsInMemory[hash]
+	local hash, x, y = Map.hash(coords)	
+	self._cellsToDispose[hash] = nil
+	
+	local mc = self._cellsInMemory[hash]	
 	
 	if mc then 
 		return mc 
-	else
-		self._cellsToDispose[hash] = nil
+	else		
 		self._cellsToLoad[hash] = {x,y}
 	end
 end

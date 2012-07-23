@@ -104,7 +104,7 @@ end
 --
 --  Sets the tile data for this map cell
 --
-function MapCell:setTileData(tiles, objs)
+function MapCell:data(tiles, objs, acts)
 	ffi.copy(self._tiles, tiles, Map.cellTileBytes)	
 
 	if objs then
@@ -117,6 +117,12 @@ function MapCell:setTileData(tiles, objs)
 			end
 		end	
 	end
+	
+	if acts then
+		local actorCount = self:actorCount()
+		self._actorData = ffi.new('map_actor[?]', actorCount)
+		ffi.copy(self._actorData, acts, #acts)					
+	end	
 end
 
 --
@@ -308,4 +314,12 @@ function MapCell:createObject(obj)
 	end
 	
 	return o
+end
+
+--
+--  Returns the number of actors saved in this map cell
+--
+function MapCell:actorCount()
+	if not self._actorData then return 0 end
+	return ffi.sizeof(self._actorData) / ffi.sizeof('map_actor')	
 end

@@ -45,6 +45,18 @@ function World:_clone(values)
 end
 
 --
+--  Saves an actor to disk
+--
+function World:saveActor(actor)
+end
+
+--
+--  Loads an actor from disk
+--
+function World:loadActor(id)
+end
+
+--
 --  Initialize the world
 --
 --	@TODO replace this with actual procedural generation
@@ -72,12 +84,21 @@ function World:initialize()
 				-- the buckets that will be destroyed
 				for _, v in pairs(map._buckets[k]) do
 					if v._id then
+						self:saveActor(v)
 						self:removeObject(v)
 					end
 				end
 			end		
 		end			
 	end
+	
+	self._map.on_cell_load = function(map, mc)
+		-- load all of the actors saved in this map cell
+		local actorCount = mc:actorCount()
+		for i = 0, actorCount - 1 do
+		end
+	end
+	
 	
 	self:createHero()
 	self:createActors()

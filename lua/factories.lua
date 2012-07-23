@@ -103,6 +103,7 @@ function createActor(filename)
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
+	t._filename = filename
 	t._id = actorID
 	actorID = actorID + 1	
 	local a = objects.Actor(t)
@@ -143,6 +144,7 @@ function createStaticActor(filename)
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
+	t._filename = filename
 	t._id = actorID
 	actorID = actorID + 1	
 	local sa = objects.StaticActor(t)
@@ -163,6 +165,7 @@ function createActorItem(filename)
 		local a = createAnimation(v)
 		t._animations[k] = a		
 	end
+	t._filename = filename
 	t._id = actorID
 	actorID = actorID + 1		
 	local ai = objects.ActorItem(t)

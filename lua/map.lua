@@ -13,6 +13,11 @@ ffi.cdef
 [[
 	typedef struct 
 	{
+		int64_t id;
+	} map_actor;
+	
+	typedef struct 
+	{
 		char name[20];
 		int64_t x;
 		int64_t y;
@@ -179,6 +184,9 @@ function Map:update(dt, camera, profiler)
 			self._generated[k] = nil
 			mc:registerBuckets(self._buckets)
 			self._cellsToLoad[k] = nil
+			if self.on_cell_load then
+				self:on_cell_load(mc)
+			end		
 			break
 		end
 	end
@@ -214,13 +222,12 @@ function Map:draw(camera)
 	local cv = camera:viewport()
 	local ts = self._tileSet:size()		
 	
-	self:calculateMinMax(camera, {Map.cellSize,Map.cellSize,Map.cellSize,Map.cellSize})
-
 	-- set all map cells to not visible
 	for k, mc in pairs(self._cellsInMemory) do
 		mc._visible = false
 	end
 	
+	self:calculateMinMax(camera, {Map.cellSize,Map.cellSize,Map.cellSize,Map.cellSize})
 	local cells = self:visibleCells()
 	
 	-- coarse adjustment
@@ -312,15 +319,26 @@ function Map:loadMapCell(coords, hash)
 		-- cell does not yet exist!
 		return nil
 	end
-	-- read cell from file
-	local tileData = f:read(Map.cellTileBytes)
-	local objBytes = f:read('*number')
+	
+	-- read header
+	local tileDataBytes = f:read('*number')
+	f:read(1)
+	local objectDataBytes = f:read('*number')
+	f:read(1)
+	local actorDataBytes = f:read('*number')
+	f:read(1)
+	
+	-- read data
+	local tileData = f:read(tileDataBytes)
 
-	--log.log('objBytes')
-	--log.log(tostring(objBytes))	
 	local objs 
-	if objBytes > 0 then		
-		objs = f:read(objBytes)
+	if objectDataBytes > 0 then		
+		objs = f:read(objectDataBytes)
+	end
+	
+	local acts
+	if actorDataBytes > 0 then		
+		acts = f:read(actorDataBytes)
 	end
 	
 	f:close()
@@ -329,11 +347,55 @@ function Map:loadMapCell(coords, hash)
 		{Map.cellSize, Map.cellSize}, 
 		{coords[1], coords[2]}, 
 		Map.layers }
-		
-	-- store the tile data
-	mc:setTileData(tileData, objs)	
+	
+	mc:data(tileData, objs, acts)
+	
+	--log.log('Loading map cell complete!')
 	
 	return mc	
+end
+
+--
+--  Saves a map cell to disk
+--	
+function Map:saveMapCell(mc)
+	--log.log('Saving map cell: ' .. mc._hash)
+	-- open file
+	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
+		
+	-- write header
+	f:write(Map.cellTileBytes)
+	f:write('*')
+	if mc._objectData then
+		f:write(ffi.sizeof(mc._objectData))
+	else
+		f:write(0)
+	end	
+	f:write('*')
+	if mc._actorData then
+		f:write(ffi.sizeof(mc._actorData))
+	else
+		f:write(0)		
+	end
+	f:write('*')
+		
+	-- write data
+	local bytes = ffi.string(mc._tiles, Map.cellTileBytes)
+	f:write(bytes)	
+	
+	if mc._objectData then
+		local bytes = ffi.string(mc._objectData, ffi.sizeof(mc._objectData))	
+		f:write(bytes)	
+	end
+	
+	if mc._actorData then
+		local bytes = ffi.string(mc._actorData, ffi.sizeof(mc._actorData))	
+		f:write(bytes)	
+	end			
+	
+	f:close()
+	
+	--log.log('Saving map cell complete!')
 end
 
 --
@@ -341,6 +403,25 @@ end
 --	
 function Map:disposeMapCell(mc)
 	--log.log('Disposing map cell: ' .. mc._hash)	
+	
+	-- update actor data
+	local actors = {}
+	for k, _ in pairs(mc._bucketIds) do
+		if self._buckets['count' .. k] == 1 then
+			-- add any actors to actor data
+			for _, v in pairs(self._buckets[k]) do
+				if v._id then
+					actors[#actors+1] = v._id
+				end
+			end
+		end		
+	end
+	
+	mc._actorData = ffi.new('map_actor[?]', #actors)
+	for k, v in ipairs(actors) do
+		mc._actorData[k-1].id = v
+	end
+		
 	-- save the map cell to disk
 	self:saveMapCell(mc)
 	
@@ -353,28 +434,6 @@ function Map:disposeMapCell(mc)
 	-- remove the references to all resources
 	self._cellsInMemory[mc._hash] = nil	
 	collectgarbage('collect')
-end
-
---
---  Saves a map cell to disk
---	
-function Map:saveMapCell(mc)
-	--log.log('Saving map cell: ' .. mc._hash)
-	local bytes = ffi.string(mc._tiles, Map.cellTileBytes)
-	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
-	f:write(bytes)	
-	
-	if mc._objectData then
-		f:write(ffi.sizeof(mc._objectData))
-		local bytes = ffi.string(mc._objectData, ffi.sizeof(mc._objectData))	
-		--log.log('ffi.sizeof(mc._objectData)')
-		--log.log(ffi.sizeof(mc._objectData))		
-		f:write(bytes)	
-	else
-		f:write(0)
-	end
-	
-	f:close()
 end
 
 --

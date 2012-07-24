@@ -186,9 +186,9 @@ function World:initialize()
 	
 	self._map.on_cell_load = function(map, mc)
 		-- load all of the actors saved in this map cell
-		local actorCount = mc:actorCount()
-		for i = 0, actorCount - 1 do
-			local id = tonumber(mc._actorData[i].id)
+		local actors = mc._tiles[Map.layers+2]
+		for i = 1, #actors do
+			local id = actors[i]
 			if not self:actorExists(id) then
 				self:loadActor(id)
 			end		

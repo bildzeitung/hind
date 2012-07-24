@@ -4,22 +4,6 @@
 	Created JUL-12-2012
 ]]
 
-local ffi = require 'ffi'
-ffi.cdef
-[[
-	typedef struct 
-	{
-		int64_t id;
-	} map_actor;
-	
-	typedef struct 
-	{
-		char name[20];
-		int64_t x;
-		int64_t y;
-	} map_object;
-]]
-
 local Object = (require 'object').Object
 
 local log = require 'log'
@@ -39,32 +23,41 @@ function MapCell:_clone(values)
 				
 	-- create memory to hold the tiles
 	o._totalTiles = o._size[1] * o._size[2] * o._layers	
-	o._tiles = ffi.new('uint16_t[?]', o._totalTiles)
-	
+	-- a table for the tiles in layers	
+	-- info about objects is stored in layer Map.layers + 1
+	-- attached actors are stored in layer Map.layers + 2
+	o._tiles = {}
+	-- holds the objects that are created
+	-- from the info in the tile structure
+	o._objects = {}
+	-- list of colliders from tiles and objects
+	-- that will be added to the collision buckets
+	o._colliders = {}	
+	-- the left, top, right, and bottom tile that
+	-- the cell encompasses
 	o._extents = { o._coords[1], o._coords[2],
 		o._coords[1] + o._size[1] - 1,
-		o._coords[2] + o._size[2] - 1 }
-	
+		o._coords[2] + o._size[2] - 1 }	
 	-- the canvas that will hold the rendered version
 	-- of this cell
 	local tss = o._tileSet:size()
 	o._canvas = love.graphics.newCanvas(
 		o._size[1] * tss[1], o._size[2] * tss[2])
-		
+	-- the canvas is only rendered once - or 
+	-- if the base tiles somehow change
 	o._rendered = false
+	-- whether this cell is currently visible
+	o._visible = false
+	-- the number of frames the cell has remained unused
+	o._framesNotUsed = 0	
+	-- the spatial hash for the cell
+	o._hash = false
 	
 	o.__tostring = function()
 		return string.format('Map Cell -> l: %d, t: %d, r: %d, b: %d', 
 			o._extents[1], o._extents[2], 
 			o._extents[3], o._extents[4])
-	end
-		
-	o._visible = false
-	o._framesNotUsed = 0	
-	o._hash = false
-	
-	o._colliders = {}
-	o._objects = {}	
+	end		
 	
 	return o
 end
@@ -79,29 +72,32 @@ function MapCell:render()
 	local s = love.timer.getMicroTime()
 	self._canvas:renderTo( 
 		function()
-			local currentTile = 0
 			local width = self._canvas:getWidth() - 1
 			local height = self._canvas:getHeight() - 1		
 			local sizeX = tss[1]
 			local sizeY = tss[2]
+			local sx = 0
+			local sy = 0
 			-- draw the tiles!
 			for z = 1, self._layers do
-				for y = 0, height, sizeY do
-					for x = 0, width, sizeX do
-						local tile = self._tiles[currentTile]
-						if tile > 0 then				
-							-- @TODO we should be using quads for map rendering with one BIG sprite atlas
-							-- it is WAY faster
+				for y = 1, Map.cellSize do
+					sx = 0
+					for x = 1, Map.cellSize do
+						local tile = self._tiles[z][y][x]
+						if tile then				
+							-- @TODO we should be using quads for map rendering with ONE sprite atlas
+							-- for the map tiles as it is WAY faster
 							--love.graphics.drawq(tq[tile]._image, tq[tile]._quad, x, y)
-							love.graphics.draw(tq[tile], x, y)
+							love.graphics.draw(tq[tile], sx, sy)
 						end
-						currentTile = currentTile + 1
+						sx = sx + sizeX
 					end
+					sy = sy + sizeY
 				end
 			end
 		end)
-	local e = love.timer.getMicroTime()		
-	--log.log('Rendering the map cell canvas took: ' .. e-s)
+	local e = love.timer.getMicroTime()
+	log.log('Rendering the map cell "' .. self._hash .. '" took ' .. (e-s))
 	
 	self._rendered = true
 end
@@ -109,34 +105,13 @@ end
 --
 --  Sets the tile data for this map cell
 --
-function MapCell:data(tiles, objs, acts)
-	log.log('=== MapCell:data ===')
-	log.log('acts')
-	log.log(tostring(acts))
-	
-	ffi.copy(self._tiles, tiles, #tiles)	
+function MapCell:data(tiles)
+	self._tiles = tiles
 
-	if objs then
-		local objCount = #objs / ffi.sizeof('map_object')	
-		if objCount > 0 then
-			self._objectData = ffi.new('map_object[?]', objCount)
-			ffi.copy(self._objectData, objs, #objs)					
-			for i = 0, objCount - 1 do
-				table.insert(self._objects, self:createObject(self._objectData[i]))
-			end
-		end	
+	local objs = tiles[Map.layers+1]
+	for i = 1, #objs do
+		table.insert(self._objects, self:createObject(objs[i]))
 	end
-	
-	if acts then
-		local actorCount = #acts / ffi.sizeof('map_actor')	
-		self._actorData = ffi.new('map_actor[?]', actorCount)
-		ffi.copy(self._actorData, acts, #acts)					
-		
-		log.log('self._actorData')
-		log.log(tostring(self._actorData))		
-	end	
-	
-	log.log('=== MapCell:data complete ===')
 end
 
 --
@@ -163,15 +138,14 @@ function MapCell:createColliders(buckets)
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
 	
-	local currentTile = 0
 	for z = 1, self._layers do
 		local sx = self._extents[1] * ts[1]
 		local sy = self._extents[2] * ts[2]
 		for y = 1, Map.cellSize do	
 		sx = self._extents[1] * ts[1]
 			for x = 1, Map.cellSize do
-				local tile = self._tiles[currentTile]
-				if tile > 0 then				
+				local tile = self._tiles[z][y][x]
+				if tile then				
 					local boundary = bs[tile]
 					if boundary and (boundary[3] > 0 or boundary[4] > 0) then
 						-- @TODO fix this, should just be able to use a collidable object, but
@@ -191,7 +165,6 @@ function MapCell:createColliders(buckets)
 						self._colliders[#self._colliders + 1] = o
 					end
 				end
-				currentTile = currentTile + 1				
 				sx = sx + ts[1]
 			end
 			sy = sy + ts[2]
@@ -286,15 +259,13 @@ end
 --  Creates a static object from
 --  a name and a position
 -- 
-function MapCell:createObject(obj)
-	local name = ffi.string(obj.name)
-	
+function MapCell:createObject(obj)	
 	--log.log('CreateObject')
 	--log.log('name')
 	--log.log(name)
 	
-	local o = table.clone(self._tileSet._objects[name], { deep = true })
-	o._position = { tonumber(obj.x), tonumber(obj.y) }
+	local o = table.clone(self._tileSet._objects[obj.name], { deep = true })
+	o._position = { obj.x, obj.y }
 
 	local b = { }
 	b[1] = o._position[1] + o._boundary[1] - o._offset[1]
@@ -329,12 +300,4 @@ function MapCell:createObject(obj)
 	end
 	
 	return o
-end
-
---
---  Returns the number of actors saved in this map cell
---
-function MapCell:actorCount()
-	if not self._actorData then return 0 end
-	return ffi.sizeof(self._actorData) / ffi.sizeof('map_actor')	
 end

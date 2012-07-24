@@ -6,23 +6,9 @@
 
 local Object = (require 'object').Object
 
-require 'map_cell'
+local marshal = require 'marshal'
 
-local ffi = require 'ffi'	
-ffi.cdef
-[[
-	typedef struct 
-	{
-		int64_t id;
-	} map_actor;
-	
-	typedef struct 
-	{
-		char name[20];
-		int64_t x;
-		int64_t y;
-	} map_object;
-]]
+require 'map_cell'
 
 local log = require 'log'
 
@@ -37,10 +23,6 @@ Map = Object{}
 Map.cellSize = 32
 -- the number of maximum layers in the map
 Map.layers = 4
--- the number of uint16s in a map cell
-Map.cellTileShorts = Map.cellSize * Map.cellSize * Map.layers
--- the number of bytes in one cell
-Map.cellTileBytes = Map.cellTileShorts * 2
 -- the number of frames to keep a map cell around for before it is disposed
 Map.unusedFrames = 60
 -- the number of tile to generate ahead
@@ -317,39 +299,16 @@ function Map:loadMapCell(coords, hash)
 	
 	local hash = hash or Map.hash(coords)
 	
+	-- open file
 	local f = io.open('map/' .. hash .. '.dat', 'rb')
 	if not f then 
 		-- cell does not yet exist!
 		return nil
-	end
-	
+	end	
 	-- read header
-	local tileDataBytes = f:read('*number')
-	f:read(1)
-	local objectDataBytes = f:read('*number')
-	f:read(1)
-	local actorDataBytes = f:read('*number')
-	f:read(1)
-	
 	-- read data
-	local tileData = f:read(tileDataBytes)
-
-	local objs 
-	if objectDataBytes > 0 then		
-		objs = f:read(objectDataBytes)
-	end
-	
-	local acts
-	if actorDataBytes > 0 then		
-		acts = f:read(actorDataBytes)
-	end
-	
-	if acts then
-		log.log('Actor info:')
-		log.log(tostring(actorDataBytes))
-		log.log(tostring(acts))
-	end
-	
+	local s = f:read('*all')
+	-- close file
 	f:close()
 	
 	local mc = MapCell{ self._tileSet, 
@@ -359,10 +318,7 @@ function Map:loadMapCell(coords, hash)
 	
 	log.log('Setting map cell data')
 	
-	mc:data(tileData, objs, acts)
-	
-	log.log('mc:actorCount()')
-	log.log(tostring(mc:actorCount()))
+	mc:data(marshal.decode(s))
 	
 	log.log('Loading map cell complete!')
 	
@@ -375,39 +331,14 @@ end
 function Map:saveMapCell(mc)
 	log.log('Saving map cell: ' .. mc._hash)
 	
+	-- turn table into a byte stream
+	local s = marshal.encode(mc._tiles)	
 	-- open file
-	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')
-		
+	local f = io.open('map/' .. mc._hash .. '.dat' ,'wb')		
 	-- write header
-	f:write(Map.cellTileBytes)
-	f:write('*')
-	if mc._objectData then
-		f:write(ffi.sizeof(mc._objectData))
-	else
-		f:write(0)
-	end	
-	f:write('*')
-	if mc._actorData then
-		f:write(ffi.sizeof(mc._actorData))
-	else
-		f:write(0)		
-	end
-	f:write('*')
-		
 	-- write data
-	local bytes = ffi.string(mc._tiles, Map.cellTileBytes)
-	f:write(bytes)	
-	
-	if mc._objectData then
-		local bytes = ffi.string(mc._objectData, ffi.sizeof(mc._objectData))	
-		f:write(bytes)	
-	end
-	
-	if mc._actorData then
-		local bytes = ffi.string(mc._actorData, ffi.sizeof(mc._actorData))	
-		f:write(bytes)	
-	end			
-	
+	f:write(s)	
+	-- close file
 	f:close()
 	
 	log.log('Saving map cell complete!')
@@ -421,24 +352,19 @@ function Map:disposeMapCell(mc)
 	
 	log.log('Updating cell actor data')
 	
-	-- update actor data
-	local actors = {}
+	-- update cell's actor data
+	local acts = mc._tiles[6]
 	for k, _ in pairs(mc._bucketIds) do
 		if self._buckets['count' .. k] == 1 then
 			-- add any actors to actor data
 			for _, v in pairs(self._buckets[k]) do
 				if v._id then
-					actors[#actors+1] = v._id
+					acts[#acts+1] = v._id
 				end
 			end
 		end
 	end
 	
-	mc._actorData = ffi.new('map_actor[?]', #actors)
-	for k, v in ipairs(actors) do
-		mc._actorData[k-1].id = v
-	end
-		
 	-- save the map cell to disk
 	self:saveMapCell(mc)
 	
@@ -733,45 +659,39 @@ function Map:generate(xpos, ypos, sx, sy)
 			--log.log('Creating map cell at generated tile coords: ' .. x .. ', ' .. y)
 			
 			local mc = {}
-			mc._objects = {}
+			mc._tiles = {}
+			for i = 1, Map.layers do
+				mc._tiles[i] = {}
+			end
+			for i = 1, Map.layers do
+				for y = 1, Map.cellSize do
+					mc._tiles[i][y] = {}
+				end
+			end
+			mc._tiles[Map.layers+1] = {}
+			mc._tiles[Map.layers+2] = {}
 			
 			--log.log('Made new map cell table')
 			
-			local currentTile = 0
-			local tileShorts = ffi.new('uint16_t[?]', Map.cellTileShorts)
 			for i = 1, Map.layers do
 				for yy = y, y + Map.cellSize - 1 do
 					for xx = x, x + Map.cellSize - 1 do
-						tileShorts[currentTile] = tiles[i][yy][xx] or 0
-						currentTile = currentTile + 1
-						
+						mc._tiles[i][yy-y+1][xx-x+1] = tiles[i][yy][xx]
 						if i == 1 and objects[yy][xx] then
-							table.insert(mc._objects, objects[yy][xx])
+							table.insert(mc._tiles[Map.layers+1], objects[yy][xx])
 						end
 					end
 				end
 			end
 			
-			--log.log('Current tile: ' .. currentTile)
-			
-			mc._tiles = tileShorts
 			local hash = Map.hash{cx,cy}
 			mc._hash = hash
 
-			mc._objectData = ffi.new('map_object[?]', #mc._objects)
-			local objectBytes = 0
-			for k, v in ipairs(mc._objects) do
-				mc._objectData[k-1].name = v.name
-				mc._objectData[k-1].x = v.x
-				mc._objectData[k-1].y = v.y
-			end	
-			mc._objects = nil	
-	
 			cells[#cells+1] = mc
 			cx = cx + Map.cellSize
 		end
 		cy = cy + Map.cellSize
-	end
+	end 
 		
 	for k, v in ipairs(cells) do
 		self:saveMapCell(v)

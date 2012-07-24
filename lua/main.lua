@@ -16,6 +16,14 @@ require 'personality_viewer'
 require 'world'
 
 function love.load()	
+	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
+	fileiothread:start()
+	--[[
+	local msg = fileiothread:demand('error')
+	log.log(msg)
+	os.exit()
+	]]
+	
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
@@ -144,7 +152,7 @@ function love.update(dt)
 				-- @ TODO put this into the actor definition file!!!!
 				-- n.b. this is a good value for testing but makes the hero 
 				-- walk very fast
-				local speed = 400
+				local speed = 125
 				-- @ TODO put this into the actor definition file!!!!
 				
 				if love.keyboard.isDown('up') then
@@ -155,7 +163,6 @@ function love.update(dt)
 					world._hero:animation('walkdown')		
 					vy = speed
 				end
-				
 				if love.keyboard.isDown('left') then
 					world._hero:animation('walkleft')
 					vx = -speed

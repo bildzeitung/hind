@@ -12,6 +12,7 @@ require 'actor_item'
 require 'actor'
 
 local factories = require 'factories'
+require 'thread_communicator'
 
 require 'renderer'
 
@@ -25,13 +26,14 @@ local log = require 'log'
 
 local pairs, ipairs, type, table, math, tostring, tonumber, io, love
 	= pairs, ipairs, type, table, math, tostring, tonumber, io, love
-	
+			
 module('objects')
 
 World = Object{ _init = { '_profiler' } }
 
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
+World.saveActorsPerFrame = 6
 
 --
 --  World constructor
@@ -52,6 +54,9 @@ function World:_clone(values)
 	o._actorsToSave = {}
 	o._actorsToLoad = {}
 	
+	local thread = love.thread.getThread('fileio')
+	o._communicator = ThreadCommunicator{ thread }
+
 	return o
 end
 
@@ -61,16 +66,12 @@ end
 function World:saveActor(actor)
 	log.log('Saving actor: ' .. actor._id)
 	
-	self._profiler:profile('Save actor', 
+	self._profiler:profile('Marshall encoding actor', 
 		function()
 			local s = marshal.encode(actor)
-			local f = io.open('map/act_' .. actor._id .. '.act', 'wb')	
-			if not f then 			
-				return nil, 'There was a problem saving the actor #' .. actor._id
-			end	
-			f:write(s)	
-			f:close()
-		end)	
+			self._communicator:send('saveActor',actor._id)
+			self._communicator:send('saveActor',s)
+		end)		
 	
 	log.log('Saving actor complete')
 end
@@ -321,23 +322,21 @@ end
 --	@TODO replace this with actual procedural generation
 --
 function World:createActors()
-	local numActors = 10
+	local numActors = 150
 	
 	local actors = {}
 
 	--self:createBunchOPotions(self._hero:position())
 
-	--[[
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
-		local a = Actor.create('content/actors/slime.dat')
-		--local a = Actor.create('content/actors/male_human.dat')	
+		--local a = Actor.create('content/actors/slime.dat')
+		local a = Actor.create('content/actors/male_human.dat')	
 		a:animation('standright')
-		a:position(math.random() * (20*32) + (500000*32), math.random() * (20*32) + (500000 * 32))
+		a:position(math.random() * (5*32) + (500000*32), math.random() * (5*32) + (500000 * 32))
 		actors[a._id] = a
 	end	
-	]]
 
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
@@ -611,11 +610,12 @@ end
 --  Updates the World
 ---
 function World:update(dt)
-	-- save one actor per frame
+	local actorsSaved = 0
 	for k, v in pairs(self._actorsToSave) do
 		self:saveActor(v)
 		self._actorsToSave[k] = nil
-		break
+		actorsSaved = actorsSaved + 1
+		if actorsSaved > World.saveActorsPerFrame then break end
 	end
 	
 	-- load one actor per frame

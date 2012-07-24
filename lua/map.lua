@@ -236,8 +236,8 @@ function Map:draw(camera)
 	-- coarse adjustment
 	local diffX = (self._minMax[1] - self._cellMinMax[1]) + Map.cellSize
 	local diffY = (self._minMax[2] - self._cellMinMax[2]) + Map.cellSize
-	local fineX = math.floor((cw[1] % 32) * self._zoom[1])
-	local fineY = math.floor((cw[2] % 32) * self._zoom[2])
+	local fineX = math.floor((cw[1] % ts[1]) * self._zoom[1])
+	local fineY = math.floor((cw[2] % ts[2]) * self._zoom[2])
 	-- the starting positions so the cells will be centered in the proper location
 	local startX = (-diffX * ts[1] * self._zoom[1]) - 
 		fineX - (ts[1] / 2 * self._zoom[1])

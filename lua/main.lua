@@ -18,11 +18,6 @@ require 'world'
 function love.load()	
 	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
 	fileiothread:start()
-	--[[
-	local msg = fileiothread:demand('error')
-	log.log(msg)
-	os.exit()
-	]]
 	
 	profiler = objects.Profiler{}	
 	

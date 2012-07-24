@@ -322,7 +322,7 @@ function World:createActors()
 		--local a = Actor.create('content/actors/slime.dat')
 		local a = Actor.create('content/actors/male_human.dat')	
 		a:animation('standright')
-		a:position(math.random() * (5*32) + (500000*32), math.random() * (5*32) + (500000 * 32))
+		a:position(math.random() * (100*32) + (500000*32), math.random() * (100*32) + (500000 * 32))
 		actors[a._id] = a
 	end	
 

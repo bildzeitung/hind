@@ -20,7 +20,7 @@ module('objects')
 Map = Object{}
 
 -- the size in tiles of the individual map cells
-Map.cellSize = 32
+Map.cellSize = 16
 -- the number of maximum layers in the map
 Map.layers = 4
 -- the number of frames to keep a map cell around for before it is disposed
@@ -56,7 +56,6 @@ function Map:_clone(values)
 			
 	-- the cells this map contains
 	o._cellsInMemory = {}
-	o._generated = {}
 	o._minMax = {}
 	o._cellMinMax = {} 
 	o._zoom = {}	
@@ -116,30 +115,8 @@ function Map:update(dt, camera, profiler)
 	
 	--[[
 	self:calculateMinMax(camera, {Map.lookAhead,  Map.lookAhead,  Map.lookAhead,  Map.lookAhead})
-
-	local generate = {}	
-	-- check to see if the cells we may need shortly have been generated
-	for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
-		for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do	
-			local coords = {x,y}
-			local hash = Map.hash(coords)								
-			-- check if the cell exists
-			if not self._cellsInMemory[hash] and not self._generated[hash] then
-				if not self:cellExists(coords,hash) then
-					log.log('Cell doesnt exist: ' .. hash)
-					generate[#generate+1] = coords			
-				end													
-				self._generated[hash] = true
-			end														
-		end		
-	end
-			
-	if #generate > 0 then
-		log.log('Number of cells to generate: ' .. #generate)
-		self:generateMapCells(generate)
-	end
 	]]
-	
+		
 	-- go through all cells and get rid of ones that are no longer required
 	for k, v in pairs(self._cellsInMemory) do
 		if not v._visible then
@@ -163,7 +140,6 @@ function Map:update(dt, camera, profiler)
 		if mc then
 			mc._hash = k
 			self._cellsInMemory[k] = mc
-			self._generated[k] = nil
 			mc:registerBuckets(self._buckets)
 			self._cellsToLoad[k] = nil
 			
@@ -388,17 +364,30 @@ function Map:disposeMapCell(mc)
 end
 
 --
---  Generates a list of map cells
+--  Returns a table with the ids for the bucket cells
+--	that are currently visible
 --
-function Map:generateMapCells(cells)
-	local cmd = 'generate#'	
-	for k, v in ipairs(cells) do	
-		--log.log('Signalling generating thread to generate: ' .. v[1] .. ',' .. v[2])
-		cmd = cmd .. v[1] .. '#' .. v[2] .. '#'
-	end	
-	local thread = love.thread.getThread('terrainGenerator')	
-	thread:set('cmd',cmd)
+function Map:visibleIds()
+	local ids = {}
+	
+	for _, cell in pairs(self._cellsInMemory) do
+		if cell._visible then
+			for id, _ in pairs(cell._bucketIds) do
+				ids[id] = true
+			end
+		end
+	end
+	
+	return ids
 end
+
+--------------------------------------------------------------------------------------------------------------------
+-- REMOVE TERRAIN GENERATION FROM THIS FILE 
+-- @TODO terrain generation should be done in another thread
+-- with all of the actor and map cell files and whatever
+-- other files are necessary saved to disk
+-- then on the main thread the map just loads the files and continues 
+-- on its merry way
 
 --
 --  Adds transition (overlay tiles)
@@ -700,20 +689,3 @@ function Map:generate(xpos, ypos, sx, sy)
 	--log.log('Finished creating map cells!')		
 end
 
---
---  Returns a table with the ids for the bucket cells
---	that are currently visible
---
-function Map:visibleIds()
-	local ids = {}
-	
-	for _, cell in pairs(self._cellsInMemory) do
-		if cell._visible then
-			for id, _ in pairs(cell._bucketIds) do
-				ids[id] = true
-			end
-		end
-	end
-	
-	return ids
-end

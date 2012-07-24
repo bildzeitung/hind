@@ -105,7 +105,7 @@ end
 --  Registers the actor in the proper
 --	collision buckets
 --
-function Collidable:registerBuckets(buckets, dbug)	
+function Collidable:registerBuckets(buckets)	
 	-- unregister the old bucket ids
 	for k, _ in pairs(self._bucketIds) do
 		local bucket = buckets[k]

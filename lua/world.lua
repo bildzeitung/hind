@@ -33,7 +33,8 @@ World = Object{ _init = { '_profiler' } }
 
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
-World.saveActorsPerFrame = 6
+World.saveActorsPerFrame = 5
+World.loadActorsPerFrame = 5
 
 --
 --  World constructor
@@ -52,7 +53,6 @@ function World:_clone(values)
 	o._drawInfoText = true			
 
 	o._actorsToSave = {}
-	o._actorsToLoad = {}
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
@@ -61,43 +61,42 @@ function World:_clone(values)
 end
 
 --
---  Saves an actor to disk
+--  Saves an actor to disk using fileio thread
 --
 function World:saveActor(actor)
-	log.log('Saving actor: ' .. actor._id)
-	
-	self._profiler:profile('Marshall encoding actor', 
-		function()
-			local s = marshal.encode(actor)
-			self._communicator:send('saveActor',actor._id)
-			self._communicator:send('saveActor',s)
-		end)		
-	
-	log.log('Saving actor complete')
+	local s = marshal.encode(actor)
+	self._communicator:send('saveActor',actor._id)
+	self._communicator:send('saveActor',s)
 end
 
 --
---  Loads an actor from disk
+--  Loads an actor from disk using fileio thread
 --
 function World:loadActor(id)
-	log.log('Loading actor: ' .. id)
-	
-	local actor
-	
-	self._profiler:profile('Load actor', 
-		function()
-			local f = io.open('map/act_' .. id .. '.act', 'rb')	
-			if not f then 			
-				return nil, 'There was a problem saving the actor #' .. actor._id
-			end	
-			local s = f:read('*all')
-			f:close()		
-			actor = marshal.decode(s)
-		end)		
-	
-	log.log('Loading actor complete')
-	
-	return actor
+	self._communicator:send('loadActor',id)
+end
+
+--
+--  Receives any actors that have been loaded
+--	by the file io thread
+--
+function World:receiveLoadedActors()
+	local actorsLoaded = 0
+	local received = false
+	repeat
+		received = false
+		local s = self._communicator:receive('loadedActor')
+		if s then
+			received = true
+			local actor = marshal.decode(s)
+			actor:update(0)
+			actor:registerBuckets(self._map._buckets)
+			actorsLoaded = actorsLoaded + 1
+			if actorsLoaded > World.loadActorsPerFrame then 
+				break
+			end
+		end
+	until not received 
 end
 
 --
@@ -186,25 +185,14 @@ function World:initialize()
 	end
 	
 	self._map.on_cell_load = function(map, mc)
-		log.log('=== on cell load ===')
 		-- load all of the actors saved in this map cell
 		local actorCount = mc:actorCount()
-		
-		log.log('actorCount')
-		log.log(tostring(actorCount))
-		
 		for i = 0, actorCount - 1 do
 			local id = tonumber(mc._actorData[i].id)
-			
-			log.log('id')
-			log.log(tostring(id))
-			log.log('self:actorExists(id)')
-			log.log(tostring(self:actorExists(id)))
-			
-			self._actorsToLoad[id] = true
+			if not self:actorExists(id) then
+				self:loadActor(id)
+			end		
 		end
-		
-		log.log('=== on cell load complete ===')
 	end	
 	
 	self:createHero()
@@ -610,24 +598,16 @@ end
 --  Updates the World
 ---
 function World:update(dt)
+	-- save actors if there are any to save
 	local actorsSaved = 0
 	for k, v in pairs(self._actorsToSave) do
 		self:saveActor(v)
 		self._actorsToSave[k] = nil
 		actorsSaved = actorsSaved + 1
 		if actorsSaved > World.saveActorsPerFrame then break end
-	end
-	
-	-- load one actor per frame
-	for id, _ in pairs(self._actorsToLoad) do
-		if not self:actorExists(id) then
-			local a = self:loadActor(id)
-			a:update(0)
-			a:registerBuckets(self._map._buckets, true)
-			self._actorsToLoad[id] = nil
-			break
-		end
-	end
+	end	
+	-- receive any actors that have been loaded
+	self:receiveLoadedActors()
 	
 	self._profiler:profile('updating lighting', 
 		function()

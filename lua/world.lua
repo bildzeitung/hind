@@ -162,12 +162,6 @@ function World:initialize()
 	self._terrainGenerator:generate(499808,499808,512,512)
 	
 	self._map = factories.createMap('outdoor')	
-	self._map:calculateMinMax(self._camera, {1,1,1,1})
-	self._map:visibleCells()
-	-- force the map to load the cells
-	for i = 0, 20 do
-		self._map:update(0, self._camera)
-	end
 	
 	self._map.on_cell_dispose = function(map, mc)
 		-- look at the ids that are going to be removed
@@ -520,16 +514,23 @@ end
 --  Updates the World
 ---
 function World:update(dt)
-	-- save actors if there are any to save
-	local actorsSaved = 0
-	for k, v in pairs(self._actorsToSave) do
-		self:saveActor(v)
-		self._actorsToSave[k] = nil
-		actorsSaved = actorsSaved + 1
-		if actorsSaved >= World.saveActorsPerFrame then break end
-	end	
-	-- receive any actors that have been loaded
-	self:receiveLoadedActors()
+	self._profiler:profile('saving actors', 
+		function()				
+			-- save actors if there are any to save
+			local actorsSaved = 0
+			for k, v in pairs(self._actorsToSave) do
+				self:saveActor(v)
+				self._actorsToSave[k] = nil
+				actorsSaved = actorsSaved + 1
+				if actorsSaved >= World.saveActorsPerFrame then break end
+			end	
+		end)
+		
+	self._profiler:profile('receiving loaded actors', 
+		function()			
+			-- receive any actors that have been loaded
+			self:receiveLoadedActors()
+		end)
 	
 	self._profiler:profile('updating lighting', 
 		function()
@@ -546,10 +547,13 @@ function World:update(dt)
 			self._renderer._lighting.shadowSkew[1] = self._renderer._lighting.shadowSkewMinMax[1] + (scaled * srange)
 		end)
 	
-	-- remove all entities that were scheduled for removal
-	for k, v in pairs(self._removals) do		
-		self:removeActor(v)
-	end	
+	self._profiler:profile('removing actors', 
+		function()			
+			-- remove all entities that were scheduled for removal
+			for k, v in pairs(self._removals) do		
+				self:removeActor(v)
+			end	
+		end)
 	
 	-- do the actor's AI updates
 	self._profiler:profile('updating AI', 
@@ -583,7 +587,7 @@ function World:update(dt)
 			for _, a in pairs(self._visibleActors) do
 				a:registerBuckets(self._map._buckets)
 			end	
-	end)
+		end)
 	
 	-- test collistions for all visible actors
 	self._profiler:profile('testing collisions', 
@@ -634,5 +638,5 @@ function World:update(dt)
 			end	
 		end)
 		
-	self._map:update(dt, self._camera, profiler)
+	self._map:update(dt, self._camera, self._profiler)
 end

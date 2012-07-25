@@ -259,10 +259,6 @@ end
 --  a name and a position
 -- 
 function MapCell:createObject(obj)	
-	--log.log('CreateObject')
-	--log.log('name')
-	--log.log(name)
-	
 	local o = table.clone(self._tileSet._objects[obj.name], { deep = true })
 	o._position = { obj.x, obj.y }
 

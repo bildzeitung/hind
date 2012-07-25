@@ -128,26 +128,35 @@ end
 --
 function Map:update(dt, camera, profiler)
 	-- go through all cells and mark any that are no longer required
-	for k, v in pairs(self._cellsInMemory) do
-		if not v._visible then
-			v._framesNotUsed = v._framesNotUsed + 1
-			if v._framesNotUsed > Map.unusedFrames then
-				self._cellsToDispose[v._hash] = v
-			end
-		end
-	end	
+	profiler:profile('marking map cells for disposal',
+		function()						
+			for k, v in pairs(self._cellsInMemory) do
+				if not v._visible then
+					v._framesNotUsed = v._framesNotUsed + 1
+					if v._framesNotUsed > Map.unusedFrames then
+						self._cellsToDispose[v._hash] = v
+					end
+				end
+			end	
+		end)
 	
 	-- dispose cells if there are any to dispose
-	local cellsDisposed = 0
-	for k, v in pairs(self._cellsToDispose) do
-		self:disposeMapCell(v)
-		self._cellsToDispose[k] = nil
-		cellsDisposed = cellsDisposed + 1
-		if cellsDisposed >= Map.disposeCellsPerFrame then break end
-	end	
+	profiler:profile('disposing map cells',
+		function()			
+			local cellsDisposed = 0
+			for k, v in pairs(self._cellsToDispose) do
+				self:disposeMapCell(v)
+				self._cellsToDispose[k] = nil
+				cellsDisposed = cellsDisposed + 1
+				if cellsDisposed >= Map.disposeCellsPerFrame then break end
+			end	
+		end)
 	
 	-- receive any map cells that have been loaded
-	self:receiveLoadedCells()
+	profiler:profile('receiving loaded map cells',	
+		function()
+			self:receiveLoadedCells()
+		end)
 end
 
 --
@@ -255,7 +264,6 @@ end
 --  Does a cell exist?
 --
 function Map:cellExists(coords, hash)
-	--log.log('Checking if cell exists: ' .. hash)
 	local hash = hash or Map.hash(coords)	
 	
 	local exists = false	
@@ -323,9 +331,7 @@ end
 --	
 function Map:disposeMapCell(mc)
 	log.log('Disposing map cell: ' .. mc._hash)	
-	
-	log.log('Updating cell actor data')
-	
+		
 	-- update cell's actor data
 	local actors = {}
 	for k, _ in pairs(mc._bucketIds) do
@@ -344,13 +350,9 @@ function Map:disposeMapCell(mc)
 	-- save the map cell to disk
 	self:saveMapCell(mc)
 	
-	log.log('Calling on_dispose callback')
-	
 	if self.on_cell_dispose then
 		self:on_cell_dispose(mc)
 	end
-	
-	log.log('Unregistering cell buckets')
 	
 	-- unregister the map cell from the collision buckets
 	mc:unregisterBuckets(self._buckets)

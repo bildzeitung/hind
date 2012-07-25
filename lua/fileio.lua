@@ -39,7 +39,6 @@ end
 function saveActor(id)
 	log.log('Save Actor: ' .. id)		
 	local actor = communicator:demand('saveActor')
-	log.log('Received actor string')
 	
 	local f = io.open('map/' .. id .. '.act', 'wb')	
 	if not f then 
@@ -72,9 +71,7 @@ end
 function saveMapCell(hash)
 	log.log('Save Map Cell: ' .. hash)		
 	local tiles = communicator:demand('saveMapCell')
-	log.log('Received tile info')
 	local actors = communicator:demand('saveMapCell')
-	log.log('Received actor info')
 
 	local f = io.open('map/' .. hash .. '.dat' ,'wb')		
 	if not f then 

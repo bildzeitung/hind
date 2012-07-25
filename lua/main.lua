@@ -129,7 +129,11 @@ function love.draw()
 			end
 		end)
 		
-	loveframes.draw()
+	
+	profiler:profile('drawing loveframes', 
+		function()		
+			loveframes.draw()
+		end)
 end
 
 function love.update(dt)
@@ -347,7 +351,11 @@ function love.update(dt)
 		
 	world:update(dt, profiler)
 	
-	loveframes.update(dt)
+	profiler:profile('updating loveframes', 
+		function()
+			loveframes.update(dt)
+		end)
+		
 end
 
 function love.mousepressed(x, y, button)

@@ -25,11 +25,12 @@ function MapCell:_clone(values)
 	o._totalTiles = o._size[1] * o._size[2] * o._layers	
 	-- a table for the tiles in layers	
 	-- info about objects is stored in layer Map.layers + 1
-	-- attached actors are stored in layer Map.layers + 2
 	o._tiles = {}
 	-- holds the objects that are created
 	-- from the info in the tile structure
 	o._objects = {}
+	-- holds the actors that should be in this cell
+	o._actors = {}
 	-- list of colliders from tiles and objects
 	-- that will be added to the collision buckets
 	o._colliders = {}	
@@ -105,13 +106,15 @@ end
 --
 --  Sets the tile data for this map cell
 --
-function MapCell:data(tiles)
+function MapCell:data(tiles, actors)
 	self._tiles = tiles
 
 	local objs = tiles[Map.layers+1]
 	for i = 1, #objs do
 		table.insert(self._objects, self:createObject(objs[i]))
 	end
+	
+	self._actors = actors
 end
 
 --
@@ -133,7 +136,6 @@ end
 --  Creates the collidable objects 
 --
 function MapCell:createColliders(buckets)
-	--log.log('==== CREATING COLLIDERS! ====')		
 	-- register any collidable tiles
 	local bs = self._tileSet:boundaries()
 	local ts = self._tileSet:size()
@@ -181,9 +183,6 @@ function MapCell:createColliders(buckets)
 				
 		self._colliders[#self._colliders + 1] = v
 	end
-	
-	--log.log('COUNT: ' .. #self._colliders)
-	--log.log('==== CREATING COLLIDERS! ====')
 end
 
 --

@@ -51,7 +51,6 @@ function World:_clone(values)
 	o._zoom = 1
 	o._showCollisionBoundaries = false	
 	o._drawInfoText = true			
-
 	o._actorsToSave = {}
 	
 	local thread = love.thread.getThread('fileio')
@@ -92,7 +91,7 @@ function World:receiveLoadedActors()
 			actor:update(0)
 			actor:registerBuckets(self._map._buckets)
 			actorsLoaded = actorsLoaded + 1
-			if actorsLoaded > World.loadActorsPerFrame then 
+			if actorsLoaded >= World.loadActorsPerFrame then 
 				break
 			end
 		end
@@ -527,7 +526,7 @@ function World:update(dt)
 		self:saveActor(v)
 		self._actorsToSave[k] = nil
 		actorsSaved = actorsSaved + 1
-		if actorsSaved > World.saveActorsPerFrame then break end
+		if actorsSaved >= World.saveActorsPerFrame then break end
 	end	
 	-- receive any actors that have been loaded
 	self:receiveLoadedActors()

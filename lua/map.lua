@@ -20,7 +20,7 @@ module('objects')
 Map = Object{}
 
 -- the size in tiles of the individual map cells
-Map.cellSize = 16
+Map.cellSize = 32
 -- the number of maximum layers in the map
 Map.layers = 4
 -- the number of frames to keep a map cell around for before it is disposed
@@ -29,6 +29,9 @@ Map.unusedFrames = 60
 Map.lookAhead = Map.cellSize * 4
 -- the size of a bucket cell
 Map.bucketCellSize = Map.cellSize * 32
+
+Map.disposeCellsPerFrame = 1
+Map.loadCellsPerFrame = 1
 
 --
 --  Returns a hash value of the supplied coordinates
@@ -49,6 +52,16 @@ function Map.hash(coords)
 end
 
 --
+--  Returns x,y coordinates from a hash value
+--  See notes about Map.hash
+--
+function Map.unhash(hash)
+	local y = math.floor(hash / 1000000)
+	local x = hash % 1000000
+	return x, y
+end
+
+--
 --  Map constructor
 --
 function Map:_clone(values)
@@ -60,9 +73,11 @@ function Map:_clone(values)
 	o._cellMinMax = {} 
 	o._zoom = {}	
 	o._cellsToDispose = {}
-	o._cellsToLoad = {}
-	
+	o._cellsLoading = {}	
 	o:createBuckets()
+	
+	local thread = love.thread.getThread('fileio')
+	o._communicator = ThreadCommunicator{ thread }	
 	
 	return o
 end
@@ -112,12 +127,7 @@ end
 --  Update map
 --
 function Map:update(dt, camera, profiler)
-	
-	--[[
-	self:calculateMinMax(camera, {Map.lookAhead,  Map.lookAhead,  Map.lookAhead,  Map.lookAhead})
-	]]
-		
-	-- go through all cells and get rid of ones that are no longer required
+	-- go through all cells and mark any that are no longer required
 	for k, v in pairs(self._cellsInMemory) do
 		if not v._visible then
 			v._framesNotUsed = v._framesNotUsed + 1
@@ -126,31 +136,18 @@ function Map:update(dt, camera, profiler)
 			end
 		end
 	end	
-
-	-- dispose one cell per frame
+	
+	-- dispose cells if there are any to dispose
+	local cellsDisposed = 0
 	for k, v in pairs(self._cellsToDispose) do
 		self:disposeMapCell(v)
 		self._cellsToDispose[k] = nil
-		break
-	end
+		cellsDisposed = cellsDisposed + 1
+		if cellsDisposed >= Map.disposeCellsPerFrame then break end
+	end	
 	
-	-- load one cell per frame
-	for k, v in pairs(self._cellsToLoad) do
-		local mc = self:loadMapCell(v, k)
-		if mc then
-			mc._hash = k
-			self._cellsInMemory[k] = mc
-			mc:registerBuckets(self._buckets)
-			self._cellsToLoad[k] = nil
-			
-			log.log('Calling on_cell_load callback')
-			if self.on_cell_load then
-				self:on_cell_load(mc)
-			end		
-			
-			break
-		end
-	end
+	-- receive any map cells that have been loaded
+	self:receiveLoadedCells()
 end
 
 --
@@ -247,7 +244,10 @@ function Map:mapCell(coords)
 	if mc then 
 		return mc 
 	else		
-		self._cellsToLoad[hash] = {x,y}
+		if not self._cellsLoading[hash] then
+			self._cellsLoading[hash] = true
+			self:loadMapCell(hash)
+		end		
 	end
 end
 
@@ -268,37 +268,43 @@ function Map:cellExists(coords, hash)
 end
 
 --
---  Loads a map cell from disk
---	
-function Map:loadMapCell(coords, hash)
-	log.log('Loading map cell: ' .. hash)	
-	
-	local hash = hash or Map.hash(coords)
-	
-	-- open file
-	local f = io.open('map/' .. hash .. '.dat', 'rb')
-	if not f then 
-		-- cell does not yet exist!
-		return nil
-	end	
-	-- read header
-	-- read data
-	local s = f:read('*all')
-	-- close file
-	f:close()
-	
-	local mc = MapCell{ self._tileSet, 
-		{Map.cellSize, Map.cellSize}, 
-		{coords[1], coords[2]}, 
-		Map.layers }
-	
-	log.log('Setting map cell data')
-	
-	mc:data(marshal.decode(s))
-	
-	log.log('Loading map cell complete!')
-	
-	return mc	
+--  Loads a map cell  from disk using fileio thread
+--
+function Map:loadMapCell(hash)
+	self._communicator:send('loadMapCell',hash)
+end
+
+--
+--  Receives any actors that have been loaded
+--	by the file io thread
+--
+function Map:receiveLoadedCells()
+	local cellsLoaded = 0
+	local received = false
+	repeat
+		received = false
+		local hash = self._communicator:receive('loadedMapCell')
+		if hash and hash ~= 0 then
+			received = true			
+			local tiles = self._communicator:demand('loadedMapCell')
+			local actors = self._communicator:demand('loadedMapCell')	
+			local x, y = Map.unhash(hash)			
+			local mc = MapCell{ self._tileSet, 
+				{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
+			mc._hash = hash			
+			self._cellsInMemory[hash] = mc
+			self._cellsLoading[hash] = nil			
+			mc:data(marshal.decode(tiles), marshal.decode(actors))
+			mc:registerBuckets(self._buckets)
+			if self.on_cell_load then
+				self:on_cell_load(mc)
+			end
+			cellsLoaded = cellsLoaded + 1
+			if cellsLoaded >= Map.loadCellsPerFrame then 
+				break
+			end
+		end
+	until not received 
 end
 
 --

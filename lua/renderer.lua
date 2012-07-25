@@ -196,7 +196,14 @@ function Renderer:draw(camera, drawables, profiler)
 			drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
 			drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
 		end)
-	
+				
+	profiler:profile('updating lighting effect', 
+		function()
+			love.graphics.setPixelEffect(self._currentShader)				
+			self:setDirectionalLight( { spotSize = 2 } )
+			self:updateLightEffect(camera)
+		end)
+		
 	-- pre draw the drawable items
 	for k, t in pairs(drawables) do		
 		profiler:profile('pre-drawing ' .. k .. ' drawables', 	
@@ -210,13 +217,6 @@ function Renderer:draw(camera, drawables, profiler)
 				end
 			end)
 	end
-			
-	profiler:profile('updating lighting effect', 
-		function()
-			love.graphics.setPixelEffect(self._currentShader)				
-			self:setDirectionalLight( { spotSize = 2 } )
-			self:updateLightEffect(camera)
-		end)
 
 	--[[
 	profiler:profile('drawing base tiles', 

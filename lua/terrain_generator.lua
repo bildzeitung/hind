@@ -273,7 +273,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	
 	local ts = self._tileSet:size()
 	
-	local hash, xcoord, ycoord = Map.hash{xpos,ypos}
+	local hash, xcoord, ycoord = Map.hash(xpos,ypos)
 	
 	for y = Map.cellSize, sy - Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize do
@@ -319,7 +319,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 				end
 			end
 			
-			local hash = Map.hash{cx,cy}
+			local hash = Map.hash(cx,cy)
 			mc._hash = hash
 			
 			if actors[hash] then
@@ -367,7 +367,7 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 		local bounds = a._boundary
 		local tileX = bounds[1] / ts[1]
 		local tileY = bounds[2] / ts[2]		
-		local hash = Map.hash{tileX, tileY}
+		local hash = Map.hash(tileX, tileY)
 		if not actors[hash] then
 			actors[hash] = {}
 		end

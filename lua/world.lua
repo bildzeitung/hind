@@ -120,7 +120,7 @@ function World:addActorToCell(actor)
 	local bounds = actor._boundary
 	local tileX = math.floor(bounds[1] / ts[1])
 	local tileY = math.floor(bounds[2] / ts[2])
-	local hash = Map.hash{tileX, tileY}
+	local hash = Map.hash(tileX, tileY)
 	
 	-- is this map cell being loaded 
 	if self._map._cellsLoading[hash] then
@@ -344,7 +344,7 @@ function World:createHero()
 	local ts = self._map._tileSet:size()	
 	hero:position(tileX*ts[1], tileY*ts[2])
 	hero:update(0.16)
-	local hash = Map.hash{tileX, tileY}
+	local hash = Map.hash(tileX, tileY)
 	self._actorsToRegister[hash] = { hero }		
 	self._hero = hero		
 end

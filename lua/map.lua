@@ -45,9 +45,9 @@ Map.loadCellsPerFrame = 1
 --  1000000 in the first dimension... which is hopefully
 --  true for now
 --
-function Map.hash(coords)
-	local x = math.floor(coords[1] / Map.cellSize) * Map.cellSize
-	local y = math.floor(coords[2] / Map.cellSize) * Map.cellSize
+function Map.hash(x, y)
+	local x = math.floor(x / Map.cellSize) * Map.cellSize
+	local y = math.floor(y / Map.cellSize) * Map.cellSize
 	return y * 1000000 + x, x, y
 end
 
@@ -75,6 +75,7 @@ function Map:_clone(values)
 	o._cellsToDispose = {}
 	o._cellsLoading = {}	
 	o:createBuckets()
+	o._visibleCells = {}
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }	
@@ -101,7 +102,7 @@ end
 --  Calculates the minimum and maximum tile range given the
 --	camera and padding
 --
-function Map:calculateMinMax(camera, padding)
+function Map:calculateMinMax(camera, l, t, r, b)
 	local cw = camera:window()
 	local cv = camera:viewport()
 	
@@ -112,10 +113,10 @@ function Map:calculateMinMax(camera, padding)
 	
 	-- get the left, top, right, and bottom
 	-- tiles that the camera can see plus some value that looks for further tiles
-	self._minMax[1] = math.floor(cw[1] / ts[1]) - padding[1]
-	self._minMax[2] = math.floor(cw[2] / ts[2])	- padding[2]
-	self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + padding[3]
-	self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + padding[4]
+	self._minMax[1] = math.floor(cw[1] / ts[1]) - l
+	self._minMax[2] = math.floor(cw[2] / ts[2])	- t
+	self._minMax[3] = math.floor((cw[1] + cw[3]) / ts[1]) + r
+	self._minMax[4] = math.floor((cw[2] + cw[4]) / ts[2]) + b
 	-- convert these to the tiles that correspond to map cell boundaries
 	self._cellMinMax[1] = math.floor(self._minMax[1] / Map.cellSize) * Map.cellSize
 	self._cellMinMax[2] = math.floor(self._minMax[2] / Map.cellSize) * Map.cellSize
@@ -162,12 +163,16 @@ end
 --
 --  Returns a table of visible cells
 --
-function Map:visibleCells()			
+function Map:visibleCells()		
+	local cells = self._visibleCells	
+	for k, v in pairs(cells) do
+		cells[k] = nil
+	end
+	
 	-- get all of the visible cells
-	local cells = {}		
 	for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
 		for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do			
-			local mc = self:mapCell{x,y}
+			local mc = self:mapCell(x,y)
 			if mc then
 				mc._visible = true
 				mc._framesNotUsed = 0
@@ -177,8 +182,6 @@ function Map:visibleCells()
 			end
 		end		
 	end
-	
-	return cells
 end
 
 --
@@ -194,8 +197,9 @@ function Map:draw(camera)
 		mc._visible = false
 	end
 	
-	self:calculateMinMax(camera, {Map.cellSize,Map.cellSize,Map.cellSize,Map.cellSize})
-	local cells = self:visibleCells()
+	self:calculateMinMax(camera, Map.cellSize,Map.cellSize,Map.cellSize,Map.cellSize)
+	self:visibleCells()
+	local cells = self._visibleCells
 	
 	-- coarse adjustment
 	local diffX = (self._minMax[1] - self._cellMinMax[1]) + Map.cellSize
@@ -244,8 +248,8 @@ end
 --	Outputs:
 --		the map cell that is closest to the coordinates
 --
-function Map:mapCell(coords)
-	local hash, x, y = Map.hash(coords)	
+function Map:mapCell(x, y)
+	local hash, x, y = Map.hash(x, y)
 	self._cellsToDispose[hash] = nil
 	
 	local mc = self._cellsInMemory[hash]	
@@ -258,21 +262,6 @@ function Map:mapCell(coords)
 			self:loadMapCell(hash)
 		end		
 	end
-end
-
---
---  Does a cell exist?
---
-function Map:cellExists(coords, hash)
-	local hash = hash or Map.hash(coords)	
-	
-	local exists = false	
-	local f = io.open('map/' .. hash .. '.dat', 'rb')
-	if f then 
-		exists = true
-		f:close()
-	end
-	return exists	
 end
 
 --

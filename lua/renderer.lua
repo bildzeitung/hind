@@ -51,6 +51,15 @@ function Renderer:_clone(values)
 	
 	o:loadShaders()
 	
+	o._drawTable = { 
+		cw = true, cv = true, 
+		zoomX = true, zoomY = true, 
+		cwzx = true, cwzt = true,
+		object = {},
+		roof = {},
+		text = {}	
+	}	
+	
 	return o
 end
 
@@ -183,13 +192,11 @@ end
 --  Render a list of drawable items
 -- 
 function Renderer:draw(camera, drawables, profiler)	
-	local drawTable = {
-		base = {},
-		overlay = {},
-		object = {},
-		roof = {},
-		text = {}
-	}
+	local drawTable = self._drawTable
+	
+	drawTable.object = {}
+	drawTable.roof = {}
+	drawTable.text = {}
 	
 	-- set up the draw table
 	profiler:profile('pre-calculating draw stuff', 
@@ -202,13 +209,15 @@ function Renderer:draw(camera, drawables, profiler)
 			drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
 			drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
 		end)
-				
+			
+	--[[			
 	profiler:profile('updating lighting effect', 
 		function()
 			love.graphics.setPixelEffect(self._currentShader)				
 			self:setDirectionalLight( { spotSize = 2 } )
 			self:updateLightEffect(camera)
 		end)
+	]]
 		
 	-- pre draw the drawable items
 	for k, t in pairs(drawables) do		
@@ -223,26 +232,6 @@ function Renderer:draw(camera, drawables, profiler)
 				end
 			end)
 	end
-
-	--[[
-	profiler:profile('drawing base tiles', 
-		function()						
-			for k, v in ipairs(drawTable.base) do
-				love.graphics.draw(v[2],
-					v[3], v[4], 0, v[5], v[6], 
-					v[7], v[8])
-			end
-		end)
-	
-	profiler:profile('drawing overlay tiles', 
-		function()		
-			for k, v in ipairs(drawTable.overlay) do
-				love.graphics.draw(v[2],
-					v[3], v[4], 0, v[5], v[6], 
-					v[7], v[8])
-			end
-		end)
-	]]
 	
 	profiler:profile('z-sorting', 
 		function()	
@@ -252,12 +241,14 @@ function Renderer:draw(camera, drawables, profiler)
 			table.sort(drawTable.roof,function(a,b)
 				return a[1] < b[1] end)
 		end)
-		
+	
+		--[[
 	profiler:profile('updating lighting for objects', 		
 		function()
 			self:setDirectionalLight( { spotSize = 0.3 } )
 			self:updateLightEffect(camera)
 		end)
+		]]
 	
 	-- @TODO the shadow direction
 	-- should be calculated based on the position

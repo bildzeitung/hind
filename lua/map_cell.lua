@@ -77,10 +77,10 @@ function MapCell:render()
 			local height = self._canvas:getHeight() - 1		
 			local sizeX = tss[1]
 			local sizeY = tss[2]
-			local sx = 0
-			local sy = 0
+			local sx, sy
 			-- draw the tiles!
 			for z = 1, self._layers do
+				sy = 0
 				for y = 1, Map.cellSize do
 					sx = 0
 					for x = 1, Map.cellSize do

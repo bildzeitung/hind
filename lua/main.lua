@@ -18,9 +18,9 @@ require 'world'
 local HERO_DEAD = -99
 local IN_GAME = 10
 
-collectgarbage('stop')
---collectgarbage('setpause',0)
---collectgarbage('setstepmul', 200)
+--collectgarbage('stop')
+collectgarbage('setpause',0)
+collectgarbage('setstepmul', 110)
 local Counters
 local Names
 

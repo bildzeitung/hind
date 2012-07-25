@@ -359,9 +359,6 @@ function Map:disposeMapCell(mc)
 	-- remove the references to all resources
 	self._cellsInMemory[mc._hash] = nil	
 
-	log.log('Collecting garbage')	
-	collectgarbage('collect')	
-		
 	log.log('Disposing map cell complete!')
 end
 

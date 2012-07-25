@@ -227,7 +227,11 @@ function love.update(dt)
 					end
 				end	
 			end
-							
+
+			if love.keyboard.isDown('escape') then
+				os.exit()
+			end
+
 			if love.keyboard.isDown('q') then
 				world._zoom  = 1
 			end

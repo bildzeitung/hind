@@ -4,6 +4,7 @@
 	Created JUN-23-2012
 ]]
 
+require 'terrain_generator'
 require 'tileset'
 require 'map'
 require 'animation'
@@ -80,21 +81,34 @@ end
 
 --
 --  Returns a new map using the
---	provided tileset and size
+--	provided tileset 
 --
 --  Inputs:
 --		ts - the name of the tileset to use 
 --			for this map
---		size - an idexed table
---			[1] - width of map in tiles
---			[2] - height of map in tiles
 --
-function createMap(ts, size)
+function createMap(ts)
 	local t = {}	
 	t._tileSet = tileSets[ts]	
 	local m = objects.Map(t)
 	return m	
 end
+
+--
+--  Returns a new terrain generator using the
+--	provided tileset
+--
+--  Inputs:
+--		ts - the name of the tileset to use 
+--			for this map
+--
+function createTerrainGenerator(ts)
+	local t = {}	
+	t._tileSet = tileSets[ts]	
+	local m = objects.TerrainGenerator(t)
+	return m	
+end
+
 
 --
 --	Returns a table suitable for creating an actor

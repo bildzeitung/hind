@@ -6,6 +6,8 @@
 
 local log = require 'log'
 
+local marshal = require 'marshal'
+
 require 'thread_communicator'
 
 local thread = love.thread.getThread()
@@ -36,16 +38,15 @@ end
 --
 function saveActor(id)
 	log.log('Save Actor: ' .. id)		
-	local msg = communicator:demand('saveActor')
-	log.log('Recieved actor string')
-	log.log(msg)
+	local actor = communicator:demand('saveActor')
+	log.log('Received actor string')
 	
-	local f = io.open('map/act_' .. id .. '.act', 'wb')	
+	local f = io.open('map/' .. id .. '.act', 'wb')	
 	if not f then 
 		log.log('There was a problem saving the actor #' .. id)
 	end	
 	
-	f:write(msg)	
+	f:write(actor)	
 	f:close()
 end
 
@@ -55,7 +56,7 @@ end
 function loadActor(id)
 	log.log('Load Actor: ' .. id)		
 	
-	local f = io.open('map/act_' .. id .. '.act', 'rb')	
+	local f = io.open('map/' .. id .. '.act', 'rb')	
 	if not f then 			
 		log.log('There was a problem loading the actor #' .. id)
 	end	
@@ -65,6 +66,60 @@ function loadActor(id)
 	communicator:send('loadedActor', s)
 end
 
+--
+--  Save a map cell to disk
+--
+function saveMapCell(hash)
+	log.log('Save Map Cell: ' .. hash)		
+	local tiles = communicator:demand('saveMapCell')
+	log.log('Received tile info')
+	local actors = communicator:demand('saveMapCell')
+	log.log('Received actor info')
+
+	local f = io.open('map/' .. hash .. '.dat' ,'wb')		
+	if not f then 
+		log.log('There was a problem saving the map cell #' .. hash)
+	end		
+	f:write(tiles)	
+	f:close()
+	
+	local f = io.open('map/act-' .. hash .. '.dat' ,'wb')		
+	if not f then 
+		log.log('There was a problem saving the actors for map cell #' .. hash)
+	end		
+	f:write(actors)	
+	f:close()	
+end
+
+--
+--  Save a map cell to disk
+--
+function loadMapCell(hash)
+	log.log('Load Map Cell: ' .. hash)		
+	
+	local tiles, actors
+	
+	local f = io.open('map/' .. hash .. '.dat', 'rb')
+	if not f then 
+		log.log('There was a problem loading the cell #' .. hash)
+		communicator:send('loadedMapCell', 0)
+		return
+	end		
+	tiles = f:read('*all')
+	f:close()	
+	
+	local f = io.open('map/act-' .. hash .. '.dat' ,'rb')		
+	if not f then 
+		log.log('There was a problem loading the actors for cell #' .. hash)
+	else
+		actors = f:read('*all')
+		f:close()
+	end
+	
+	communicator:send('loadedMapCell', hash)
+	communicator:send('loadedMapCell', tiles)
+	communicator:send('loadedMapCell', actors)
+end
 
 -- LOOP FOREVER!
 log.log('File io server waiting for input...')
@@ -74,5 +129,9 @@ while true do
 		saveActor(msg)
 	elseif cmd == 'loadActor' then
 		loadActor(msg)
+	elseif cmd == 'saveMapCell' then
+		saveMapCell(msg)
+	elseif cmd == 'loadMapCell' then
+		loadMapCell(msg)
 	end
 end

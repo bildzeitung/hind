@@ -33,8 +33,8 @@ World = Object{ _init = { '_profiler' } }
 
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
-World.saveActorsPerFrame = 5
-World.loadActorsPerFrame = 5
+World.saveActorsPerFrame = 2
+World.loadActorsPerFrame = 2
 
 --
 --  World constructor
@@ -158,9 +158,11 @@ function World:initialize()
 	self._camera = factories.createCamera()
 	self._camera:window(500000*32,500000*32,width,height)
 	self._camera:viewport(0,0,width,height)
-		
-	self._map = factories.createMap('outdoor')
-	self._map:generate(499808,499808,512,512)
+	
+	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
+	self._terrainGenerator:generate(499808,499808,512,512)
+	
+	self._map = factories.createMap('outdoor')	
 	self._map:calculateMinMax(self._camera, {1,1,1,1})
 	self._map:visibleCells()
 	-- force the map to load the cells
@@ -186,17 +188,18 @@ function World:initialize()
 	
 	self._map.on_cell_load = function(map, mc)
 		-- load all of the actors saved in this map cell
-		local actors = mc._tiles[Map.layers+2]
-		for i = 1, #actors do
-			local id = actors[i]
+		for i = 1, #mc._actors do
+			local id = mc._actors[i]
 			if not self:actorExists(id) then
 				self:loadActor(id)
 			end		
 		end
+		
+		-- @TODO need to think of a smart way to do this
+		self._hero:registerBuckets(self._map._buckets)	
 	end	
 	
 	self:createHero()
-	self:createActors()
 	
 	--@TODO in a cave with a flashlight or similar
 	--[[
@@ -298,81 +301,9 @@ function World:createHero()
 	-- put the hero in the middle of the map for fun
 	hero:position(500008*32, 500000*32)
 	hero:update(0.16)
-
-	hero:registerBuckets(self._map._buckets)	
+	
 
 	self._hero = hero	
-end
-
---
---  Create some actors
---
---	@TODO replace this with actual procedural generation
---
-function World:createActors()
-	local numActors = 150
-	
-	local actors = {}
-
-	--self:createBunchOPotions(self._hero:position())
-
-	local sx = 0
-	local sy = 0
-	for i = 1, numActors do		
-		--local a = Actor.create('content/actors/slime.dat')
-		local a = Actor.create('content/actors/male_human.dat')	
-		a:animation('standright')
-		a:position(math.random() * (100*32) + (500000*32), math.random() * (100*32) + (500000 * 32))
-		actors[a._id] = a
-	end	
-
-	local npc = Actor.create('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:animation('standright')
-	npc:position(500000*32,500000*32)
-	npc:name('Bilbo')
-	actors[npc._id] = npc	
-	
-	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-	
-	local npc = Actor.create('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:animation('standright')
-	npc:position(499990*32,500000*32)
-	npc:name('Larry')
-	actors[npc._id] = npc	
-	
-	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-
-	local npc = Actor.create('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:animation('standright')
-	npc:position(499980*32,500000*32)
-	npc:name('Jimbo')
-	actors[npc._id] = npc	
-	
-	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-	
-	-- add the actors to the collision buckets
-	for k, v in pairs(actors) do
-		v:update(0.16)
-		v:registerBuckets(self._map._buckets)
-	end	
 end
 
 --
@@ -496,6 +427,16 @@ function World:draw()
 					cv[3] .. ', ' .. 
 					cv[4], 10, y)		
 				y=y+20
+
+				y = 150
+				love.graphics.print('ACTORS TO SAVE: '..table.count(self._actorsToSave), 400, y)		
+				y = y + 20				
+
+				love.graphics.print('CELLS TO DISPOSE '..table.count(self._map._cellsToDispose), 400, y)		
+				y = y + 20				
+
+				love.graphics.print('CELLS LOADING '..table.count(self._map._cellsLoading), 400, y)		
+				y = y + 20				
 			end
 		end)		
 end
@@ -569,24 +510,6 @@ function World:dropItem(actor)
 				end)
 		else
 			self:createItem('content/actors/potions.dat', actor:position(),
-				function(item)
-					item:setType('weak','healing')
-				end)
-		end
-	end
-end
-
---
---  @TODO get rid of this!
---
-function World:createBunchOPotions(pos)
-	-- create bunch o' potions
-	for y = -300, -50, 34 do
-		for x = -400, 400, 34 do
-			local pos = { pos[1], pos[2] }
-			pos[1] = pos[1] + x
-			pos[2] = pos[2] + y
-			self:createItem('content/actors/potions.dat', pos,
 				function(item)
 					item:setType('weak','healing')
 				end)

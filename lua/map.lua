@@ -28,7 +28,7 @@ Map.unusedFrames = 60
 -- the number of tile to generate ahead
 Map.lookAhead = Map.cellSize * 4
 -- the size of a bucket cell
-Map.bucketCellSize = Map.cellSize * 32
+Map.bucketCellSize = Map.cellSize * 16
 
 Map.disposeCellsPerFrame = 1
 Map.loadCellsPerFrame = 1

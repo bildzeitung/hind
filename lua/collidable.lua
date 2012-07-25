@@ -19,6 +19,9 @@ Collidable = Object{}
 --  Collidable support the following Events:
 --		on_collide(other) - will be called when the collidable collides
 --							with another collidable
+--		on_no_buckets() - will be called when none of the coliision
+--							buckets the collidable tried to register in 
+--							were available
 --
 
 --
@@ -118,14 +121,22 @@ function Collidable:registerBuckets(buckets)
 	self._bucketIds = self:spatialBuckets(buckets)
 	
 	-- register the new buckets ids
+	local bucketFound = false
 	for k, _ in pairs(self._bucketIds) do
 		local bucket = buckets[k]
 		if bucket then
 			bucket[self._id] = self
+			bucketFound = true
 		else
 			self._bucketIds[k] = nil
 		end
 	end	
+	
+	if not bucketFound then
+		if self.on_no_buckets then
+			self:on_no_buckets()
+		end
+	end
 end
 
 --

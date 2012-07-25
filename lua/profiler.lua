@@ -32,6 +32,11 @@ function Profiler:profile(p, fn)
 	local s = love.timer.getMicroTime()
 	fn()
 	local d = love.timer.getMicroTime() - s
+	
+	if d > 0.02 then
+		p = '*L* ' .. p
+	end
+	
 	-- track running average of this item
 	local prof = self._profiles[p] or { sum = 0, count = 0 }
 	prof.count = prof.count + 1

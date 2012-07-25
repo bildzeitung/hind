@@ -111,9 +111,9 @@ function love.draw()
 				for _, v in pairs(avgs) do
 					if v.avg > 0.00009 then
 						love.graphics.print(v.name,10, y)				
-						love.graphics.print(v.count, 280, y)				
+						love.graphics.print(v.count, 350, y)				
 						love.graphics.print(string.format('%.5f', v.avg),
-							330, y)		
+							450, y)		
 						y=y+15		
 					end
 					total = total + v.avg
@@ -355,7 +355,6 @@ function love.update(dt)
 		function()
 			loveframes.update(dt)
 		end)
-		
 end
 
 function love.mousepressed(x, y, button)

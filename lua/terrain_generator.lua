@@ -352,18 +352,18 @@ end
 function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	local ts = self._tileSet:size()
 	
-	local numActors = 150
+	local numActors = 200
 	
 	local actors = {}
 
 	--self:createBunchOPotions(self._hero:position())
 
 	for i = 1, numActors do		
-		--local a = Actor.create('content/actors/slime.dat')
-		local a = Actor.create('content/actors/male_human.dat')	
+		local a = Actor.create('content/actors/slime.dat')
+		--local a = Actor.create('content/actors/male_human.dat')	
 		a:animation('standright')
-		local tileX = math.floor(math.random() * (sx - 12)) + xpos + 6
-		local tileY = math.floor(math.random() * (sy - 12)) + ypos + 6
+		local tileX = math.floor(math.random() * (sx - 128)) + xpos + 64
+		local tileY = math.floor(math.random() * (sy - 128)) + ypos + 64
 		a:position(tileX * ts[1], tileY * ts[2])
 		
 		local hash = Map.hash{tileX, tileY}

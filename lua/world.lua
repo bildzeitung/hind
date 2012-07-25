@@ -90,6 +90,17 @@ function World:receiveLoadedActors()
 			local actor = marshal.decode(s)
 			actor:update(0)
 			actor:registerBuckets(self._map._buckets)
+			
+			-- if an actor wanders off the currently loaded map
+			-- it needs to be saved to disk and added to cell that it wandered
+			-- off to
+			actor.on_no_buckets = function(actor)
+				log.log('No buckets found for #' .. actor._id.. '#')
+				self:addActorToCell(actor)
+				self._actorsToSave[actor._id] = actor
+				self:removeActor(actor)
+			end
+			
 			actorsLoaded = actorsLoaded + 1
 			if actorsLoaded >= World.loadActorsPerFrame then 
 				break
@@ -97,6 +108,23 @@ function World:receiveLoadedActors()
 		end
 	until not received 
 end
+
+--
+--  Adds an actor to a map cell
+--
+function World:addActorToCell(actor)
+	-- figure out the new map cell
+	-- hash value for this actor
+	local ts = self._map._tileSet:size()
+	local pos = actor:position()
+	local tileX = pos[1] / ts[1]
+	local tileY = pos[2] / ts[2]
+	local hash = Map.hash{tileX, tileY}
+	
+	self._communicator:send('addActorToCell',actor._id)	
+	self._communicator:send('addActorToCell',hash)
+end
+
 
 --
 --  Returns true if an actor exists in the game world
@@ -159,7 +187,7 @@ function World:initialize()
 	self._camera:viewport(0,0,width,height)
 	
 	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
-	self._terrainGenerator:generate(499808,499808,512,512)
+	self._terrainGenerator:generate(499904,499904,256,256)
 	
 	self._map = factories.createMap('outdoor')	
 	

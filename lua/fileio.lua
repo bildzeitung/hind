@@ -4,6 +4,8 @@
 	Created JUL-23-2012
 ]]
 
+require 'table_ext'
+
 local log = require 'log'
 
 local marshal = require 'marshal'
@@ -18,7 +20,8 @@ local commands =
 	'saveActor',
 	'loadActor',
 	'saveMapCell',
-	'loadMapCell'
+	'loadMapCell',
+	'addActorToCell'
 }
 
 --
@@ -89,7 +92,7 @@ function saveMapCell(hash)
 end
 
 --
---  Save a map cell to disk
+--  Load a map cell from disk
 --
 function loadMapCell(hash)
 	log.log('Load Map Cell: ' .. hash)		
@@ -118,6 +121,43 @@ function loadMapCell(hash)
 	communicator:send('loadedMapCell', actors)
 end
 
+--
+--  Add an actor to a cell
+--
+function addActorToCell(id)
+	local hash = communicator:demand('addActorToCell')
+	log.log('Add actor "' .. id .. '" to cell "' .. hash .. '"')		
+	
+	local f = io.open('map/act-' .. hash .. '.dat' ,'rb')		
+	if not f then 
+		log.log('There was a problem reading the actors for cell #' .. hash)
+		return
+	end
+	local actors = f:read('*all')
+	f:close()
+	
+	-- add the actor id to the table of actors for this cell
+	actors = marshal.decode(actors)	
+	
+	log.log('===== BEFORE ======')
+	log.log(table.dump(actors))
+	
+	actors[#actors + 1] = id
+	
+	log.log('===== AFTER ======')
+	log.log(table.dump(actors))
+	
+	actors = marshal.encode(actors)
+	
+	local f = io.open('map/act-' .. hash .. '.dat' ,'wb')		
+	if not f then 
+		log.log('There was a problem writing the actors for cell #' .. hash)
+		return
+	end	
+	f:write(actors)				
+	f:close()		
+end
+
 -- LOOP FOREVER!
 log.log('File io server waiting for input...')
 while true do
@@ -130,5 +170,7 @@ while true do
 		saveMapCell(msg)
 	elseif cmd == 'loadMapCell' then
 		loadMapCell(msg)
+	elseif cmd == 'addActorToCell' then
+		addActorToCell(msg)
 	end
 end

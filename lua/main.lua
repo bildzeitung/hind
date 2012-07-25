@@ -19,6 +19,10 @@ local HERO_DEAD = -99
 local IN_GAME = 10
 
 collectgarbage('stop')
+--collectgarbage('setpause',0)
+--collectgarbage('setstepmul', 200)
+local Counters
+local Names
 
 function love.load()	
 	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
@@ -93,8 +97,8 @@ function love.draw()
 	
 	world:draw(profiler)
 	
-	-- draw info text
-	profiler:profile('drawing info text', 	
+	-- draw profile text
+	profiler:profile('drawing profile text', 	
 		function()		
 			love.graphics.setFont(smallFont)
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
@@ -136,8 +140,7 @@ function love.draw()
 				love.graphics.print(string.format('%.5f', 1/total), 10, y)
 			end
 		end)
-		
-	
+
 	profiler:profile('drawing loveframes', 
 		function()		
 			loveframes.draw()
@@ -232,10 +235,6 @@ function love.update(dt)
 			if love.keyboard.isDown('w') then
 				world._zoom  = 2
 			end
-			
-			if love.keyboard.isDown('e') then
-				world._zoom  = 3
-			end	
 			
 			if love.keyboard.isDown('r') then
 				world._zoom  = 4
@@ -347,14 +346,6 @@ function love.update(dt)
 			if love.keyboard.isDown(',') then		
 				profiler:reset()
 			end		
-
-			if love.keyboard.isDown('[') then		
-				world._drawInfoText = true
-			end		
-			
-			if love.keyboard.isDown(']') then		
-				world._drawInfoText = false
-			end				
 		end)
 		
 	world:update(dt, profiler)
@@ -401,6 +392,55 @@ function love.keyreleased(key)
 	for overlay, _ in pairs(overlays) do
 		if overlay.keyreleased then
 			overlay:keyreleased(key)
+		end	
+	end
+	
+	if key == '[' then		
+		world._drawInfoText = not world._drawInfoText
+	end		
+			
+	if key == 'e' then
+		drawProfileText = not drawProfileText
+	end	
+	
+	if key == 'd' then
+		local function hook ()
+		  local f = debug.getinfo(2, 'f').func
+		  if Counters[f] == nil then    
+			Counters[f] = 1
+			Names[f] = debug.getinfo(2, 'Sn')
+		  else  
+			Counters[f] = Counters[f] + 1
+		  end
+		end
+
+		local function getname (func)
+		  local n = Names[func]
+		  if n.what == "C" then
+			return n.name
+		  end
+		  local loc = string.format("[%s]:%s", n.short_src, n.linedefined)
+		  if n.namewhat ~= "" then
+			return string.format("%s (%s)", loc, n.name)
+		  else
+			return string.format("%s", loc)
+		  end
+		end				
+		
+		if not debugMode then
+			debugMode = true
+			Counters = {}
+			Names = {}									
+			debug.sethook(hook, 'c')
+		else		
+			debugMode = false
+			debug.sethook()  
+			for func, count in pairs(Counters) do
+				if count > 1000 then
+					local msg = tostring(getname(func)) .. ' : ' .. count
+					log.log(msg)
+				end
+			end	
 		end	
 	end
 end

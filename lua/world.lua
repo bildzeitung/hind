@@ -24,8 +24,8 @@ local marshal = require 'marshal'
 
 local log = require 'log'
 
-local pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage
-	= pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage
+local pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage, string
+	= pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage, string
 			
 module('objects')
 
@@ -383,54 +383,34 @@ function World:draw()
 				end		
 			end
 		end)
-		
+	
+	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)	
+	love.graphics.print('MEMORY IN USE '.. string.format('%.2f', collectgarbage('count')), 10, 85)			
+				
 	-- draw info text
 	self._profiler:profile('drawing info text', 	
 		function()		
-			love.graphics.setColor(255,255,255,255)		
-			love.graphics.setPixelEffect()
-			
-			love.graphics.setFont(World.largeFont)
-			love.graphics.print('HEALTH: ' .. self._hero:health() .. '/' .. self._hero._maxHealth, 10, 10)			
-			love.graphics.print('GOLD: ' .. self._hero:gold(), 250, 10)
-			love.graphics.print('EXPERIENCE: ' .. self._hero:experience(), 500, 10)			
-			love.graphics.print('SPELL: ' .. self._hero._spells[self._hero._currentSpell][2], 0, 40)						
-			love.graphics.print('MANA: ' .. self._hero:mana(), 250, 40)
-			love.graphics.print('COST: ' .. self._hero._spells[self._hero._currentSpell][3], 500, 40)						
-			
-			love.graphics.setFont(World.smallFont)		
-
-			local y = 0
-			for k, v in ipairs(self._hero._inventory) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 750, y)
-				y=y+20
-			end
-			
-			local y = 0
-			for k, v in pairs(self._hero._equipped) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 900, y)
-				y=y+20
-			end
-			
-			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
-			
 			if self._drawInfoText then
-				local y = 85
-				for k, v in pairs(self._hero._bucketIds) do
-					local count = table.count(self._map._buckets[k])
-					love.graphics.print('HERO BUCKET ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
-					y = y + 20
-				end
-
-				love.graphics.print('VISIBLE ID: '..table.count(self._visibleIds), 10, y)		
-				y = y + 20
+				love.graphics.setColor(255,255,255,255)		
+				love.graphics.setPixelEffect()
 				
+				love.graphics.setFont(World.largeFont)
+				love.graphics.print('HEALTH: ' .. self._hero:health() .. '/' .. self._hero._maxHealth, 10, 10)			
+				love.graphics.print('GOLD: ' .. self._hero:gold(), 250, 10)
+				love.graphics.print('EXPERIENCE: ' .. self._hero:experience(), 500, 10)			
+				love.graphics.print('SPELL: ' .. self._hero._spells[self._hero._currentSpell][2], 0, 40)						
+				love.graphics.print('MANA: ' .. self._hero:mana(), 250, 40)
+				love.graphics.print('COST: ' .. self._hero._spells[self._hero._currentSpell][3], 500, 40)						
+				
+				love.graphics.setFont(World.smallFont)		
+
+				local y = 105
+				love.graphics.print('VISIBLE ID: '..table.count(self._visibleIds), 10, y)		
+				y = y + 20			
 				love.graphics.print('CELLS IN MEMORY '..table.count(self._map._cellsInMemory), 10, y)		
 				y = y + 20				
-
 				love.graphics.print('self._visibleActors '..table.count(self._visibleActors), 10, y)		
 				y = y + 20		
-
 				love.graphics.print('self._visibleObjects '..table.count(self._visibleObjects), 10, y)		
 				y = y + 20		
 				
@@ -480,9 +460,6 @@ function World:draw()
 
 				love.graphics.print('CELLS LOADING '..table.count(self._map._cellsLoading), 400, y)		
 				y = y + 20				
-				
-				love.graphics.print('MEMORY IN USE '..collectgarbage('count'), 400, y)		
-				y = y + 20												
 			end
 		end)		
 end

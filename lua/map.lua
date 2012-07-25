@@ -88,12 +88,12 @@ end
 function Map:createBuckets()
 	local ts = self._tileSet:size()	
 	
-	local columns = 1000000 * ts[1] / Map.bucketCellSize
+	local columns = math.floor(1000000 * ts[1] / Map.bucketCellSize)
 	
 	self._buckets = {}
 	self._buckets.hash = function(x,y)
-		return math.floor(math.floor(x / Map.bucketCellSize) +
-				(math.floor(y / Map.bucketCellSize) * columns)) + 1
+		return math.floor(x / Map.bucketCellSize) + 
+			(math.floor(y / Map.bucketCellSize) * columns) + 1
 	end		
 end
 

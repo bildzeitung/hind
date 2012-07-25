@@ -17,11 +17,11 @@ local communicator = objects.ThreadCommunicator{ thread }
 
 local commands = 
 {
-	'addActorToCell',
-	'saveActor',
 	'saveMapCell',
-	'loadActor',	
+	'saveActor',
+	'addActorToCell',	
 	'loadMapCell',
+	'loadActor'
 }
 
 --
@@ -137,20 +137,8 @@ function addActorToCell(id)
 	f:close()
 	
 	-- add the actor id to the table of actors for this cell
-	actors = marshal.decode(actors)	
-	
-	--[[
-	log.log('===== BEFORE ======')
-	log.log(table.dump(actors))
-	]]
-	
+	actors = marshal.decode(actors)		
 	actors[#actors + 1] = id
-	
-	--[[
-	log.log('===== AFTER ======')
-	log.log(table.dump(actors))
-	]]
-	
 	actors = marshal.encode(actors)
 	
 	local f = io.open('map/act-' .. hash .. '.dat' ,'wb')		

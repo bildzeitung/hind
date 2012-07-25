@@ -24,8 +24,8 @@ local marshal = require 'marshal'
 
 local log = require 'log'
 
-local pairs, ipairs, type, table, math, tostring, tonumber, io, love
-	= pairs, ipairs, type, table, math, tostring, tonumber, io, love
+local pairs, ipairs, type, table, math, tostring, tonumber, love
+	= pairs, ipairs, type, table, math, tostring, tonumber, love
 			
 module('objects')
 
@@ -89,8 +89,6 @@ function World:receiveLoadedActors()
 		if s then
 			received = true
 			local actor = marshal.decode(s)
-			actor:update(0)
-			actor:registerBuckets(self._map._buckets)
 			
 			-- if an actor wanders off the currently loaded map
 			-- it needs to be saved to disk and added to cell that it wandered
@@ -100,6 +98,9 @@ function World:receiveLoadedActors()
 				self._actorsToSave[actor._id] = actor
 				self:removeActor(actor)						
 			end
+			
+			actor:update(0)
+			actor:registerBuckets(self._map._buckets)
 			
 			actorsLoaded = actorsLoaded + 1
 			if actorsLoaded >= World.loadActorsPerFrame then 
@@ -116,19 +117,15 @@ function World:addActorToCell(actor)
 	-- figure out the new map cell
 	-- hash value for this actor
 	local ts = self._map._tileSet:size()
-	local pos = actor:position()
-	local tileX = pos[1] / ts[1]
-	local tileY = pos[2] / ts[2]
+	local bounds = actor._boundary
+	local tileX = math.floor(bounds[1] / ts[1])
+	local tileY = math.floor(bounds[2] / ts[2])
 	local hash = Map.hash{tileX, tileY}
 	
 	-- is this map cell being loaded 
 	if self._map._cellsLoading[hash] then
 		-- the map cell is being loaded already so just
 		-- register the actor again when the map cell is loaded
-		log.log('===== FOUND ER =====')
-		log.log('self._map._cellsLoading[' .. hash .. ']')
-		log.log(tostring(self._map._cellsLoading[hash]))
-		
 		if not self._actorsToRegister[hash] then
 			self._actorsToRegister[hash] = { actor }
 		else

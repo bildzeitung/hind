@@ -293,8 +293,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	for y = 1, sy - 1, Map.cellSize do
 		cx = xcoord
 		for x = 1, sx - 1, Map.cellSize do
-			--log.log('Creating map cell at coords: ' .. cx .. ', ' .. cy)
-			--log.log('Creating map cell at generated tile coords: ' .. x .. ', ' .. y)
+			log.log('Creating map cell at coords: ' .. cx .. ', ' .. cy)
 			
 			local mc = {}
 			mc._tiles = {}
@@ -308,8 +307,6 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 				end
 			end
 			mc._tiles[Map.layers+1] = {}
-			
-			--log.log('Made new map cell table')
 			
 			for i = 1, Map.layers do
 				for yy = y, y + Map.cellSize - 1 do
@@ -341,7 +338,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 		self:saveMapCell(v)
 	end
 
-	--log.log('Finished creating map cells!')		
+	log.log('Finished creating map cells!')		
 end
 
 --
@@ -352,7 +349,7 @@ end
 function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	local ts = self._tileSet:size()
 	
-	local numActors = 200
+	local numActors = 50
 	
 	local actors = {}
 
@@ -366,6 +363,10 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 		local tileY = math.floor(math.random() * (sy - 128)) + ypos + 64
 		a:position(tileX * ts[1], tileY * ts[2])
 		
+		a:update(0)
+		local bounds = a._boundary
+		local tileX = bounds[1] / ts[1]
+		local tileY = bounds[2] / ts[2]		
 		local hash = Map.hash{tileX, tileY}
 		if not actors[hash] then
 			actors[hash] = {}

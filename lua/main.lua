@@ -15,6 +15,9 @@ require 'inventory_viewer'
 require 'personality_viewer'
 require 'world'
 
+local HERO_DEAD = -99
+local IN_GAME = 10
+
 function love.load()	
 	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
 	fileiothread:start()
@@ -67,20 +70,20 @@ function love.load()
 	loveframes.config['DEBUG'] = false
 	loveframes.util.SetActiveSkin('Hind')
 	
-	state = 'normalGame'	
+	state = IN_GAME
 	overlays = {}	
 	
 	world = objects.World{ profiler }
 	world:initialize()
 	world._hero.on_end_die = function(self, other)			
-		state = 'herodead'
+		state = HERO_DEAD
 	end
 end
 
 function love.draw()
 	love.graphics.setColor(255,255,255,255)
 	
-	if state == 'herodead' then		
+	if state == HERO_DEAD then		
 		love.graphics.setFont(largeFont)
 		love.graphics.print('GAME OVER', 300, 300)
 		return
@@ -137,7 +140,7 @@ function love.draw()
 end
 
 function love.update(dt)
-	if state == 'herodead' then		
+	if state == HERO_DEAD then		
 		return
 	end
 

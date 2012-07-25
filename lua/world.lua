@@ -24,8 +24,8 @@ local marshal = require 'marshal'
 
 local log = require 'log'
 
-local pairs, ipairs, type, table, math, tostring, tonumber, love
-	= pairs, ipairs, type, table, math, tostring, tonumber, love
+local pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage
+	= pairs, ipairs, type, table, math, tostring, tonumber, love, collectgarbage
 			
 module('objects')
 
@@ -480,6 +480,9 @@ function World:draw()
 
 				love.graphics.print('CELLS LOADING '..table.count(self._map._cellsLoading), 400, y)		
 				y = y + 20				
+				
+				love.graphics.print('MEMORY IN USE '..collectgarbage('count'), 400, y)		
+				y = y + 20												
 			end
 		end)		
 end

@@ -12,8 +12,8 @@ require 'map_cell'
 
 local log = require 'log'
 
-local table, pairs, ipairs, math, io, love, tostring, collectgarbage
-	= table, pairs, ipairs, math, io, love, tostring, collectgarbage
+local table, pairs, ipairs, math, io, love, tostring
+	= table, pairs, ipairs, math, io, love, tostring
 	
 module('objects')
 

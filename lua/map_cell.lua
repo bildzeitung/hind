@@ -269,6 +269,11 @@ function MapCell:createObject(obj)
 	b[4] = o._position[2] + o._boundary[4] - o._offset[2]		
 	o._boundary = b
 	
+	o._objectDrawEntry = { true,  o._image[1], true, true, 
+		true, true, true, true }
+	o._roofDrawEntry = { true,  o._image[2], true, true, 
+		true, true, true, true }
+	
 	--
 	--  Draw the object
 	--
@@ -283,15 +288,25 @@ function MapCell:createObject(obj)
 		local z = self._position[2] + 
 			self._height - (self._position[1] * 0.0000000001)
 		
-		table.insert(drawTable.object, 
-			{ z, self._image[1], 
-			sx, sy, 
-			zoomX, zoomY, self._offset[1], self._offset[2] })
-			
-		table.insert(drawTable.roof, 
-			{ z, self._image[2], 
-			sx, sy, 
-			zoomX, zoomY, self._offset[1], self._offset[2] })			
+		local object = drawTable.object
+		self._objectDrawEntry[1] = z
+		self._objectDrawEntry[3] = sx
+		self._objectDrawEntry[4] = sy
+		self._objectDrawEntry[5] = zoomX
+		self._objectDrawEntry[6] = zoomY
+		self._objectDrawEntry[7] = self._offset[1]
+		self._objectDrawEntry[8] = self._offset[2]				
+		object[#object+1] = self._objectDrawEntry
+		
+		local roof = drawTable.roof
+		self._roofDrawEntry[1] = z
+		self._roofDrawEntry[3] = sx
+		self._roofDrawEntry[4] = sy
+		self._roofDrawEntry[5] = zoomX
+		self._roofDrawEntry[6] = zoomY
+		self._roofDrawEntry[7] = self._offset[1]
+		self._roofDrawEntry[8] = self._offset[2]						
+		roof[#roof+1] = self._roofDrawEntry		
 	end
 	
 	return o

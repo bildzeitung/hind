@@ -32,7 +32,7 @@ function Collidable:_clone(values)
 	
 	o._position = { 0, 0 }	
 	o._boundary = { 0, 0, 0, 0 }
-	o._bucketIds = {}	
+	o._bucketIds = {}
 	o._ignores = {}
 	o._collidees = {}
 	o:ignoreCollision(o)
@@ -94,14 +94,14 @@ end
 --  that the object currently occupies
 --
 function Collidable:spatialBuckets(b)
-	local ids = {}
-		
-	ids[b.hash(self._boundary[1], self._boundary[2])] = true
-	ids[b.hash(self._boundary[1], self._boundary[4])] = true
-	ids[b.hash(self._boundary[3], self._boundary[2])] = true
-	ids[b.hash(self._boundary[3], self._boundary[4])] = true
+	for k, _ in pairs(self._bucketIds) do
+		self._bucketIds[k] = nil
+	end
 	
-	return ids
+	self._bucketIds[b.hash(self._boundary[1], self._boundary[2])] = true
+	self._bucketIds[b.hash(self._boundary[1], self._boundary[4])] = true
+	self._bucketIds[b.hash(self._boundary[3], self._boundary[2])] = true
+	self._bucketIds[b.hash(self._boundary[3], self._boundary[4])] = true
 end
 
 --
@@ -118,7 +118,7 @@ function Collidable:registerBuckets(buckets)
 	end	
 	
 	-- calculates the spatial buckets
-	self._bucketIds = self:spatialBuckets(buckets)
+	self:spatialBuckets(buckets)
 	
 	-- register the new buckets ids
 	local bucketFound = false

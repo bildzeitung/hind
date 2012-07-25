@@ -360,7 +360,7 @@ function World:draw()
 			actors = self._visibleActors, objects = self._visibleObjects 
 		}, 
 		self._profiler )
-		
+	
 	-- draw collision boundaries?		
 	self._profiler:profile('drawing collision boundaries',
 		function()
@@ -660,7 +660,7 @@ function World:update(dt)
 	-- get the list of visible ids
 	self._profiler:profile('getting list of ids near map centre', 
 		function()
-			self._visibleIds = self._map:visibleIds(self._camera)
+			self._map:visibleIds(self._visibleIds)
 		end)
 	
 	-- clear the list of visible items

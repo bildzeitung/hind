@@ -362,8 +362,11 @@ end
 --  Returns a table with the ids for the bucket cells
 --	that are currently visible
 --
-function Map:visibleIds()
-	local ids = {}
+function Map:visibleIds(id_table)
+	local ids = id_table
+	for k, v in pairs(ids) do
+		ids[k] = nil
+	end
 	
 	for _, cell in pairs(self._cellsInMemory) do
 		if cell._visible then
@@ -372,6 +375,4 @@ function Map:visibleIds()
 			end
 		end
 	end
-	
-	return ids
 end

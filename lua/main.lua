@@ -18,6 +18,8 @@ require 'world'
 local HERO_DEAD = -99
 local IN_GAME = 10
 
+collectgarbage('stop')
+
 function love.load()	
 	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
 	fileiothread:start()
@@ -100,26 +102,29 @@ function love.draw()
 			if drawProfileText then
 				local y = 300
 				local total = 0	
-				love.graphics.print('=== PROFILES ===', 10, y)
+				love.graphics.print('========= PROFILES ===========', 10, y)
+				love.graphics.print('=== COUNT ===', 350, y)
+				love.graphics.print('=== TIME ===', 450, y)
+				love.graphics.print('=== MEMORY ===', 650, y)
 				y = y + 20
 				
 				local avgs = {}
 				
 				for k, v in pairs(profiler:profiles()) do
-					avgs[#avgs+1] = { name = k, avg = v.sum / v.count, count = v.count }
+					avgs[#avgs+1] = { name = k, mem_avg = v.mem_sum / v.count, time_avg = v.time_sum / v.count, count = v.count }
 				end
 				
-				table.sort(avgs, function(a,b) return a.avg > b.avg end)
+				table.sort(avgs, function(a,b) return a.mem_avg > b.mem_avg end)
 				
 				for _, v in pairs(avgs) do
-					if v.avg > 0.00009 then
+					if v.time_avg > 0.00009 or v.mem_avg > 0.001 then
 						love.graphics.print(v.name,10, y)				
 						love.graphics.print(v.count, 350, y)				
-						love.graphics.print(string.format('%.5f', v.avg),
-							450, y)		
+						love.graphics.print(string.format('%.5f', v.time_avg),450, y)		
+						love.graphics.print(string.format('%.5f', v.mem_avg),650, y)		
 						y=y+15		
 					end
-					total = total + v.avg
+					total = total + v.time_avg
 				end	
 				
 				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)

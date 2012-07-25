@@ -23,6 +23,8 @@ function Drawable:_clone(values)
 	
 	o._screenPos = { 0, 0 }
 	o._position = { 0, 0 }
+	o._drawTableEntry = { true, true, true, true, 
+		true, true, true, true }
 	
 	return o
 end
@@ -67,10 +69,16 @@ function Drawable:draw(camera, drawTable)
 	local tq = ts:quads()
 	local frame = self._currentAnimation:frame()
 	
-	object[#object+1] = { 
-		self._position[2] + of[2] - (self._position[1] * 1e-14),
-		tq[frame], self._screenPos[1], self._screenPos[2],
-		zoomX, zoomY, of[1], of[2] }
+	self._drawTableEntry[1] = self._position[2] + of[2] - (self._position[1] * 1e-14)
+	self._drawTableEntry[2] = tq[frame]
+	self._drawTableEntry[3] = self._screenPos[1]
+	self._drawTableEntry[4] = self._screenPos[2]
+	self._drawTableEntry[5] = zoomX
+	self._drawTableEntry[6] = zoomY
+	self._drawTableEntry[7] = of[1]
+	self._drawTableEntry[8] = of[2]
+			
+	object[#object+1] = self._drawTableEntry
 end
 
 --

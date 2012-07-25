@@ -6,8 +6,8 @@
 
 local Object = (require 'object').Object
 
-local love, pairs, ipairs, type, table, unpack, log
-	= love, pairs, ipairs, type, table, unpack, log
+local love, pairs, ipairs, type, table, unpack
+	= love, pairs, ipairs, type, table, unpack
 	
 module('objects')
 
@@ -50,7 +50,7 @@ function Renderer:_clone(values)
 	end
 	
 	o:loadShaders()
-		
+	
 	return o
 end
 
@@ -131,7 +131,12 @@ end
 --
 --  Update the light effect
 --
+-- 	@TODO
+--	cloning a table like this every frame is horrific
+--  this code needs to change if we are going to use dynamic lighting!!!
+--
 function Renderer:updateLightEffect(camera)
+	--[[
 	self._shaders.light:send('origin', self._lighting.origin)
 	self._shaders.light:send('fallOff', self._lighting.fallOff)
 	self._shaders.light:send('spotSize', self._lighting.spotSize)
@@ -171,12 +176,13 @@ function Renderer:updateLightEffect(camera)
 			self._shaders.light:send(k, unpack(v))
 		end
 	end
+	]]
 end
 
 --
 --  Render a list of drawable items
 -- 
-function Renderer:draw(camera, drawables, profiler)
+function Renderer:draw(camera, drawables, profiler)	
 	local drawTable = {
 		base = {},
 		overlay = {},
@@ -247,7 +253,7 @@ function Renderer:draw(camera, drawables, profiler)
 				return a[1] < b[1] end)
 		end)
 		
-	profiler:profile('updating ligthing for objects', 		
+	profiler:profile('updating lighting for objects', 		
 		function()
 			self:setDirectionalLight( { spotSize = 0.3 } )
 			self:updateLightEffect(camera)
@@ -308,7 +314,7 @@ function Renderer:draw(camera, drawables, profiler)
 			local f = love.graphics.getFont()
 			local cm = love.graphics.getColorMode()
 			love.graphics.setColorMode('modulate')
-			for k, v in pairs(drawTable.text) do
+			for k, v in ipairs(drawTable.text) do
 				love.graphics.setFont(v[2])
 				love.graphics.setColor(unpack(v[3]))
 				love.graphics.print(v[1], v[4], v[5], 0, 

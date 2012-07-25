@@ -52,6 +52,7 @@ function World:_clone(values)
 	o._showCollisionBoundaries = false	
 	o._drawInfoText = true			
 	o._actorsToSave = {}
+	o._actorsToRegister = {}
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
@@ -95,10 +96,9 @@ function World:receiveLoadedActors()
 			-- it needs to be saved to disk and added to cell that it wandered
 			-- off to
 			actor.on_no_buckets = function(actor)
-				log.log('No buckets found for #' .. actor._id.. '#')
 				self:addActorToCell(actor)
 				self._actorsToSave[actor._id] = actor
-				self:removeActor(actor)
+				self:removeActor(actor)						
 			end
 			
 			actorsLoaded = actorsLoaded + 1
@@ -121,8 +121,24 @@ function World:addActorToCell(actor)
 	local tileY = pos[2] / ts[2]
 	local hash = Map.hash{tileX, tileY}
 	
-	self._communicator:send('addActorToCell',actor._id)	
-	self._communicator:send('addActorToCell',hash)
+	-- is this map cell being loaded 
+	if self._map._cellsLoading[hash] then
+		-- the map cell is being loaded already so just
+		-- register the actor again when the map cell is loaded
+		log.log('===== FOUND ER =====')
+		log.log('self._map._cellsLoading[' .. hash .. ']')
+		log.log(tostring(self._map._cellsLoading[hash]))
+		
+		if not self._actorsToRegister[hash] then
+			self._actorsToRegister[hash] = { actor }
+		else
+			table.insert(self._actorsToRegister[hash], actor)		
+		end
+	else	
+		-- save the actor the cell
+		self._communicator:send('addActorToCell',actor._id)	
+		self._communicator:send('addActorToCell',hash)
+	end
 end
 
 
@@ -213,11 +229,17 @@ function World:initialize()
 			local id = mc._actors[i]
 			if not self:actorExists(id) then
 				self:loadActor(id)
-			end		
+			end
 		end
-		
-		-- @TODO need to think of a smart way to do this
-		self._hero:registerBuckets(self._map._buckets)	
+		-- register all of the actors that were not saved to the cell
+		-- because they wandered into the cell's space as it was loading
+		if self._actorsToRegister[mc._hash] then
+			for _, actor in ipairs(self._actorsToRegister[mc._hash]) do
+				actor:update(0)
+				actor:registerBuckets(self._map._buckets)
+			end
+			self._actorsToRegister[mc._hash] = nil
+		end
 	end	
 	
 	self:createHero()
@@ -320,11 +342,14 @@ function World:createHero()
 	]]
 	
 	-- put the hero in the middle of the map for fun
-	hero:position(500008*32, 500000*32)
+	local tileX = 500032
+	local tileY = 500032
+	local ts = self._map._tileSet:size()	
+	hero:position(tileX*ts[1], tileY*ts[2])
 	hero:update(0.16)
-	
-
-	self._hero = hero	
+	local hash = Map.hash{tileX, tileY}
+	self._actorsToRegister[hash] = { hero }		
+	self._hero = hero		
 end
 
 --

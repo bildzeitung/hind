@@ -330,8 +330,6 @@ end
 --  Disposes of a map cell
 --	
 function Map:disposeMapCell(mc)
-	log.log('Disposing map cell: ' .. mc._hash)	
-		
 	-- update cell's actor data
 	local actors = {}
 	for k, _ in pairs(mc._bucketIds) do
@@ -358,8 +356,6 @@ function Map:disposeMapCell(mc)
 	mc:unregisterBuckets(self._buckets)
 	-- remove the references to all resources
 	self._cellsInMemory[mc._hash] = nil	
-
-	log.log('Disposing map cell complete!')
 end
 
 --

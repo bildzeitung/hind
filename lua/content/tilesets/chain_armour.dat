@@ -1,0 +1,30 @@
+{
+	_name = 'chain_armour',
+	_size = { 64, 64 },	
+	_images = {
+		{
+			_file = '/content/images/walkcycle/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52} }
+		},
+		{
+			_file = '/content/images/slash/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52}  }
+		},
+		{
+			_file = '/content/images/hurt/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52}  }
+		},
+		{
+			_file = '/content/images/spellcast/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52}  }
+		},
+		{
+			_file = '/content/images/thrust/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52}  }
+		},
+		{
+			_file = '/content/images/bow/TORSO_chain_armor_torso.png', 
+			_boundaries = { default = {20,32,44,52}  }
+		}	
+	}
+}

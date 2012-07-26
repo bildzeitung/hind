@@ -1,0 +1,30 @@
+{
+	_name = 'plate_pants',
+	_size = { 64, 64 },	
+	_images = {
+		{
+			_file = '/content/images/walkcycle/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/slash/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/hurt/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/spellcast/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/thrust/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		},
+		{
+			_file = '/content/images/bow/LEGS_plate_armor_pants.png', 
+			_boundaries = { default = {18,12,46,30} }
+		}	
+	}
+}

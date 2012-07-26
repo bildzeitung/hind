@@ -7,9 +7,11 @@
 require 'tileset'
 require 'map'
 require 'actor'
+require 'inventory_actor'
+require 'static_actor'
+require 'actor_item'
 require 'animation'
 require 'camera'
-
 
 module (..., package.seeall)
 
@@ -32,6 +34,24 @@ local function readTableFromFile(filename)
 		return nil, 'There was an error loading the table from filename "' 
 			.. filename .. '" - the file did not parse properly.'
 	end
+	
+	-- merge in base tables if they are 
+	-- mentioned
+	while t._baseTable do 
+		local ot = readTableFromFile(t._baseTable)
+		t._baseTable = nil
+		t = table.merge(ot, t)
+		
+		if t._static then
+			if not objects.static then
+				objects.static = {}
+			end
+			objects.static = table.merge(objects.static, t._static)
+			t._static = nil
+		end		
+	end
+	
+	
 	
 	return t
 end
@@ -66,7 +86,7 @@ function createMap(ts, size)
 	local t = {}	
 	t._tileSet = tileSets[ts]
 	t._sizeInTiles = size	
-	local m = map:new(t)	
+	local m = objects.Map(t)
 	return m	
 end
 
@@ -85,9 +105,69 @@ function createActor(filename)
 		t._animations[k] = a		
 	end
 	t._id = actorID
-	actorID = actorID + 1
-	local a = actor:new(t)	
+	actorID = actorID + 1	
+	local a = objects.Actor(t)
 	return a
+end
+
+--
+--  Returns a new inventory actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--
+function createInventoryActor(filename)
+	local t = readTableFromFile(filename)
+	for k, v in pairs(t._animations) do
+		local a = createAnimation(v)
+		t._animations[k] = a		
+	end
+	t._id = actorID
+	actorID = actorID + 1	
+	local a = objects.InventoryActor(t)
+	return a
+end
+
+--
+--  Returns a new static actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--
+function createStaticActor(filename)
+	local t = readTableFromFile(filename)
+	for k, v in pairs(t._animations) do
+		local a = createAnimation(v)
+		t._animations[k] = a		
+	end
+	t._id = actorID
+	actorID = actorID + 1	
+	local sa = objects.StaticActor(t)
+	return sa
+end
+
+--
+--  Returns a new actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--
+function createActorItem(filename)
+	local t = readTableFromFile(filename)
+	for k, v in pairs(t._animations) do
+		local a = createAnimation(v)
+		t._animations[k] = a		
+	end
+	t._id = actorID
+	actorID = actorID + 1		
+	local ai = objects.ActorItem(t)
+	return ai
 end
 
 --
@@ -99,7 +179,7 @@ end
 --
 function createAnimation(t)
 	t._tileSet = tileSets[t._tileSet]
-	local a = animation:new(t)	
+	local a = objects.Animation(t)
 	return a
 end
 
@@ -109,4 +189,13 @@ end
 function createCamera()
 	local c = camera:new{}
 	return c
+end
+
+--
+--  Returns a floating text
+--  
+function createFloatingText(text, font, color, position, velocity, aliveTime)
+	local ft = objects.FloatingText
+		{ text, font, color, position, velocity, aliveTime}
+	return ft
 end

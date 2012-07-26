@@ -1,0 +1,6 @@
+{
+	_name = 'longsword',
+	_description = 'Longsword',
+	_baseTable = 'content/actors/sword.dat',	
+	_damage = 10
+}

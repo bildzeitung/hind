@@ -4,66 +4,102 @@
 	Created JUN-21-2012
 ]]
 
+require 'profiler'
 require 'factories'
+require 'renderer'
+require 'floating_text'
+require 'libraries.loveframes'
+require 'dialog_generator'
+require 'dialog_viewer'
+require 'inventory_viewer'
+require 'personality_viewer'
 
-function love.load()
-	love.graphics.setColorMode('replace')
+function love.load()	
+	profiler = objects.Profiler{}	
+	
+	largeFont = love.graphics.newFont(24)
+	smallFont = love.graphics.newFont(12)
+	
+	screenWidth = 1200
+	screenHeight = 675
+	local success = love.graphics.setMode( 
+		screenWidth,screenHeight, false, false, 0 )		
 
-	-- create the shader effects
-	loadEffects()
+	soundEffects = {}
+	
+	local load = { 
+		'coin_pickup', 'sword_cut_1', 'sword_cut_2', 'sword_slash_1',
+		'sword_slash_2', 'human_hurt_1', 'human_attack_1', 'human_attack_2', 
+		'human_attack_3', 'human_attack_4'
+	}
+	
+	for _, v in ipairs(load) do
+		soundEffects[v] = 
+			love.audio.newSource( 'content/sounds/' .. v .. '.wav', 'static' )
+	end
 	
 	tileSets = {}
 	
-	local ts = factories.createTileset('outdoor.dat')
-	tileSets[ts:name()] = ts
-	local ts = factories.createTileset('fem1.dat')
-	tileSets[ts:name()] = ts
+	local load = {
+		'outdoor', 'male_human', 
+		'chain_armour', 'chain_helmet', 'plate_shoes', 
+		'plate_pants', 'longsword', 'monster', 'coins', 
+		'magic_firelion', 'magic_iceshield', 'potions',
+		'inventory_items'
+	}
+		
+	for _, v in ipairs(load) do
+		local ts = factories.createTileset('content/tilesets/' .. v .. '.dat')
+		tileSets[ts:name()] = ts
+	end
 	
 	-- the size of the world
 	local worldX = 500 * 32
 	local worldY = 500 * 32
-	buckets = createBuckets(500, worldX, worldY)
+	buckets = createBuckets(250, worldX, worldY)
 		
 	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
 	daMap:generate()
+	daMap:transitions()
+
 	daMap:createColliders(buckets)
 	
 	daCamera = factories.createCamera()
-	daCamera:window(2000,2000,800,600)
+	daCamera:window(2000,2000,screenWidth,screenHeight)
+	daCamera:viewport(0,0,screenWidth,screenHeight)
 	
-	shadowCanvas = love.graphics.newCanvas(800,600)
+	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
 	
 	createActors()
 	
-	-- spot lights are in screen space coordinates
-	-- origin, spotsize, falloff are in
-	-- texture space? screen space?
-	--
-	maxLights = 6
+	npc = factories.createActor('content/actors/male_human.dat')
+	npc._health = 2000
+	npc._maxHealth = 2000
+	npc:animation('standright')
+	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
+	npc:map(daMap)
+	actors[npc._id] = npc
+	npc:name('Bilbo')
 	
-	lighting = {
-		originMinMax = { 0.2, 0.8 },
-		origin = { 0.2, 0.4 },
-		spotSize = { 0.25 },
-		fallOff = { 0.25 },		
-		shadowSkewMinMax = { -2, 2 },
-		shadowSkew = { -2, 0 },		
-		spotLights = { pos = {}, screenPos = {}, size = {}, screenSize = {}, 
-			angle = {}, lightColor = {}, world = {} }
-	}
-	
-	for i = 1, maxLights do
-		lighting.spotLights.pos[i] = {0,0}
-		lighting.spotLights.screenPos[i] = {0,0}
-		lighting.spotLights.size[i] = {0,0}
-		lighting.spotLights.screenSize[i] = {0,0}
-		lighting.spotLights.angle[i] = {0,0}
-		lighting.spotLights.lightColor[i] = {0,0,0}
-		lighting.spotLights.world[i] = false
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
 	end
 	
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
+
+	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc, hero = hero }	
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
+		
 	zoom = 1
-	currentShader = nil
 	showCollisionBoundaries = false
 	
 	visibleIds = {}
@@ -85,71 +121,23 @@ function love.load()
 								angle = {0,6.3},
 								color = {2,2,2} }
 	]]
-end
-
---
---  Set the directional light parameters
---
-function setDirectionalLight(params)	
-	for k, v in pairs(params) do
-		lighting[k] = v
-	end
-end
 	
---
---  Set the directional light parameters
---
-function setSpotLight(params)	
-	local idx = params.idx
-	params.idx = nil
-	for k, v in pairs(params) do
-		lighting.spotLights[k][idx] = v
-	end
-end
+	drawInfoText = true
+	floatingTexts = {}		
+	removals = {}	
+	renderer = objects.Renderer{}
 	
---
---  Update the light effect
---
-function updateLightEffect()
-	lightEffect:send('origin', lighting.origin)
-	lightEffect:send('fallOff', lighting.fallOff)
-	lightEffect:send('spotSize', lighting.spotSize)
+	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
+	--music:setVolume(0.15)
+	--music:setLooping( true )
+	--music:play()	
 	
-	local t = table.clone(lighting.spotLights,{deep = true})
+	loveframes.config['DEBUG'] = false
+	loveframes.util.SetActiveSkin('Hind')
 	
-	local cw = daCamera:window()
-	local cv = daCamera:viewport()
-	local zoomX = cv[3] / cw[3]
+	state = 'normalGame'
 	
-	-- convert world position to screen position
-	for k, pos in ipairs(t.pos) do		
-		-- convert to screen space
-		if t.world[k] then
-			t.pos[k][1] = (pos[1] - cw[1]) / cw[3] * cv[3]
-			t.pos[k][2] = cv[4] - ((pos[2] - cw[2]) / cw[4] * cv[4])		
-		end
-		lighting.spotLights.screenPos[k] = { t.pos[k][1], t.pos[k][2] }
-	end
-	
-	-- convert world size to screen size
-	for k, size in ipairs(t.size) do
-		-- convert to screen space
-		if t.world[k] then
-			t.size[k][1] = size[1] * (cv[3] / cw[3])
-			t.size[k][2] = size[2] * (cv[4] / cw[4])			
-		end
-		lighting.spotLights.screenSize[k] = { t.size[k][1], t.size[k][2] }		
-	end
-
-	local paramsToSend = { pos = true, size = true, 
-		angle = true, lightColor = true }
-	
-	-- send all of the parameters
-	for k, v in pairs(t) do
-		if paramsToSend[k] then
-			lightEffect:send(k, unpack(v))
-		end
-	end
+	overlays = {}
 end
 
 --
@@ -175,442 +163,686 @@ function createBuckets(cellSize, worldX, worldY)
 end
 
 --
+--  Creates floating text
+--
+function createFloatingText(colour, actor, text)
+	local ft = factories.createFloatingText( text, largeFont,
+		colour, { actor._position[1], actor._position[2] },
+		{ 0, -120 }, 1 )
+	ft.on_expired = function(self)
+		floatingTexts[self] = nil
+	end
+	floatingTexts[ft] = true
+	
+	-- @TODO find a better way to seperate floating texts!
+	for k1, _ in pairs(floatingTexts) do
+		for k2, _ in pairs(floatingTexts) do
+			if k1 ~= k2 and k1._position[1] == k2._position[1] and
+			k1._position[2] == k2._position[2] then
+				k2._position[2] = k2._position[2] + 20
+			end
+		end
+	end
+end
+
+--
+--
+--
+function createItem(description, position, cb)
+	item = factories.createStaticActor(description)
+	item:position(position[1], position[2])
+	if cb then cb(item) end
+	item:update(0)
+	item:registerBuckets(buckets)			
+end
+
+--
+--  Drop an item
+--
+function dropItem(actor)
+	-- drop an item
+	if math.random() > 0.25 then		
+		if math.random() > 0.25 then
+			createItem('content/actors/coins.dat', actor:position(),
+				function(item)
+					item:value(math.floor(math.random()*100))
+				end)
+		else
+			createItem('content/actors/potions.dat', actor:position(),
+				function(item)
+					item:setType('weak','healing')
+				end)
+		end
+	end
+end
+
+function createBunchOPotions(pos)
+	-- create bunch o' potions
+	for y = -300, -50, 34 do
+		for x = -400, 400, 34 do
+			local pos = { pos[1], pos[2] }
+			pos[1] = pos[1] + x
+			pos[2] = pos[2] + y
+			createItem('content/actors/potions.dat', pos,
+				function(item)
+					item:setType('weak','healing')
+				end)
+		end
+	end
+end
+
+--
 --  Creates the actors
 --
 function createActors()
-	local numActors = 1000
+	local numActors = 2000
 	local size = daMap:size()
 	
 	actors = {}
-	hero = factories.createActor('princess.dat')
-	hero:animation('standright')
+	hero = factories.createInventoryActor('content/actors/hero.dat')
+	
+	for k, v in pairs(hero._attributes) do
+		hero['_'..k] = v
+		hero[k] = function(self, value, absolute)
+			if not value then
+				return self['_'..k]
+			end
+			
+			if absolute then
+				self['_'..k] = value
+			else
+				self['_'..k] = self['_'..k] + value
+			end
+			
+			if self['on_set_' .. k]  then
+				return self['on_set_' .. k](self, self['_'..k], value) 
+			end
+		end
+	end	
+	hero._attributes = nil
+	
+	for k, v in pairs(hero._personality) do
+		hero['_'..k] = 0		
+		hero[k] = function(self, value, absolute)
+			if not value then
+				return self['_'..k]
+			end
+			
+			if absolute then
+				self['_'..k] = value
+			else
+				self['_'..k] = self['_'..k] + value
+			end
+			
+			if self['on_set_' .. k]  then
+				return self['on_set_' .. k](self, self['_'..k], value) 
+			end
+		end
+	end
+	
+	hero:name('Sir Gallahad')
+	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
+	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
+	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
+	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
+	local longSword = factories.createActorItem('content/actors/longsword.dat')
+
+	hero:addItem(longSword)
+	hero:addItem(platePants)
+	hero:addItem(plateShoes)
+	hero:addItem(chainHelmet)
+	hero:addItem(chainArmour)	
+	
+	hero:animation('standright')	
+	
+	--[[
+	hero:equipItem('weapon',longSword)		
+	hero:equipItem('legs',platePants)	
+	hero:equipItem('head',chainHelmet)	
+	hero:equipItem('torso',chainArmour)	
+	hero:equipItem('feet',plateShoes)	
+	
+	]]
+	
+	hero.on_set_greed = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Greed: ' .. justSet)
+	end
+	
+	hero.on_set_likeable = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Likeable: ' .. justSet)
+	end	
+
+	hero.on_set_luck = function(self, newValue, justSet)
+		createFloatingText({0,255,255,255}, hero, 'Luck: ' .. justSet)
+	end	
+	
+	--[[
+	-- give the hero items that will complete the dialogs
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_puppy'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_kitten'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_mojo'})
+	table.insert(hero._inventory, { name = 'questItem_Bilbo_mind'})
+	]]
+	
 	-- put the hero in the middle of the map for fun
 	hero:position(size[1]/2,size[2]/2)
 	hero:map(daMap)
 	table.insert(actors, hero)
-	hero.player = true
-		
+
+	--createBunchOPotions(hero:position())
+				
 	local sx = 0
 	local sy = 0
 	for i = 1, numActors do		
 		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
-		local a = factories.createActor('princess.dat')
+		local a = factories.createActor('content/actors/slime.dat')
 		a:animation('standright')
 		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
 		a:map(daMap)
-		table.insert(actors, a)
+		actors[a._id] = a
 	end	
 	
 	print()
 end
 
---
---  Creates the custom shaders
---
-function loadEffects()
-	lightEffect = love.graphics.newPixelEffect [[
-		extern vec2 pos[6];
-		extern vec2 size[6];
-		extern vec2 angle[6];
-		extern vec3 lightColor[6];
-				
-		extern vec2 origin;
-		extern float fallOff;
-		extern float spotSize;
-		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
-		{
-			float PI2 = 3.14159265358979323846264 * 2;
-			float d = 0;			
-			float a;
-			vec3 l = vec3(0,0,0);
-			int i;
-			for (i=0;i<2;i++) 
-			{
-				vec2 toObj = screen_coords - pos[i];
-				a = atan(toObj.y, toObj.x);
-				if ( a < 0 )
-					a = a + PI2;
-				if (a > angle[i].x && a < angle[i].y) {
-					vec2 hv = toObj / size[i];
-					d = clamp(1 - length(hv), 0, 1);
-					l += (d * lightColor[i]) * 0.5;
-				}
-			}
-			
-			d = pow(clamp(length(origin - texture_coords) - spotSize, 0, 1),fallOff);
-			l *= (1 - d);
-			
-			color = Texel( texture, texture_coords);
-			color.rgb *= l;
-			color = clamp(color, 0, 1);
-			return color;
-		}	
-	]]
-	
-	shadowEffect = love.graphics.newPixelEffect [[
-		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
-		{
-			color = Texel( texture, texture_coords );
-			color.rgb *= 0;
-			color.a /= 2;
-			return color;
-		}	
-	]]	
-end
-
 function love.draw()
-	-- set up the draw table
-	local drawTable = {
-		base = {},
-		overlay = {},
-		object = {},
-		roof = {}
-	}
+	love.graphics.setColor(255,255,255,255)
 	
-	-- pre calculate what we can
-	drawTable.cw = daCamera:window()
-	drawTable.cv = daCamera:viewport()	
-	drawTable.zoomX = drawTable.cv[3] / drawTable.cw[3] 
-	drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
-	drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
-	drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
-		
-	-- draw the map tiles
-	daMap:drawTiles(daCamera, drawTable)
-
-	-- draw only the visible actors
-	for a, _ in pairs(visibleActors) do
-		if a.draw then
-			a:draw(daCamera, drawTable)
-		end
-	end	
-	
-	-- draw only the visible objects
-	for o, _ in pairs(visibleObjects) do
-		o:draw(daCamera, drawTable)
-	end		
-			
-	love.graphics.setPixelEffect(currentShader)			
-	
-	setDirectionalLight( { spotSize = 2 } )
-	updateLightEffect()
-
-	for k, v in ipairs(drawTable.base) do
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
+	if hero.dead then		
+		love.graphics.setFont(largeFont)
+		love.graphics.print('GAME OVER', 300, 300)
+		return
 	end
-	
-	for k, v in ipairs(drawTable.overlay) do
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end
-	
-	table.sort(drawTable.object,function(a,b)
-		return a[1] < b[1] end)
 
-	table.sort(drawTable.roof,function(a,b)
-		return a[1] < b[1] end)
+	renderer:draw( daCamera, { floatingTexts = floatingTexts, map = daMap,
+			actors = visibleActors, objects = visibleObjects }, profiler )
 		
-	setDirectionalLight( { spotSize = 0.3 } )
-	updateLightEffect()
-	
-	-- @TODO the shadow direction
-	-- should be calculated based on the position
-	-- and size of all of the current spot lights
-	-- in screen space
+	-- draw collision boundaries?		
+	profiler:profile('drawing collision boundaries',
+		function()
+			if showCollisionBoundaries then
+				local cw = daCamera:window()
+				for k, _ in pairs(visibleIds) do
+					for _, v in pairs(buckets[k]) do
+						if v._boundary then
+							local b = v._boundary
+							love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
 
-	-- draw the objects and their shadows
-	for k, v in ipairs(drawTable.object) do
-		love.graphics.setPixelEffect(shadowEffect)				
-			
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], 
-			lighting.shadowSkew[1], lighting.shadowSkew[2])
-	
-		love.graphics.setPixelEffect(currentShader)			
-	
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end	
-	
-	-- draw the roof shadows
-	love.graphics.setPixelEffect(shadowEffect)				
-	for k, v in ipairs(drawTable.roof) do		
-		love.graphics.draw(v[2],
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8], 
-			lighting.shadowSkew[1], lighting.shadowSkew[2])
-	end
-	
-	-- draw the roof objects			
-	love.graphics.setPixelEffect(currentShader)		
-	for k, v in ipairs(drawTable.roof) do	
-		love.graphics.draw(v[2], 
-			v[3], v[4], 0, v[5], v[6], 
-			v[7], v[8])
-	end		
-		
-	local cw = daCamera:window()
-	if showCollisionBoundaries then
-		-- draw only the visible actors
-		for a, _ in pairs(visibleActors) do
-			if a._boundary then
-				local b = a._boundary
-				love.graphics.rectangle(
-					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+							if v._equipped then
+								for _, item in pairs(v._equipped) do
+									local b = item._boundary
+									love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
+								end						
+							end
+						end			
+					end
+				end		
 			end
-		end	
-		-- draw only the visible objects
-		for o, _ in pairs(visibleObjects) do
-			if o._boundary then
-				local b = o._boundary
-				love.graphics.rectangle(
-					'line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])		
+		end)
+		
+	--[[
+	for v, _ in pairs(visibleActors) do
+		if v._health then
+			love.graphics.print(tostring(v._health), v._screenPos[1], v._screenPos[2])
+		end		
+	end
+	]]
+
+	-- draw info text
+	profiler:profile('drawing info text', 	
+		function()		
+			love.graphics.setColor(255,255,255,255)		
+			love.graphics.setPixelEffect()
+			
+			love.graphics.setFont(largeFont)
+			love.graphics.print('HEALTH: ' .. hero:health() .. '/' .. hero._maxHealth, 10, 10)			
+			love.graphics.print('GOLD: ' .. hero:gold(), 250, 10)
+			love.graphics.print('EXPERIENCE: ' .. hero:experience(), 500, 10)			
+			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
+			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
+			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
+			
+			love.graphics.setFont(smallFont)		
+
+			local y = 0
+			for k, v in ipairs(hero._inventory) do
+				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 750, y)
+				y=y+20
 			end
-		end			
-	end
-	
-	love.graphics.setPixelEffect()
-	
-	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 20)
-	
-	local y = 30
-	for k, v in pairs(hero._bucketIds) do
-		love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. #buckets[k], 10, y)		
-		y = y + 20
-	end
-	
-	love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
-	y=y+20		
-	
-	love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
-		hero._position[2], 10, y)		
-	y=y+20
-	
-	love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
-		hero._boundary[2] .. ', ' .. 
-		hero._boundary[3] .. ', ' .. 
-		hero._boundary[4], 10, y)		
-	y=y+20
-	
-	if hero._collidee then
-		love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
-		hero._collidee._boundary[2] .. ', ' .. 
-		hero._collidee._boundary[3] .. ', ' .. 
-		hero._collidee._boundary[4], 10, y)		
-		y=y+20
-	end
-	
-	local cw = daCamera:window()
-	local cv = daCamera:viewport()
-	love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
-		cw[2] .. ', ' .. 
-		cw[3] .. ', ' .. 
-		cw[4], 10, y)		
-	y=y+20
-	
-	love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
-		cv[2] .. ', ' .. 
-		cv[3] .. ', ' .. 
-		cv[4], 10, y)		
-	y=y+20
+			
+			local y = 0
+			for k, v in pairs(hero._equipped) do
+				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 900, y)
+				y=y+20
+			end
+			
+			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
+			
+			if drawInfoText then
+				local y = 85
+				for k, v in pairs(hero._bucketIds) do
+					local count = table.count(buckets[k])
+					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
+					y = y + 20
+				end
+				
+				love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
+				y=y+20		
+				
+				love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
+					hero._position[2], 10, y)		
+				y=y+20
+				
+				love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
+					hero._boundary[2] .. ', ' .. 
+					hero._boundary[3] .. ', ' .. 
+					hero._boundary[4], 10, y)		
+				y=y+20
+				
+				if hero._collidee then
+					love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
+					hero._collidee._boundary[2] .. ', ' .. 
+					hero._collidee._boundary[3] .. ', ' .. 
+					hero._collidee._boundary[4], 10, y)		
+					y=y+20
+				end
+				
+				local cw = daCamera:window()
+				local cv = daCamera:viewport()
+				love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
+					cw[2] .. ', ' .. 
+					cw[3] .. ', ' .. 
+					cw[4], 10, y)		
+				y=y+20
+				
+				love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
+					cv[2] .. ', ' .. 
+					cv[3] .. ', ' .. 
+					cv[4], 10, y)		
+				y=y+20
+		
+				local total = 0	
+				y = 200
+				love.graphics.print('=== PROFILES ===', 10, y)
+				y = y + 20
+				
+				for k, v in pairs(profiler:profiles()) do
+					local avg = v.sum / v.count
+					if avg > 0.0009 then
+						love.graphics.print(k,10, y)				
+						love.graphics.print(v.count, 280, y)				
+						love.graphics.print(string.format('%.5f', v.sum / v.count),
+							330, y)		
+						y=y+15		
+					end
+					total = total + avg
+				end	
+				
+				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
+				y=y+15
+				love.graphics.print(string.format('%.5f', total), 10, y)
+				y=y+15
+				love.graphics.print('=== EXPECTED FPS ===', 10, y)
+				y=y+15
+				love.graphics.print(string.format('%.5f', 1/total), 10, y)
+			end
+		end)
+		
+	loveframes.draw()
 end
 
 function love.update(dt)
-	local vx, vy = 0, 0
-	
-	-- @TODO proper day / night cycles with changing colour
-	-- and direction of light
-	lighting.origin[1] = lighting.origin[1] + 0.0001
-	if lighting.origin[1] > lighting.originMinMax[2] then 
-		lighting.origin[1] = lighting.originMinMax[1]
-	end	
-		
-    local orange = lighting.originMinMax[2] - lighting.originMinMax[1]
-	local srange = lighting.shadowSkewMinMax[2] - lighting.shadowSkewMinMax[1]
-    local scaled = (lighting.origin[1]  - lighting.originMinMax[1]) / orange
-    lighting.shadowSkew[1] = lighting.shadowSkewMinMax[1] + (scaled * srange)
-	
-	if love.keyboard.isDown('up') then
-        hero:animation('walkup')		
-		vy = -125
-    elseif
-		love.keyboard.isDown('down') then
-        hero:animation('walkdown')		
-		vy = 125
+	if hero.dead then		
+		return
 	end
-	
-	if love.keyboard.isDown('left') then
-        hero:animation('walkleft')		
-		vx = -125
-    elseif
-		love.keyboard.isDown('right') then
-        hero:animation('walkright')		
-		vx = 125
-	end
-	
-	if love.keyboard.isDown('q') then
-		zoom = 1
-	end
-	
-	if love.keyboard.isDown('w') then
-		zoom = 2
-	end
-	
-	if love.keyboard.isDown('e') then
-		zoom = 3
-	end	
-	
-	if love.keyboard.isDown('r') then
-		zoom = 4
-	end		
 
-	if love.keyboard.isDown('t') then
-		zoom = 0.5
-	end		
+	profiler:profile('updating lighting', 
+		function()
+			-- @TODO proper day / night cycles with changing colour
+			-- and direction of light
+			renderer._lighting.origin[1] = renderer._lighting.origin[1] + 0.0001
+			if renderer._lighting.origin[1] > renderer._lighting.originMinMax[2] then 
+				renderer._lighting.origin[1] = renderer._lighting.originMinMax[1]
+			end	
+				
+			local orange = renderer._lighting.originMinMax[2] - renderer._lighting.originMinMax[1]
+			local srange = renderer._lighting.shadowSkewMinMax[2] - renderer._lighting.shadowSkewMinMax[1]
+			local scaled = (renderer._lighting.origin[1]  - renderer._lighting.originMinMax[1]) / orange
+			renderer._lighting.shadowSkew[1] = renderer._lighting.shadowSkewMinMax[1] + (scaled * srange)
+		end)
 	
-	if love.keyboard.isDown('a') then
-		zoom = zoom + 0.01
-	end
-	
-	if love.keyboard.isDown('z') then
-		zoom = zoom - 0.01
-	end	
-	
-	if love.keyboard.isDown('h') then
-		showCollisionBoundaries = true
-	end		
+	profiler:profile('handling keyboard input', 
+		function()
+			if not hero._currentAction and table.count(overlays) == 0 then
+				local vx, vy = 0, 0
+			
+				if love.keyboard.isDown('up') then
+					hero:animation('walkup')		
+					vy = -125
+				elseif
+					love.keyboard.isDown('down') then
+					hero:animation('walkdown')		
+					vy = 125
+				end
+				
+				if love.keyboard.isDown('left') then
+					hero:animation('walkleft')
+					vx = -125
+				elseif
+					love.keyboard.isDown('right') then
+					hero:animation('walkright')		
+					vx = 125
+				end
+				
+				hero:velocity(vx, vy)
+				
+				if vx == 0 and vy == 0 then
+					hero:animation('stand' .. hero:direction(), true)
+				end
+				
+				if love.keyboard.isDown('lctrl') then
+					if hero:distanceFrom(npc) < 100 and table.count(npc:dialogs()) > 0 then
+						hero:velocity(0,0)
+						hero:animation('stand' .. hero:direction(), true)
+						dialogViewer = objects.DialogViewer{ npc }
+						overlays[dialogViewer] = true
+						dialogViewer.on_close = function(self)
+							overlays[dialogViewer] = nil
+						end
+					else
+						hero:action('attack')
+					end
+				end
+				
+				if love.keyboard.isDown('lshift') then	
+					hero:action('spellcast')
+				end		
 
-	if love.keyboard.isDown('n') then
-		showCollisionBoundaries = false
-	end
-	
-	--@TODO coordinate the shadow and light position
-	-- with the light color for day / night effect
-	-- each light could also generate it's own shadow
-	-- redraw!!!!!!	
-	if love.keyboard.isDown('1') then		
-		currentShader = lightEffect		
-		
-		-- morning
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {1.0,1.0,0.8}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end				
-	end
-	
-	if love.keyboard.isDown('2') then		
-		currentShader = lightEffect		
-		
-		-- midday
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end			
-	end
-	
-	if love.keyboard.isDown('3') then		
-		currentShader = lightEffect		
-		
-		-- dusk
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {2.0,1.6,1.6}, world = false }		
-		for i = 2, maxLights do
-			setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
-					angle = {0, 0}, lightColor = {0,0,0}, world = false }		
-		end					
-	end	
-	
-	if love.keyboard.isDown('4') then		
-		currentShader = lightEffect		
-		
-		-- night
-		setDirectionalLight( { fallOff = 0.35 } )
-		setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
-				angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
-		-- random spot lights
-		setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
-				angle = {-1, 7}, lightColor = {3,3,3}, world = true }
-		updateLightEffect()
-	end		
-		
-	if love.keyboard.isDown('o') then
-		currentShader = nil
-	end
-	
-	hero:velocity(vx, vy)
-	
-	if vx == 0 and vy == 0 then
-		local anim = hero:animation():name():gsub('walk','stand')
-		hero:animation(anim)
-	end
-		
-	-- @TODO AI!!! (DOH!)
-	-- update the visible npcs with some crappy "AI"
-	for a, _ in pairs(visibleActors) do
-		if a.velocity and not a.player then
-			if math.random() > 0.95 then
-				a:velocity(math.random()*200-100,math.random()*200-100)
+				if love.keyboard.isDown('i') then
+					hero:velocity(0,0)
+					hero:animation('stand' .. hero:direction(), true)
+					inventoryViewer = objects.InventoryViewer{ hero }
+					overlays[inventoryViewer] = true
+					inventoryViewer.on_close = function(self)
+						overlays[inventoryViewer] = nil
+					end
+				end		
+				
+				if love.keyboard.isDown('p') then
+					hero:velocity(0,0)
+					hero:animation('stand' .. hero:direction(), true)
+					personalityViewer = objects.PersonalityViewer{ hero }
+					overlays[personalityViewer] = true
+					personalityViewer.on_close = function(self)
+						overlays[personalityViewer] = nil
+					end
+				end	
 			end
-		end	
-	end	
+							
+			if love.keyboard.isDown('q') then
+				zoom = 1
+			end
+			
+			if love.keyboard.isDown('w') then
+				zoom = 2
+			end
+			
+			if love.keyboard.isDown('e') then
+				zoom = 3
+			end	
+			
+			if love.keyboard.isDown('r') then
+				zoom = 4
+			end		
 
+			if love.keyboard.isDown('t') then
+				zoom = 0.5
+			end		
+			
+			if love.keyboard.isDown('a') then
+				zoom = zoom + 0.01
+			end
+			
+			if love.keyboard.isDown('z') then
+				zoom = zoom - 0.01
+			end	
+			
+			if love.keyboard.isDown('h') then
+				showCollisionBoundaries = true
+			end		
+
+			if love.keyboard.isDown('n') then
+				showCollisionBoundaries = false
+			end	
+			
+			if love.keyboard.isDown('=') then
+				hero._currentSpell = hero._currentSpell + 1
+				if hero._currentSpell > #hero._spells then
+					hero._currentSpell = #hero._spells
+				end
+			end			
+
+			if love.keyboard.isDown('-') then	
+				hero._currentSpell = hero._currentSpell - 1
+				if hero._currentSpell < 1 then
+					hero._currentSpell = 1
+				end
+			end			
+		
+			--@TODO coordinate the shadow and light position
+			-- with the light color for day / night effect
+			-- each light could also generate it's own shadow
+			-- redraw!!!!!!	
+			if love.keyboard.isDown('1') then		
+				renderer:shader('light')
+				
+				-- morning
+				renderer:setDirectionalLight( { fallOff = 0.35 } )
+				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {1.7,1.4,1.1}, world = false }		
+				for i = 2, renderer:maxLights() do
+					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end				
+			end
+			
+			if love.keyboard.isDown('2') then		
+				renderer:shader('light')
+				
+				-- midday
+				renderer:setDirectionalLight( { fallOff = 0.35 } )
+				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
+				for i = 2, renderer:maxLights() do
+					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end			
+			end
+			
+			if love.keyboard.isDown('3') then		
+				renderer:shader('light')
+				
+				-- dusk
+				renderer:setDirectionalLight( { fallOff = 0.35 } )
+				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {2.0,1.6,1.4}, world = false }		
+				for i = 2, renderer:maxLights() do
+					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
+				end					
+			end	
+			
+			if love.keyboard.isDown('4') then		
+				renderer:shader('light')
+				
+				-- night
+				renderer:setDirectionalLight( { fallOff = 0.35 } )
+				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+						angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
+				-- random spot lights
+				renderer:setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
+						angle = {-1, 7}, lightColor = {3,3,3}, world = true }				
+				renderer:setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75},
+						angle = {-1, 7}, lightColor = {3,1,1}, world = true }
+				renderer:setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
+						angle = {1, 3}, lightColor = {0.5,0.5,2}, world = true }
+				renderer:setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
+						angle = {4,4.5}, lightColor = {2,2,2}, world = true }
+						
+				renderer:updateLightEffect(daCamera)
+			end		
+				
+			if love.keyboard.isDown('o') then
+				renderer:shader(nil)
+			end
+			
+			if love.keyboard.isDown(',') then		
+				profiler:reset()
+			end		
+
+			if love.keyboard.isDown('[') then		
+				drawInfoText = true
+			end		
+			
+			if love.keyboard.isDown(']') then		
+				drawInfoText = false
+			end				
+		end)
+	
+	-- remove all entities that were scheduled for removal
+	for k, v in pairs(removals) do		
+		-- unregister the actor from the buckets
+		for b, _ in pairs(v._bucketIds) do
+			buckets[b][v._id] = nil
+		end				
+		-- remove actor from actor list
+		actors[k] = nil
+		-- remove actor from list of visible actors
+		visibleActors[v] = nil
+	end	
+	
+	-- do the actor's AI updates
+	profiler:profile('updating AI', 
+		function()
+			for a, _ in pairs(visibleActors) do
+				if a.AI then
+					a:AI()
+				end					
+			end	
+		end)
+
+	-- update the floating texts
+	profiler:profile('updating floating texts', 
+		function()		
+			for t, _ in pairs(floatingTexts) do
+				t:update(dt)
+			end
+		end)
+		
 	-- update only the visible actors
-	for a, _ in pairs(visibleActors) do
-		if a.update then
-			a:update(dt)
-		end
-	end
+	profiler:profile('updating actors', 
+		function()		
+			for a, _ in pairs(visibleActors) do
+				a:update(dt)
+			end
+		end)	
 
 	-- update the collision buckets
-	for a, _ in pairs(visibleActors) do
-		if a.registerBuckets then
-			a:registerBuckets(buckets)
-		end
-	end
+	profiler:profile('updating collision buckets', 
+		function()			
+			for a, _ in pairs(visibleActors) do
+				a:registerBuckets(buckets)
+			end	
+	end)
 	
-	--	
 	-- test collistions for all visible actors
-	--
-	for a, _ in pairs(visibleActors) do
-		if a.checkCollision then
-			a:checkCollision(buckets)
-		end
-	end	
+	profiler:profile('testing collisions', 
+		function()				
+			for a, _ in pairs(visibleActors) do
+				a:checkCollision(buckets)
+			end	
+		end)
 		
 	-- zoom and center the map on the main character
-	daCamera:zoom(zoom)
-	daCamera:center(hero._position[1], hero._position[2])
+	profiler:profile('updating camera', 
+		function()
+			daCamera:zoom(zoom)
+			daCamera:center(hero._position[1], hero._position[2])
+		end)
 	
 	-- get the list of visible ids
-	visibleIds = daMap:nearIds(daCamera, buckets, 2)
+	profiler:profile('getting list of ids near map centre', 
+		function()
+			visibleIds = daMap:nearIds(daCamera, buckets, 2)
+		end)
 	
-	-- generate a list of visible actors and objects
-	for k, _ in pairs(visibleObjects) do
-		visibleObjects[k] = nil
-	end	
-	for k, _ in pairs(visibleActors) do
-		visibleActors[k] = nil
-	end	
-	for k, _ in pairs(visibleIds) do
-		for _, v in pairs(buckets[k]) do
-			if v.checkCollision then
-				visibleActors[v] = true
-			end
-			if v._image then
-				visibleObjects[v] = true
-			end			
-		end
-	end	
+	-- clear the list of visible items
+	profiler:profile('wiping out old visible items',
+		function()
+			for k, _ in pairs(visibleObjects) do
+				visibleObjects[k] = nil
+			end	
+			for k, _ in pairs(visibleActors) do
+				visibleActors[k] = nil
+			end	
+		end)
+		
+	-- generate a list of visible items
+	profiler:profile('generating list of visible items',
+		function()				
+			for k, _ in pairs(visibleIds) do
+				for _, v in pairs(buckets[k]) do
+					if v.ACTOR or v.STATICACTOR then
+						visibleActors[v] = true
+					end
+					-- map objects that you can collide with but
+					-- never interact with
+					if v._image then
+						visibleObjects[v] = true
+					end	
+				end
+			end	
+		end)
+		
+	loveframes.update(dt)
+end
+
+function love.mousepressed(x, y, button)
+	loveframes.mousepressed(x, y, button)
+
+	for overlay, _ in pairs(overlays) do
+		if overlay.mousepressed then
+			overlay:mousepressed(x, y ,button)
+		end	
+	end
+end
+
+function love.mousereleased(x, y, button)
+	loveframes.mousereleased(x, y, button)
+
+	for overlay, _ in pairs(overlays) do
+		if overlay.mousereleased then
+			overlay:mousereleased(x, y ,button)
+		end	
+	end
+end
+
+function love.keypressed(key, unicode)
+	loveframes.keypressed(key, unicode)
+
+	for overlay, _ in pairs(overlays) do
+		if overlay.keypressed then
+			overlay:keypressed(key, unicode)
+		end	
+	end
+end
+
+function love.keyreleased(key)
+	loveframes.keyreleased(key)
+	
+	for overlay, _ in pairs(overlays) do
+		if overlay.keyreleased then
+			overlay:keyreleased(key)
+		end	
+	end
 end

@@ -1,0 +1,196 @@
+{
+	_name = 'Slime',
+	_damage = 5,
+	_health = 15,
+	_maxHealth = 15,
+	AI = function(self)
+		if self._currentAction ~= 'die' then
+			if self._currentAction ~= 'attack' and math.random() > 0.95 then
+				local xv = math.random()*200-100
+				local yv = math.random()*200-100
+						
+				if math.abs(xv) < 50 then xv = 0 end
+				if math.abs(yv) < 50 then yv = 0 end
+						
+				self:velocity(xv, yv)				
+					
+				if yv > 0 then
+					self:animation('walkdown')
+				elseif yv < 0 then
+					self:animation('walkup')
+				end
+						
+				if xv > 0 then 
+					self:animation('walkright')
+				elseif xv < 0 then
+					self:animation('walkleft')
+				end
+			end		
+			if math.random() > 0.995 then
+				self:action('attack')
+			end										
+		end				
+	end,
+	on_set_health = function(self, newValue, justset)
+		if justset < 0 then
+			createFloatingText({255,0,0,255},self, -justset)
+		end
+	end,
+	on_begin_die = function(self)		
+		self:velocity(0,0)
+		if self._killer.experience then
+			self._killer:experience(100)			
+			createFloatingText({0,255,255,255},self._killer, 100)
+		end
+	end,		
+	on_end_die = function(self, other)			
+		removals[self._id] = self						
+		dropItem(self)
+	end,
+	on_begin_attack = function(self)
+	end,
+	on_end_attack = function(self)
+		self:resetCollisions()
+	end,
+	on_collide = function(self, other)
+		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other._id and other.HERO then
+			if not self._collidees[other._id] then
+				other:health(-self._damage, false, self)
+				self._collidees[other._id] = true
+			end
+		end
+	end,
+	_animations = 
+	{
+		standup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		walkup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 3,
+			_looping = 'loop'
+		},
+		attackup = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},		
+		standleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standleft',
+			_frameDuration = 0.10,
+			_frameStart = 4,
+			_frameEnd = 4,
+			_looping = 'loop'
+		},		
+		walkleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkleft',
+			_frameDuration = 0.10,
+			_frameStart = 4,
+			_frameEnd = 6,
+			_looping = 'loop'
+		},
+		attackleft = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},		
+		standdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standdown',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 7,
+			_looping = 'loop'
+		},		
+		walkdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkdown',
+			_frameDuration = 0.10,
+			_frameStart = 7,
+			_frameEnd = 9,
+			_looping = 'loop'
+		},
+		attackdown = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},	
+		standright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'standright',
+			_frameDuration = 0.10,
+			_frameStart = 10,
+			_frameEnd = 10,
+			_looping = 'loop'
+		},	
+		walkright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'walkright',
+			_frameDuration = 0.10,
+			_frameStart = 10,
+			_frameEnd = 12,
+			_looping = 'loop'
+		},	
+		attackright = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'attackup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		},			
+		die = 
+		{	
+			_tileSet = 'monsters',
+			_offset = { 16, 32 },
+			_name = 'die',
+			_frameDuration = 0.04,
+			_frameStart = 1,
+			_frameEnd = 12,
+			_looping = 'once'
+		}			
+	}
+}

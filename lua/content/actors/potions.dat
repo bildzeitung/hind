@@ -1,0 +1,94 @@
+{
+	_static = 
+	{
+		potionValues = 
+		{
+			healing = 
+			{
+				weak = 20,
+				medium = 50
+			}
+		}
+	},
+	_baseTable = 'content/actors/item.dat',	
+	_stackable = true,
+	_count = 0,
+	_maxCount = 25,
+	setType = function(self, strength, effect)
+		self._name = strength .. '_' .. effect
+		self._description = strength .. ' ' .. effect .. ' potion'
+		self._effect = effect
+		self._strength = strength
+		self:animation(self._name .. '_game')				
+	end,
+	use = function(self, other)
+		if self._stackable then
+			if self._count < 1 then return nil end
+		end
+		
+		if self._effect == 'healing' then
+			if other:health() == other:maxHealth() then
+				return nil
+			end		
+			other:health(objects.static.potionValues.healing[self._strength])
+		end
+		
+		local remove = not self._stackable
+		
+		if self._stackable then
+			self._count = self._count - 1
+			if self._count == 0 then
+				remove = true
+			end
+		end
+		
+		if remove then
+			other:removeItem(self)
+		end
+		
+		return true
+	end,
+	_animations = 
+	{
+		weak_healing_game = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'weak_healing_game',
+			_frameDuration = 1,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		weak_healing_inventory = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'weak_healing_inventory',
+			_frameDuration = 1,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		medium_healing_game = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'medium_healing_game',
+			_frameDuration = 1,
+			_frameStart = 2,
+			_frameEnd = 2,
+			_looping = 'loop'
+		},
+		medium_healing_inventory = 
+		{	
+			_tileSet = 'potions',
+			_offset = { 16, 16 },
+			_name = 'medium_healing_inventory',
+			_frameDuration = 1,
+			_frameStart = 2,
+			_frameEnd = 2,
+			_looping = 'loop'
+		}
+	}
+}

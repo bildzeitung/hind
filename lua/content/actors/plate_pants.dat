@@ -1,0 +1,189 @@
+{
+	_baseTable = 'content/actors/item.dat',	
+	_slot = 'legs',
+	_name = 'plate_pants',
+	_description = 'Plate Pants',
+	_animations = 
+	{
+		inventory = 
+		{	
+			_tileSet = 'inventory_items',
+			_offset = { 16, 16 },
+			_name = 'inventory',
+			_frameDuration = 1,
+			_frameStart = 5,
+			_frameEnd = 5,
+			_looping = 'loop'
+		},
+		standup = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'standup',
+			_frameDuration = 0.10,
+			_frameStart = 1,
+			_frameEnd = 1,
+			_looping = 'loop'
+		},
+		walkup = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'walkup',
+			_frameDuration = 0.10,
+			_frameStart = 2,
+			_frameEnd = 9,
+			_looping = 'loop'
+		},
+		standleft = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'standleft',
+			_frameDuration = 0.10,
+			_frameStart = 10,
+			_frameEnd = 10,
+			_looping = 'loop'
+		},		
+		walkleft = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'walkleft',
+			_frameDuration = 0.10,
+			_frameStart = 11,
+			_frameEnd = 18,
+			_looping = 'loop'
+		},
+		standdown = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'standdown',
+			_frameDuration = 0.10,
+			_frameStart = 19,
+			_frameEnd = 19,
+			_looping = 'loop'
+		},		
+		walkdown = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'walkdown',
+			_frameDuration = 0.10,
+			_frameStart = 20,
+			_frameEnd = 27,
+			_looping = 'loop'
+		},
+		standright = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'standright',
+			_frameDuration = 0.10,
+			_frameStart = 28,
+			_frameEnd = 28,
+			_looping = 'loop'
+		},	
+		walkright = 
+		{	
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'walkright',
+			_frameDuration = 0.10,
+			_frameStart = 29,
+			_frameEnd = 36,
+			_looping = 'loop'
+		},
+		attackup = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'attackup',
+			_frameDuration = 0.04,
+			_frameStart = 37,
+			_frameEnd = 42,
+			_looping = 'onceboth'		
+		},
+		attackleft = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'attackleft',
+			_frameDuration = 0.04,
+			_frameStart = 43,
+			_frameEnd = 48,
+			_looping = 'onceboth'		
+		},
+		attackdown = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'attackdown',
+			_frameDuration = 0.04,
+			_frameStart = 49,
+			_frameEnd = 54,
+			_looping = 'onceboth'		
+		},
+		attackright = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'attackright',
+			_frameDuration = 0.04,
+			_frameStart = 55,
+			_frameEnd = 60,
+			_looping = 'onceboth'		
+		},
+		die = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'die',
+			_frameDuration = 0.30,
+			_frameStart = 61,
+			_frameEnd = 67,
+			_looping = 'once'			
+		},
+		spellcastup = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'spellcastup',
+			_frameDuration = 0.12,
+			_frameStart = 67,
+			_frameEnd = 73,
+			_looping = 'once'			
+		},
+		spellcastleft = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'spellcastleft',
+			_frameDuration = 0.12,
+			_frameStart = 74,
+			_frameEnd = 80,
+			_looping = 'once'			
+		},
+		spellcastdown = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'spellcastdown',
+			_frameDuration = 0.12,
+			_frameStart = 81,
+			_frameEnd = 87,
+			_looping = 'once'			
+		},
+		spellcastright = 
+		{
+			_tileSet = 'plate_pants',
+			_offset = { 32, 64.02 },
+			_name = 'spellcastright',
+			_frameDuration = 0.12,
+			_frameStart = 88,
+			_frameEnd = 94,
+			_looping = 'once'			
+		}							
+	}
+}

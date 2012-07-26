@@ -1,0 +1,56 @@
+{
+	on_collide = function(self, other)	
+		if other.gold then
+			soundEffects['coin_pickup']:rewind()
+			love.audio.play(soundEffects['coin_pickup'])
+			removals[self._id] = self
+			other:gold(self._value)
+			self._value = nil			
+		end
+	end,	
+	value = function(self, v)
+		if v < 70 then
+			self._value = 1
+			self:animation('copper')
+		elseif v < 95 then
+			self._value = 10
+			self:animation('silver')
+		else
+			self._value = 100
+			self:animation('gold')
+		end
+	end,
+	_animations = 
+	{
+		gold = 
+		{	
+			_tileSet = 'coins',
+			_offset = { 16, 16 },
+			_name = 'standup',
+			_frameDuration = 0.06,
+			_frameStart = 1,
+			_frameEnd = 8,
+			_looping = 'loop'
+		},
+		silver = 
+		{	
+			_tileSet = 'coins',
+			_offset = { 16, 16 },
+			_name = 'walkup',
+			_frameDuration = 0.06,
+			_frameStart = 9,
+			_frameEnd = 16,
+			_looping = 'loop'
+		},
+		copper = 
+		{	
+			_tileSet = 'coins',
+			_offset = { 16, 16 },
+			_name = 'standleft',
+			_frameDuration = 0.06,
+			_frameStart = 17,
+			_frameEnd = 24,
+			_looping = 'loop'
+		}			
+	}
+}

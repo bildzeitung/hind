@@ -1,0 +1,114 @@
+{
+	_baseTable = 'content/actors/male_human.dat',	
+	dead = false,
+	HERO = true,
+	_maxInventoryCount = 72,
+	_maxHealth = 50,
+	_health = 50,
+	_experience = 0,
+	_gold = 0,
+	_attributes = 
+	{
+		experience = 0, gold = 0, mana = 200, manaRegen = 100, 
+		currentSpell = 1
+	},
+	_personality =
+	{
+		greed = { 'Giving', 'Greedy' },
+		charm = { 'Personable', 'Grumpy' },
+		lawfulness = { 'Lawful', 'Unlawful' },
+		spirituality = { 'Spiritual', 'Athiest' },
+		temperment = { 'Calm', 'Hot Tempered' },
+		luck = { 'Lucky', 'Unlucky' },
+		social = { 'Extrovert', 'Introvert' },
+		compassion = { 'Compassionate', 'Cold Blooded' },
+		violence = { 'Non-violent', 'Violent' },
+		courage = { 'Brave', 'Afraid' },
+		physicality = { 'Strong', 'Weak' },
+		curiousity = { 'Curious', 'Rigid' },
+		nature = { 'Nature Lover', 'Nature Hater' },
+		technology = { 'Technological', 'Simple' },
+		honesty = { 'Honest', 'Dishonest' },
+		racism = { 'Accepting', 'Racist' },
+		sexism = { 'Equal', 'Sexist' },
+		organized = { 'Organized', 'Disorganized' },
+		forgiveness = { 'Forgiving', 'Grudging' },
+		outlook = { 'Optimistic', 'Pessimistic' },
+		wisdom = { 'Wise', 'Foolish' },
+		intelligence = { 'Smart', 'Dumb' },
+		gullable = { 'Naive', 'Street-Smart' },
+		attractiveness = { 'Flirtatious', 'Awkward' },
+		competitiveness = { 'Competitive', 'Uncompetitive' }
+	},
+	_spells = 
+	{
+		{ 'firelion', 'Fire Lion', 50 },
+		{ 'iceshield', 'Ice Shield', 50 }
+	},
+	update = function(self,dt)
+		objects.InventoryActor.update(self,dt)
+		
+		self._manaRegen = self._manaRegen + dt
+		if self._manaRegen > 1 then
+			self._mana = self._mana + 1
+			self._manaRegen = self._manaRegen - 1
+			if self._mana > 200 then
+				self._mana = 200
+			end			
+		end
+	end,
+	on_set_health = function(self, newValue, justset)
+		if justset < 0 then
+			createFloatingText({255,0,0,255},self, -justset)
+			soundEffects['human_hurt_1']:rewind()
+			love.audio.play(soundEffects['human_hurt_1'])		
+		else
+			createFloatingText({0,255,0,255},self, justset)
+		end
+	end,	
+	on_begin_spellcast = function(self)
+		local spell = self._spells[self._currentSpell]
+		if spell[3] > self._mana then return false end
+		self._mana = self._mana - spell[3]		
+		self:velocity(0,0)
+	end,
+	on_end_spellcast = function(self)
+		local spell = self._spells[self._currentSpell]
+		local magic = 
+			factories.createActor('content/actors/magic_'..
+			spell[1] .. '.dat')			
+		magic._actor = self
+		self:ignoreCollision(magic)
+		magic:ignoreCollision(self)				
+		magic:map(daMap)	
+		magic:animation('attack'..self:direction())				
+		magic:position(self._position[1], self._position[2])
+		magic:update(0)
+		magic:registerBuckets(buckets)				
+		magic:action('attack')
+	end,
+	on_begin_attack = function(self)
+		self:velocity(0,0)
+		
+		local sound = 'human_attack_' .. math.floor(math.random() * 4) + 1
+		soundEffects[sound]:rewind()
+		love.audio.play(soundEffects[sound])
+		
+		local weapon = self._equipped['weapon']	
+		if weapon then
+			weapon:on_begin_attack()
+		end
+	end,
+	on_end_attack = function(self)
+		local weapon = self._equipped['weapon']	
+		if weapon then
+			weapon:on_end_attack()
+		end
+	end,
+	on_begin_die = function(self, other)		
+		self:velocity(0,0)
+	end,	
+	on_end_die = function(self, other)			
+		self.dead = true
+	end
+}

@@ -1,0 +1,10 @@
+{
+	_name = 'inventory_items',
+	_size = { 32, 32 },	
+	_images = {		
+		{
+			_file = '/content/images/items/inventory.png', 
+			_boundaries = { default = {0,0,0,0} }
+		}
+	}
+}

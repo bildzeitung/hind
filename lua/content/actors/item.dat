@@ -1,0 +1,37 @@
+{
+	_nonBlocking = true,
+	_stackable = false,
+	_count = 0,
+	_maxCount = 0,
+	_name = 'item',
+	_description = 'Uknown Item',
+	on_collide = function(self, other)	
+		if not self._beingRemoved and other.addItem then
+			if other:addItem(self) then
+				self._beingRemoved = true
+				removals[self._id] = self
+			end
+		end
+	end,
+	stackable = function(self)
+		return self._stackable
+	end,
+	count = function(self, value, absolute)
+		if not value then return self._count end
+		
+		if absolute then	
+			self._count = value
+		else
+			self._count = self._count + value
+		end		
+	end,
+	maxCount = function(self)
+		return self._maxCount
+	end,
+	name = function(self)
+		return self._name
+	end,
+	description = function(self)
+		return self._description
+	end
+}

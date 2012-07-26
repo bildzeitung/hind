@@ -4,110 +4,59 @@
 	Created JUN-21-2012
 ]]
 
-local animation = require 'animation'
+local Object = (require 'object').Object
 
-module(..., package.seeall)
+require 'drawable'
+require 'collidable'
 
---
---  Creats a new actor from the provided table
---
-function _M:new(t)
-	self.__index = self    
-	setmetatable(t, self)
-		
-	t._inventory = {}
+local log = require 'log'
 
-	t._screenPos = { 0, 0 }
-	t._position = { 0, 0 }
-	t._velocity = { 0, 0 }
-	t._boundary = { 0, 0, 0, 0 }
-	t._lastPosUpdate = { 0, 0 }
-	t._bucketIds = {}
-	t._map = nil
-				
-	return t
-end
-
---
---  Sets or gets the current animation
---
---  Inputs:
---		a - an animation index or nil
---		r - true if the animation should be reset
---
-function _M:animation(a, r)
-	if not a then 
-		return self._currentAnimation
-	end
+local table, pairs, ipairs, type, love
+	= table, pairs, ipairs, type, love
 	
-	self._currentAnimation = self._animations[a]
-	if r then
-		self._currentAnimation:reset()
-	end	
+module('objects')
+
+Actor = Object{}
+
+--
+--  Actors support the following Events:
+--
+--		on_begin_X() - will be called when the actor begins an action
+--		on_end_X() - will be called when the actor begins an action
+--		on_set_health() - will be called when health is updated
+--
+
+--
+--  Actor constructor
+--
+function Actor:_clone(values)
+	local o = table.merge(
+		table.merge(Collidable(values), Drawable(values)),
+		Object._clone(self,values))
+			
+	o._dialogs = {}	
+  	o._lastPosUpdate = { 0, 0 }	
+	o._velocity = { 0, 0 }
+	o._map = nil
+	o.ACTOR = true
+	o._currentAction = nil	
+	o._health = values._health or 0
+	o._maxHealth = values._maxHealth or o._health
+	
+	return o
 end
 
 --
 --  Sets the map that the actor is acting on
 --
-function _M:map(m)
+function Actor:map(m)
 	self._map = m
-end
-
---
---  Draw the actor
---
-function _M:draw(camera, drawTable)
-	local cw, cv, zoomX, zoomY, cwzx, cwzy =
-		drawTable.cw, drawTable.cv, 
-		drawTable.zoomX, drawTable.zoomY,
-		drawTable.cwzx, drawTable.cwzy		
-
-	local of = self._currentAnimation:offset()
-	
-	self._screenPos[1] = math.floor((self._position[1] * zoomX) 
-		- cwzx)
-	self._screenPos[2] = math.floor((self._position[2] * zoomY)
-		- cwzy)
-	
-	local ts = self._currentAnimation:tileSet()
-	local tq = ts:quads()
-	local frame = self._currentAnimation:frame()
-	
-	table.insert(drawTable.object, 
-		{ self._position[2] + of[2] - (self._position[1] * 0.0000000001), tq[frame], 
-		self._screenPos[1], self._screenPos[2],
-		zoomX, zoomY, of[1], of[2] })
-end
-
---
---  Set or get the position
---
-function _M:position(x, y)
-	if not x then
-		return self._position
-	end
-		
-	self._position[1] = x
-	self._position[2] = y
-end
-
-
---
---  Set or get the screen position
---
-function _M:screenPos(x, y)
-	if not x then
-		return self._screenPos
-	end
-		
-	self._screenPos[1] = x
-	self._screenPos[2] = y
 end
 
 --
 --  Set or get the velocity 
 --
-function _M:velocity(x, y)
+function Actor:velocity(x, y)
 	if not x then
 		return self._velocity[1], self._velocity[2]
 	end
@@ -117,105 +66,9 @@ function _M:velocity(x, y)
 end
 
 --
---  Called when the actor collides 
---  with another object
---
-function _M:collide(other)
-	if self._lastPosUpdate[1] ~= 0 or 
-		self._lastPosUpdate[2] ~= 0 then
-			self._position[1] = self._position[1] - self._lastPosUpdate[1]		
-			self._position[2] = self._position[2] - self._lastPosUpdate[2]
-			self._lastPosUpdate[1] = 0
-			self._lastPosUpdate[2] = 0
-	end
-	
-	self._collidee = other
-	
-	-- calculate the bounding boxes
-	self:calculateBoundary()	
-end
-
---
---  Checks for collision with nearby objects
---
-function _M:checkCollision(b)
-	self._collidee = nil
-	
-	for k, _ in pairs(self._bucketIds) do
-		for _, v in pairs(b[k]) do
-			if v ~= self then
-				local hit = true		
-				if v._boundary[1] > self._boundary[3] or
-					v._boundary[3] < self._boundary[1] or
-					v._boundary[2] > self._boundary[4] or
-					v._boundary[4] < self._boundary[2] then
-					hit = false
-				end			
-				if hit then	
-					self:collide(v)
-					if v.collide then	
-						v:collide(self)
-					end
-				end
-			end
-		end
-	end
-end
-
-
---
---  Returns the spatial buckets 
---  that the object currently occupies
---
-function _M:spatialBuckets(b)
-	local ids = {}
-		
-	ids[b.hash(self._boundary[1], self._boundary[2])] = true
-	ids[b.hash(self._boundary[1], self._boundary[4])] = true
-	ids[b.hash(self._boundary[3], self._boundary[2])] = true
-	ids[b.hash(self._boundary[3], self._boundary[4])] = true
-	
-	return ids
-end
-
---
---  Registers the actor in the proper
---	collision buckets
---
-function _M:registerBuckets(buckets)	
-	-- unregister the old bucket ids
-	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = nil
-	end	
-	
-	-- calculates the spatial buckets
-	self._bucketIds = self:spatialBuckets(buckets)
-	
-	-- register the new buckets ids
-	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = self
-	end	
-end
-
---
---  Performs a collision calculation
---
-function _M:calculateBoundary()	
-	-- update the boundary box 
-	local ts = self._currentAnimation:tileSet()
-	local bs = ts:boundaries()
-	local boundary = bs[self._currentAnimation:frame()]
-	local of = self._currentAnimation:offset()	
-	self._boundary[1] = self._position[1] + boundary[1] - of[1]
-	self._boundary[2] = self._position[2] + boundary[2] - of[2]
-	self._boundary[3] = self._position[1] + boundary[3] - of[1]
-	self._boundary[4] = self._position[2] + boundary[4] - of[2]
-end
-
---
 --  Update function
 --
-function _M:update(dt)
+function Actor:update(dt)
 	self._latestDt = dt
 	
 	self._lastPosUpdate[1] = (dt * self._velocity[1])
@@ -239,4 +92,170 @@ function _M:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
+end
+
+--
+--  Returns the direction the actor is facing
+--  
+function Actor:direction()
+	local currentAnim = self:animation():name()
+	if currentAnim:find('left') then return 'left' end
+	if currentAnim:find('right') then return 'right' end
+	if currentAnim:find('up') then return 'up' end
+	if currentAnim:find('down') then return 'down' end
+end
+
+--
+--  Do an action
+-- 
+function Actor:action(name, cancel)
+	if not name then return self._currentAction end
+	
+	-- can only do an action when not doing an action
+	if self._currentAction and not cancel then
+		return 
+	end
+	
+	-- an action is cancelled if 
+	-- on_begin_X returns false	
+	local retval	
+	if self['on_begin_' .. name] then
+		retval = self['on_begin_' .. name](self)
+	end		
+	if retval == false then return end
+	
+	-- set the current action
+	self._currentAction = name
+						
+	-- save old animation
+	local currentAnim
+	if self._currentAnimation then
+		currentAnim = self._currentAnimation:name()
+	end
+	-- switch to the new animation
+	if self._animations[name] then
+		self:animation(name, true)
+	else
+		self:animation(name .. self:direction(), true)
+	end	
+	-- set the callback for when the animation ends
+	self._currentAnimation.done_cb = function()
+		if currentAnim then
+			self:animation(currentAnim, true)
+		end
+		
+		self._currentAnimation.done_cb = nil			
+		self._currentAction = nil
+		
+		if self['on_end_' .. name] then
+			self['on_end_' .. name](self)
+		end
+	end	
+end
+
+--
+--  Called when a collidable collides with
+--  another object
+--
+function Actor:collide(other)	
+	-- only adjust positions for blocking items
+	if not other._nonBlocking then
+		if self._lastPosUpdate[1] ~= 0 or self._lastPosUpdate[2] ~= 0 then
+			-- check if reversing the last update moves the
+			-- actor farther away from the other object
+			local xdiff = other._position[1] - self._position[1]
+			local ydiff = other._position[2] - self._position[2]			
+			local currentDist = xdiff * xdiff + ydiff * ydiff
+
+			local xdiff = other._position[1] - 
+				(self._position[1] - self._lastPosUpdate[1])
+			local ydiff = other._position[2] - 
+				(self._position[2] - self._lastPosUpdate[2])
+			local possibleDist = xdiff * xdiff + ydiff * ydiff
+
+			if currentDist < possibleDist then
+				self._position[1] = self._position[1] - self._lastPosUpdate[1]		
+				self._position[2] = self._position[2] - self._lastPosUpdate[2]
+				self._lastPosUpdate[1] = 0
+				self._lastPosUpdate[2] = 0
+			end
+			
+			self:calculateBoundary()		
+		end
+	end
+	
+	Collidable.collide(self, other)
+end
+
+--
+--  Sets or gets the actors name
+--
+function Actor:name(n)
+	if not n then return self._name end
+	self._name = n
+end
+
+--
+--  Adds a dialog to the actor
+--
+function Actor:addDialog(d)
+	self._dialogs[d:name()] = d
+end
+
+--
+--  Removes a dialog from the actor
+--
+function Actor:removeDialog(d)
+	if type(d) == 'string' then
+		self._dialogs[d] = nil
+	else
+		self._dialogs[d:name()] = nil
+	end
+end
+
+--
+--  The list of dialogs this actor currently owns
+--
+function Actor:dialogs()
+	return self._dialogs
+end
+
+--
+--  Sets or gets the Actor's health
+--
+function Actor:health(value, absolute, other)
+	if not value then return self._health end
+	
+	if absolute then 
+		self._health = value
+	else
+		self._health = self._health + value
+	end
+	
+	if self._health > self._maxHealth then
+		self._health = self._maxHealth		
+	end
+	
+	if self._health <= 0 then
+		self._health = 0
+		self._killer = other
+		self:action('die', true)
+	end	
+	
+	if self.on_set_health then
+		self:on_set_health(self._health, value)
+	end	
+end
+
+--
+--  Sets or gets the Actor's maxHealth
+--
+function Actor:maxHealth(value, absolute)
+	if not value then return self._maxHealth end
+	
+	if absolute then 
+		self._maxHealth = value
+	else
+		self._maxHealth = self._maxHealth + value
+	end
 end

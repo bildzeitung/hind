@@ -59,7 +59,7 @@ function Actor:_clone(values)
 	o._currentAction = nil	
 	o._health = values._health or 0
 	o._maxHealth = values._maxHealth or o._health
-	
+
 	return o
 end
 
@@ -263,8 +263,8 @@ end
 --
 --  Defines serialization / deserialization
 --
-function Actor:__persist()
-	local t =
+function Actor:__persistTable()
+	return 
 	{
 		_filename = self._filename,
 		_id = self._id,
@@ -275,10 +275,17 @@ function Actor:__persist()
 		_lastPosUpdate = { self._lastPosUpdate[1], self._lastPosUpdate[2] },
 		_position = { self._position[1], self._position[2] },
 		_velocity = { self._velocity[1], self._velocity[2] },
+		_collidees = table.clone(self._collidees, { nometa = true })
 		--_ignores,
-		--_dialogs,
-		--_collidees
+		--_dialogs,		
 	}
+end
+
+--
+--  Used for marshal to define serialization
+--
+function Actor:__persist()
+	local t = self:__persistTable()
 	return function()
 		local a = objects.Actor.create(t._filename, t)		
 		a:animation(a._currentAnimation)		

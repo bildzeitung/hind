@@ -11,6 +11,8 @@ require 'static_actor'
 require 'actor_item'
 require 'actor'
 
+local pq = require 'priority_queue'
+
 local factories = require 'factories'
 require 'thread_communicator'
 
@@ -54,7 +56,7 @@ function World:_clone(values)
 	o._actorsToSave = {}
 	o._actorsToRegister = {}
 	
-	o._timedEvents = {}
+	o._timedEvents = pq.new()
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
@@ -74,7 +76,7 @@ end
 --
 function World:timer(ms, fn)
 	local executionTime = love.timer.getMicroTime() + (ms / 1000)
-	self._timedEvents[executionTime] = fn				
+	self._timedEvents:push(fn, executionTime)
 end
 
 --
@@ -84,12 +86,18 @@ end
 --	priority queue here
 --
 function World:executeTimedEvents()
-	for k, v in pairs(self._timedEvents) do
-		if k <= love.timer.getMicroTime() then
-			v()
-			self._timedEvents[k] = nil
-		end
-	end	
+	local notReady
+	repeat
+		if self._timedEvents:isempty() then break end
+		notReady = true
+		local fn, ms = self._timedEvents:pop()
+		if ms <= love.timer.getMicroTime() then
+			fn()
+			notReady = false
+		else
+			self._timedEvents:push(fn,ms)
+		end		
+	until notReady 
 end
 
 --

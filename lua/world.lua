@@ -54,10 +54,42 @@ function World:_clone(values)
 	o._actorsToSave = {}
 	o._actorsToRegister = {}
 	
+	o._timedEvents = {}
+	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
 
 	return o
+end
+
+--
+--  Add a timed event to the world. After ms ms fn will be executed 
+--  with this as argument
+--
+-- 	@TODO figure out an efficient way to store
+-- 	and query these timed functions. Probably a priority queue would
+-- 	be a good option because we always want to execute
+-- 	the function that is closest to now so we could store
+-- 	the functions with the priority being their execution time	
+--
+function World:timer(ms, fn)
+	local executionTime = love.timer.getMicroTime() + (ms / 1000)
+	self._timedEvents[executionTime] = fn				
+end
+
+--
+--  Fires any timed events that are equal to or past their execution time
+--
+--	See notes re: World:timer for discussion on using a
+--	priority queue here
+--
+function World:executeTimedEvents()
+	for k, v in pairs(self._timedEvents) do
+		if k <= love.timer.getMicroTime() then
+			v()
+			self._timedEvents[k] = nil
+		end
+	end	
 end
 
 --
@@ -569,6 +601,11 @@ end
 --  Updates the World
 ---
 function World:update(dt)
+	self._profiler:profile('executing timed events', 
+		function()
+			self:executeTimedEvents()
+		end)
+
 	self._profiler:profile('saving actors', 
 		function()				
 			-- save actors if there are any to save

@@ -2,12 +2,19 @@
 	_ignoresHits = true,
 	_location = {},
 	on_collide = function(self, other)
-		if other.HERO then
+		if other.HERO and not self._collidees[other._id] then	
+			self._collidees[other._id] = true
 			soundEffects['coin_pickup']:rewind()
-			love.audio.play(soundEffects['coin_pickup'])	
+			love.audio.play(soundEffects['coin_pickup'])
 			other:position(self._location[1], self._location[2])
 			other:update(0)
-			other:registerBuckets(world._map._buckets)
+			other:registerBuckets(world._map._buckets)			
+			
+			-- reset the use of the teleporter after a few seconds
+			world:timer(15000, 
+				function()
+					self._collidees[other._id] = nil
+				end)
 		end
 	end,
 	location = function(self, x, y)

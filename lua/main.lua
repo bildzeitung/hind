@@ -20,7 +20,7 @@ local IN_GAME = 10
 
 --collectgarbage('stop')
 collectgarbage('setpause',0)
-collectgarbage('setstepmul', 110)
+collectgarbage('setstepmul', 200)
 local Counters
 local Names
 

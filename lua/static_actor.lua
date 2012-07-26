@@ -56,3 +56,22 @@ function StaticActor:update(dt)
 	-- calculate the bounding boxes
 	self:calculateBoundary()
 end
+
+--
+--  Defines serialization / deserialization
+--
+function StaticActor:__persist()
+	local t =
+	{
+		_filename = self._filename,
+		_id = self._id,
+		_name = self._name,
+		_currentAnimation = self._currentAnimation._name,
+		_position = { self._position[1], self._position[2] },
+	}
+	return function()
+		local a = objects.StaticActor.create(t._filename, t)		
+		a:animation(a._currentAnimation)		
+		return a
+	end
+end

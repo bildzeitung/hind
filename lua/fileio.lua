@@ -21,7 +21,8 @@ local commands =
 	'saveActor',
 	'addActorToCell',	
 	'loadMapCell',
-	'loadActor'
+	'loadActor',
+	'deleteActor'
 }
 
 --
@@ -66,6 +67,20 @@ function loadActor(id)
 	f:close()	
 			
 	communicator:send('loadedActor', s)
+end
+
+--
+--  Deletes an actor from disk
+--
+function deleteActor(id)
+	log.log('Delete Actor: ' .. id)		
+
+	local result, err = os.remove('map/' .. id .. '.act')	
+	
+	if not result and not err:find('No such file or directory') then
+		log.log('There was a problem deleting actor #' .. id)
+		log.log(err)
+	end
 end
 
 --
@@ -158,6 +173,8 @@ while true do
 		saveActor(msg)
 	elseif cmd == 'loadActor' then
 		loadActor(msg)
+	elseif cmd == 'deleteActor' then
+		deleteActor(msg)
 	elseif cmd == 'saveMapCell' then
 		saveMapCell(msg)
 	elseif cmd == 'loadMapCell' then

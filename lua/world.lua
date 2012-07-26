@@ -95,8 +95,6 @@ function World:receiveLoadedActors()
 			-- off to
 			actor.on_no_buckets = function(actor)
 				self:addActorToCell(actor)
-				self._actorsToSave[actor._id] = actor
-				self:removeActor(actor)						
 			end
 			
 			actor:update(0)
@@ -111,28 +109,36 @@ function World:receiveLoadedActors()
 end
 
 --
+--  Adds an actor to the register table
+-- 
+function World:addActorToRegister(actor,hash)
+	if not self._actorsToRegister[hash] then
+		self._actorsToRegister[hash] = { actor }
+	else
+		table.insert(self._actorsToRegister[hash], actor)	
+	end
+end
+
+--
 --  Adds an actor to a map cell
 --
 function World:addActorToCell(actor)
 	-- figure out the new map cell
 	-- hash value for this actor
-	local ts = self._map._tileSet:size()
-	local bounds = actor._boundary
-	local tileX = math.floor(bounds[1] / ts[1])
-	local tileY = math.floor(bounds[2] / ts[2])
+	local tileX, tileY = 
+		self._map:posToTile(actor._boundary[1], actor._boundary[2])
 	local hash = Map.hash(tileX, tileY)
 	
 	-- is this map cell being loaded 
 	if self._map._cellsLoading[hash] then
 		-- the map cell is being loaded already so just
 		-- register the actor again when the map cell is loaded
-		if not self._actorsToRegister[hash] then
-			self._actorsToRegister[hash] = { actor }
-		else
-			table.insert(self._actorsToRegister[hash], actor)		
-		end
+		self:addActorToRegister(actor, hash)
 	else	
-		-- save the actor the cell
+		-- save the actor and add it to the cell
+		self._actorsToSave[actor._id] = actor
+		self:disposeActor(actor)						
+
 		self._communicator:send('addActorToCell',actor._id)	
 		self._communicator:send('addActorToCell',hash)
 	end
@@ -201,6 +207,7 @@ function World:initialize()
 	
 	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
 	self._terrainGenerator:generate(499904,499904,256,256)
+	self._terrainGenerator:generate(500160,499904,256,256)
 	
 	self._map = factories.createMap('outdoor')	
 	
@@ -209,11 +216,11 @@ function World:initialize()
 		for k, _ in pairs(mc._bucketIds) do
 			if map._buckets['count' .. k] == 1 then
 				-- get rid of visible actors and objects that were in 
-				-- the buckets that will be destroyed
+				-- the buckets that will be disposed
 				for _, v in pairs(map._buckets[k]) do
 					if v._id then
 						self._actorsToSave[v._id] = v
-						self:removeActor(v)
+						self:disposeActor(v)
 					end
 				end
 			end		
@@ -346,6 +353,14 @@ function World:createHero()
 	hero:update(0.16)
 	local hash = Map.hash(tileX, tileY)
 	self._actorsToRegister[hash] = { hero }		
+	
+	hero.on_no_buckets = function(actor)
+		local tileX, tileY = 
+			self._map:posToTile(actor._boundary[1], actor._boundary[2])
+		local hash = Map.hash(tileX, tileY)
+		self:addActorToRegister(actor, hash)
+	end
+	
 	self._hero = hero		
 end
 
@@ -465,24 +480,34 @@ function World:draw()
 end
 
 --
---  Schedule an item for removal
+--  Removes an actor permanently from the game world
 --
-function World:scheduleRemoval(item)
-	self._removals[item._id] = item
+function World:removeActor(actor)
+	self:disposeActor(actor)
+	self._communicator:send('deleteActor',actor._id)	
 end
 
 --
---  Removes an object or actor from the game world
+--  Schedule an actor for permanent removal
 --
-function World:removeActor(object)
+function World:scheduleRemoval(actor)
+	self._actorsToSave[actor._id] = nil				
+	self._removals[actor._id] = actor
+end
+
+--
+--  Disposes an actor from the game world
+--  but doesn't delete the actor permanently
+--
+function World:disposeActor(actor)
 	-- unregister the actor from the buckets
-	for b, _ in pairs(object._bucketIds) do
+	for b, _ in pairs(actor._bucketIds) do
 		if self._map._buckets[b] then
-			self._map._buckets[b][object._id] = nil
+			self._map._buckets[b][actor._id] = nil
 		end
 	end				
 	-- remove actor from list of visible actors
-	self._visibleActors[object._id] = nil
+	self._visibleActors[actor._id] = nil
 end
 
 --
@@ -577,11 +602,12 @@ function World:update(dt)
 			self._renderer._lighting.shadowSkew[1] = self._renderer._lighting.shadowSkewMinMax[1] + (scaled * srange)
 		end)
 	
-	self._profiler:profile('removing actors', 
+	self._profiler:profile('permanently removing actors', 
 		function()			
 			-- remove all entities that were scheduled for removal
 			for k, v in pairs(self._removals) do		
 				self:removeActor(v)
+				self._removals[k] = nil
 			end	
 		end)
 	

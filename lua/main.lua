@@ -58,7 +58,7 @@ function love.load()
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
 		'plate_pants', 'longsword', 'monster', 'coins', 
 		'magic_firelion', 'magic_iceshield', 'potions',
-		'inventory_items'
+		'inventory_items', 'magic_torrent'
 	}
 		
 	for _, v in ipairs(load) do

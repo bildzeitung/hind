@@ -28,7 +28,7 @@ Map.unusedFrames = 60
 -- the number of tile to generate ahead
 Map.lookAhead = Map.cellSize * 4
 -- the size of a bucket cell
-Map.bucketCellSize = Map.cellSize * 16
+Map.bucketCellSize = Map.cellSize * 32
 
 Map.disposeCellsPerFrame = 1
 Map.loadCellsPerFrame = 1
@@ -364,4 +364,12 @@ function Map:visibleIds(id_table)
 			end
 		end
 	end
+end
+
+--
+--  Converts a position to a tile coordinate
+--
+function Map:posToTile(x, y)
+	local ts = self._tileSet:size()
+	return math.floor(x / ts[1]), math.floor(y / ts[2])
 end

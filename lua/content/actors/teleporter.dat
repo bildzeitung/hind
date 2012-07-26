@@ -1,0 +1,48 @@
+{
+	_ignoresHits = true,
+	_location = {},
+	on_collide = function(self, other)
+		if other.HERO then
+			soundEffects['coin_pickup']:rewind()
+			love.audio.play(soundEffects['coin_pickup'])	
+			other:position(self._location[1], self._location[2])
+			other:update(0)
+			other:registerBuckets(world._map._buckets)
+		end
+	end,
+	location = function(self, x, y)
+		if not x then return self._location end
+		
+		self._location[1] = x
+		self._location[2] = y
+	end,
+	__persist = function (self)
+		local t =
+		{
+			_filename = self._filename,
+			_id = self._id,
+			_name = self._name,
+			_currentAnimation = self._currentAnimation._name,
+			_position = { self._position[1], self._position[2] },
+			_location = { self._location[1], self._location[2] }
+		}
+		return function()
+			local a = objects.StaticActor.create(t._filename, t)		
+			a:animation(a._currentAnimation)		
+			return a
+		end
+	end,
+	_animations = 
+	{
+		default = 
+		{	
+			_tileSet = 'magic_torrent',
+			_offset = { 64, 64 },
+			_name = 'default',
+			_frameDuration = 0.1,
+			_frameStart = 1,
+			_frameEnd = 16,
+			_looping = 'loop'
+		}
+	}
+}

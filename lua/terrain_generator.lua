@@ -26,6 +26,8 @@ function TerrainGenerator:_clone(values)
 			
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
+	
+	o._actors = {}
 
 	return o
 end
@@ -213,7 +215,8 @@ end
 --  Generates a map
 --
 function TerrainGenerator:generate(xpos, ypos, sx, sy)
-
+	self._actors = {}
+	
 	-- create a table to hold all of the tiles
 	local tiles = {}
 	for i = 1, Map.layers do
@@ -254,8 +257,9 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	self:transitions(tiles)
 	
 	-- generate and save the actors
-	local actors = self:createActors(xpos, ypos, sx, sy)
-	for _, t in pairs(actors) do		
+	self:createActors(xpos, ypos, sx, sy)
+	
+	for _, t in pairs(self._actors) do		
 		for _, a in ipairs(t) do
 			self:saveActor(a)
 		end
@@ -322,8 +326,8 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 			local hash = Map.hash(cx,cy)
 			mc._hash = hash
 			
-			if actors[hash] then
-				for k, v in ipairs(actors[hash]) do
+			if self._actors[hash] then
+				for k, v in ipairs(self._actors[hash]) do
 					mc._actors[#mc._actors + 1] = v._id
 				end
 			end
@@ -342,40 +346,57 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 end
 
 --
+--  Inserts an actor into the current actor hash table
+--
+function TerrainGenerator:addActor(actor, tileX, tileY)
+	local ts = self._tileSet:size()
+	actor:position(tileX * ts[1], tileY * ts[2])	
+	actor:update(0)
+	local hash = Map.hash(actor._boundary[1] / ts[1], actor._boundary[2] / ts[2])
+	if not self._actors[hash] then
+		self._actors[hash] = {}
+	end
+	table.insert(self._actors[hash], actor)
+	
+	log.log('Added actor #' .. actor._id .. '# with hash #' .. hash .. '#')
+end
+
+--
+--  Creates a teleporter
+--
+function TerrainGenerator:createTeleporter(sx, sy, dx, dy)
+	local ts = self._tileSet:size()
+	local teleporter = StaticActor.create('content/actors/teleporter.dat')
+	teleporter:animation('default')
+	teleporter:location(dx * ts[1], dy * ts[2])	
+	self:addActor(teleporter, sx, sy)	
+end
+
+--
 --  Create some actors
 --
 --	@TODO replace this with actual procedural generation
 --
 function TerrainGenerator:createActors(xpos, ypos, sx, sy)
-	local ts = self._tileSet:size()
-	
 	local numActors = 50
 	
 	local actors = {}
 
-	--self:createBunchOPotions(self._hero:position())
-
 	for i = 1, numActors do		
-		local a = Actor.create('content/actors/slime.dat')
-		--local a = Actor.create('content/actors/male_human.dat')	
-		a:animation('standright')
+		local actor = Actor.create('content/actors/slime.dat')
+		actor:animation('standright')
 		local tileX = math.floor(math.random() * (sx - 128)) + xpos + 64
-		local tileY = math.floor(math.random() * (sy - 128)) + ypos + 64
-		a:position(tileX * ts[1], tileY * ts[2])
-		
-		a:update(0)
-		local bounds = a._boundary
-		local tileX = bounds[1] / ts[1]
-		local tileY = bounds[2] / ts[2]		
-		local hash = Map.hash(tileX, tileY)
-		if not actors[hash] then
-			actors[hash] = {}
-		end
-		table.insert(actors[hash], a)
-		
-		log.log('Created actor with hash: ' .. hash)
+		local tileY = math.floor(math.random() * (sy - 128)) + ypos + 64		
+		self:addActor(actor, tileX, tileY)
 	end	
+	
+	if xpos == 499904 then
+		self:createTeleporter(500040, 500032, 500300, 500032)
+	elseif xpos == 500160 then
+		self:createTeleporter(500310, 500032, 500030, 500032)
+	end
 
+	
 	--[[
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000

@@ -13,42 +13,52 @@ require 'camera'
 module (..., package.seeall)
 
 local actorID = 1000000
+local fileTables = {}
 
 --
 --  Reads in a lua table from a file
 --
 function readTableFromFile(filename)
-	local f = io.open(filename, 'r')
-	if not f then 
-		return nil, 'There was an error loading the table from filename "' 
-			.. filename .. '" - the file did not open.'
-	end
-	local s = f:read('*all')
-	f:close()
-	
-	local t = loadstring('return ' .. s)()
-	if not t then
-		return nil, 'There was an error loading the table from filename "' 
-			.. filename .. '" - the file did not parse properly.'
-	end
-	
-	-- merge in base tables if they are 
-	-- mentioned
-	while t._baseTable do 
-		local ot = readTableFromFile(t._baseTable)
-		t._baseTable = nil
-		t = table.merge(ot, t)
+	-- we only want to call loadstring the
+	-- first time a table is constructed as it is slow
+	if fileTables[filename] then
+		return table.clone(fileTables[filename], { deep = true, nometa = true })
+	else
+		local f = io.open(filename, 'r')
+		if not f then 
+			return nil, 'There was an error loading the table from filename "' 
+				.. filename .. '" - the file did not open.'
+		end
+		local s = f:read('*all')
+		f:close()
 		
+		local t = loadstring('return ' .. s)()
+		
+		if not t then
+			return nil, 'There was an error loading the table from filename "' 
+				.. filename .. '" - the file did not parse properly.'
+		end
+			
 		if t._static then
 			if not objects.static then
 				objects.static = {}
 			end
 			objects.static = table.merge(objects.static, t._static)
 			t._static = nil
-		end		
-	end
-	
-	return t
+		end	
+			
+		-- merge in base tables if they are 
+		-- mentioned
+		while t._baseTable do 
+			local ot = readTableFromFile(t._baseTable)
+			t._baseTable = nil
+			t = table.merge(ot, t)			
+		end
+				
+		fileTables[filename] = t
+		
+		return table.clone(t, { deep = true, nometa = true })
+	end	
 end
 
 --
@@ -115,6 +125,7 @@ end
 --
 function prepareActor(filename, existing)
 	local t = readTableFromFile(filename)
+	
 	for k, v in pairs(t._animations) do
 		local a = createAnimation(v)
 		t._animations[k] = a		

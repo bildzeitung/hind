@@ -25,10 +25,8 @@ function TerrainGenerator:_clone(values)
 	local o = Object._clone(self,values)
 			
 	local thread = love.thread.getThread('fileio')
-	o._communicator = ThreadCommunicator{ thread }
+	o._communicator = ThreadCommunicator{ thread }	
 	
-	o._actors = {}
-
 	return o
 end
 	
@@ -41,7 +39,9 @@ end
 --	types start at index 1 and are contiguous in 
 --	a tileset
 --  
-function TerrainGenerator:transitions(tiles)
+function TerrainGenerator:transitions()
+	local tiles = self._tiles
+	
 	local tilesPerType = 18
 	
 	--  a table that maps the edge number
@@ -216,9 +216,13 @@ end
 --
 function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	self._actors = {}
+	local actors = self._actors
+	self._tiles = {}
+	local tiles = self._tiles
+	self._objects = {}
+	local objects = self._objects
 	
 	-- create a table to hold all of the tiles
-	local tiles = {}
 	for i = 1, Map.layers do
 		tiles[i] = {}
 	end
@@ -259,7 +263,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	-- generate and save the actors
 	self:createActors(xpos, ypos, sx, sy)
 	
-	for _, t in pairs(self._actors) do		
+	for _, t in pairs(actors) do		
 		for _, a in ipairs(t) do
 			self:saveActor(a)
 		end
@@ -270,7 +274,6 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	local tree_cycle = { 'short_tree', 'tall_tree', 'pine_tree' }
 	
 	-- create a table to hold all of the objects
-	local objects = {}
 	for y = 1, sy do		
 		objects[y] = {}
 	end	
@@ -282,12 +285,28 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	for y = Map.cellSize, sy - Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize do
 			if math.random() > 0.99 and math.floor(tiles[1][y][x] / 18) == 5 then
-				objects[y][x] = { name = tree_cycle[(current % 3) + 1], 
+					objects[y][x] = { name = tree_cycle[(current % 3) + 1], 
 					x = xcoord * ts[1] + x * ts[1], y = ycoord * ts[1] + y * ts[2] }
 				current = current + 1
 			end
 		end
 	end
+	
+	self:splitIntoCells(xpos,ypos)
+
+	--log.log('Finished creating map cells!')		
+end
+
+--
+--  Split a terrain into cells
+--
+function TerrainGenerator:splitIntoCells(xpos, ypos)
+	local hash, xcoord, ycoord = Map.hash(xpos,ypos)
+	local tiles = self._tiles
+	local objects = self._objects
+	local actors = self._actors
+	local sy = #tiles[1]
+	local sx = #tiles[1][1]
 	
 	local cx = xcoord
 	local cy = ycoord
@@ -297,7 +316,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	for y = 1, sy - 1, Map.cellSize do
 		cx = xcoord
 		for x = 1, sx - 1, Map.cellSize do
-			log.log('Creating map cell at coords: ' .. cx .. ', ' .. cy)
+			--log.log('Creating map cell at coords: ' .. cx .. ', ' .. cy)
 			
 			local mc = {}
 			mc._tiles = {}
@@ -327,7 +346,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 			mc._hash = hash
 			
 			if self._actors[hash] then
-				for k, v in ipairs(self._actors[hash]) do
+				for k, v in ipairs(actors[hash]) do
 					mc._actors[#mc._actors + 1] = v._id
 				end
 			end
@@ -341,8 +360,6 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	for k, v in ipairs(cells) do
 		self:saveMapCell(v)
 	end
-
-	log.log('Finished creating map cells!')		
 end
 
 --
@@ -358,7 +375,7 @@ function TerrainGenerator:addActor(actor, tileX, tileY)
 	end
 	table.insert(self._actors[hash], actor)
 	
-	log.log('Added actor #' .. actor._id .. '# with hash #' .. hash .. '#')
+	--log.log('Added actor #' .. actor._id .. '# with hash #' .. hash .. '#')
 end
 
 --
@@ -448,7 +465,7 @@ end
 --  Saves a map cell to disk using fileio thread
 --	
 function TerrainGenerator:saveMapCell(mc)
-	log.log('Saving generated map cell: ' .. mc._hash)
+	--log.log('Saving generated map cell: ' .. mc._hash)
 	
 	self._communicator:send('saveMapCell',mc._hash)
 	local s = marshal.encode(mc._tiles)		
@@ -456,7 +473,7 @@ function TerrainGenerator:saveMapCell(mc)
 	local s = marshal.encode(mc._actors)	
 	self._communicator:send('saveMapCell',s)		
 	
-	log.log('Saving generated map cell complete!')
+	--log.log('Saving generated map cell complete!')
 end
 
 --

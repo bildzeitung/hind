@@ -129,7 +129,7 @@ end
 --
 function Map:update(dt, camera, profiler)
 	-- go through all cells and mark any that are no longer required
-	profiler:profile('marking map cells for disposal', function()						
+	--profiler:profile('marking map cells for disposal', function()						
 			for k, v in pairs(self._cellsInMemory) do
 				if not v._visible then
 					v._framesNotUsed = v._framesNotUsed + 1
@@ -138,10 +138,10 @@ function Map:update(dt, camera, profiler)
 					end
 				end
 			end	
-		end) -- profile
+		--end) -- profile
 	
 	-- dispose cells if there are any to dispose
-	profiler:profile('disposing map cells', function()			
+	--profiler:profile('disposing map cells', function()			
 			local cellsDisposed = 0
 			for k, v in pairs(self._cellsToDispose) do
 				self:disposeMapCell(v)
@@ -149,12 +149,12 @@ function Map:update(dt, camera, profiler)
 				cellsDisposed = cellsDisposed + 1
 				if cellsDisposed >= Map.disposeCellsPerFrame then break end
 			end	
-		end) -- profile
+		--end) -- profile
 	
 	-- receive any map cells that have been loaded
-	profiler:profile('receiving loaded map cells', function()
+	--profiler:profile('receiving loaded map cells', function()
 			self:receiveLoadedCells()
-		end) -- profile
+		--end) -- profile
 end
 
 --

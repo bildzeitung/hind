@@ -95,17 +95,6 @@ function Actor:update(dt)
 end
 
 --
---  Returns the direction the actor is facing
---  
-function Actor:direction()
-	local currentAnim = self:animation():name()
-	if currentAnim:find('left') then return 'left' end
-	if currentAnim:find('right') then return 'right' end
-	if currentAnim:find('up') then return 'up' end
-	if currentAnim:find('down') then return 'down' end
-end
-
---
 --  Do an action
 -- 
 function Actor:action(name, cancel)
@@ -133,11 +122,7 @@ function Actor:action(name, cancel)
 		currentAnim = self._currentAnimation:name()
 	end
 	-- switch to the new animation
-	if self._animations[name] then
-		self:animation(name, true)
-	else
-		self:animation(name .. self:direction(), true)
-	end	
+	self:animation(name, true)
 	-- set the callback for when the animation ends
 	self._currentAnimation.done_cb = function()
 		if currentAnim then

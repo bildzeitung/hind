@@ -19,8 +19,9 @@ local HERO_DEAD = -99
 local IN_GAME = 10
 
 --collectgarbage('stop')
-collectgarbage('setpause',0)
-collectgarbage('setstepmul', 200)
+--collectgarbage('setpause',0)
+--collectgarbage('setstepmul', 200)
+
 local Counters
 local Names
 
@@ -106,10 +107,10 @@ function love.draw()
 			if drawProfileText then
 				local y = 300
 				local total = 0	
-				love.graphics.print('========= PROFILES ===========', 10, y)
-				love.graphics.print('=== COUNT ===', 350, y)
-				love.graphics.print('=== TIME ===', 450, y)
-				love.graphics.print('=== MEMORY ===', 650, y)
+				love.graphics.print('===== PROFILES ======', 0, y)
+				love.graphics.print('= C =', 275, y)
+				love.graphics.print('= T =', 325, y)
+				love.graphics.print('= M =', 425, y)
 				y = y + 20
 				
 				local avgs = {}
@@ -118,26 +119,33 @@ function love.draw()
 					avgs[#avgs+1] = { name = k, mem_avg = v.mem_sum / v.count, time_avg = v.time_sum / v.count, count = v.count }
 				end
 				
-				table.sort(avgs, function(a,b) return a.mem_avg > b.mem_avg end)
+				--table.sort(avgs, function(a,b) return a.mem_avg > b.mem_avg end)
+				table.sort(avgs, function(a,b) return a.name > b.name end)
 				
+				local x = 0
 				for _, v in pairs(avgs) do
-					if v.time_avg > 0.00009 or v.mem_avg > 0.001 then
-						love.graphics.print(v.name,10, y)				
-						love.graphics.print(v.count, 350, y)				
-						love.graphics.print(string.format('%.5f', v.time_avg),450, y)		
-						love.graphics.print(string.format('%.5f', v.mem_avg),650, y)		
+					--if v.time_avg > 0.00009 or v.mem_avg > 0.001 then
+						love.graphics.print(v.name, x, y)				
+						love.graphics.print(v.count, x + 275, y)				
+						love.graphics.print(string.format('%.5f', v.time_avg),x + 325, y)		
+						love.graphics.print(string.format('%.5f', v.mem_avg),x + 425, y)		
 						y=y+15		
-					end
+					--end
 					total = total + v.time_avg
+					
+					if y > 640 then 
+						y = 340
+						x = x + 500
+					end
 				end	
 				
-				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
+				love.graphics.print('=== TOTAL AVG TIME ===', x, y)
 				y=y+15
-				love.graphics.print(string.format('%.5f', total), 10, y)
+				love.graphics.print(string.format('%.5f', total), x, y)
 				y=y+15
-				love.graphics.print('=== EXPECTED FPS ===', 10, y)
+				love.graphics.print('=== EXPECTED FPS ===', x, y)
 				y=y+15
-				love.graphics.print(string.format('%.5f', 1/total), 10, y)
+				love.graphics.print(string.format('%.5f', 1/total), x, y)
 			end
 		end)
 
@@ -166,26 +174,30 @@ function love.update(dt)
 				-- @ TODO put this into the actor definition file!!!!
 				
 				if love.keyboard.isDown('up') then
-					world._hero:animation('walkup')		
+					world._hero:direction('up')
+					world._hero:animation('walk')		
 					vy = -speed
 				elseif
 					love.keyboard.isDown('down') then
-					world._hero:animation('walkdown')		
+					world._hero:direction('down')
+					world._hero:animation('walk')		
 					vy = speed
 				end
 				if love.keyboard.isDown('left') then
-					world._hero:animation('walkleft')
+					world._hero:direction('left')
+					world._hero:animation('walk')
 					vx = -speed
 				elseif
 					love.keyboard.isDown('right') then
-					world._hero:animation('walkright')		
+					world._hero:direction('right')
+					world._hero:animation('walk')
 					vx = speed
 				end
 				
 				world._hero:velocity(vx, vy)
 				
 				if vx == 0 and vy == 0 then
-					world._hero:animation('stand' .. world._hero:direction(), true)
+					world._hero:animation('stand')
 				end
 				
 				if love.keyboard.isDown('lctrl') then
@@ -227,7 +239,7 @@ function love.update(dt)
 					end
 				end	
 			end
-
+			
 			if love.keyboard.isDown('escape') then
 				os.exit()
 			end
@@ -349,7 +361,7 @@ function love.update(dt)
 			
 			if love.keyboard.isDown(',') then		
 				profiler:reset()
-			end		
+			end	
 		end)
 		
 	world:update(dt, profiler)

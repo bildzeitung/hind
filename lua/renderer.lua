@@ -194,10 +194,16 @@ end
 function Renderer:draw(camera, drawables, profiler)	
 	local drawTable = self._drawTable
 	
-	drawTable.object = {}
-	drawTable.roof = {}
-	drawTable.text = {}
-	
+	for k, v in pairs(drawTable.object) do
+		drawTable.object[k] = nil
+	end
+	for k, v in pairs(drawTable.roof) do
+		drawTable.roof[k] = nil
+	end
+	for k, v in pairs(drawTable.text) do
+		drawTable.text[k] = nil
+	end
+
 	-- set up the draw table
 	profiler:profile('pre-calculating draw stuff', 
 		function()
@@ -302,8 +308,6 @@ function Renderer:draw(camera, drawables, profiler)
 	-- render all of the text objects
 	profiler:profile('drawing text objects', 	
 		function()		
-			local f = love.graphics.getFont()
-			local cm = love.graphics.getColorMode()
 			love.graphics.setColorMode('modulate')
 			for k, v in ipairs(drawTable.text) do
 				love.graphics.setFont(v[2])
@@ -311,8 +315,6 @@ function Renderer:draw(camera, drawables, profiler)
 				love.graphics.print(v[1], v[4], v[5], 0, 
 					drawTable.zoomX, drawTable.zoomY)	
 			end
-			if f then love.graphics.setFont(f) end
-			love.graphics.setColorMode(cm)
 		end)
 end
 

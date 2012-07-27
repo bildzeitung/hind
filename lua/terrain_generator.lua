@@ -241,7 +241,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy)
 	-- now add some land
 	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
 		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do
-			local tt = math.floor(math.random(3)) + 3
+			local tt = math.floor(math.random(2)) + 3
 			for yy = y, y + Map.cellSize - 1 do
 				for xx = x, x + Map.cellSize - 1 do
 					tiles[1][yy][xx] = 11 + (tt*18)

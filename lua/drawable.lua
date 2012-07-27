@@ -25,8 +25,22 @@ function Drawable:_clone(values)
 	o._position = { 0, 0 }
 	o._drawTableEntry = { true, true, true, true, 
 		true, true, true, true }
+	o._direction = 'right'
 	
 	return o
+end
+
+--
+--  Sets or gets the current direction
+--  
+function Drawable:direction(d)
+	if not d then return self._direction end
+	
+	if self._direction ~= d then
+		self._changeDirection = true
+	end
+	
+	self._direction = d
 end
 
 --
@@ -41,7 +55,13 @@ function Drawable:animation(a, r)
 		return self._currentAnimation
 	end
 	
-	self._currentAnimation = self._animations[a]
+	-- switch to the new animation
+	if self._animations[a] then
+		self._currentAnimation = self._animations[a]
+	else
+		self._currentAnimation = self._animations[a .. self._direction]
+	end				
+	
 	if r then
 		self._currentAnimation:reset()
 	end	

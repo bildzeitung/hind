@@ -60,6 +60,8 @@ function Renderer:_clone(values)
 		text = {}	
 	}	
 	
+	o._zSortFn = function(a,b) return a[1] < b[1] end
+
 	return o
 end
 
@@ -237,11 +239,8 @@ function Renderer:draw(camera, drawables, profiler)
 	end
 	
 	--profiler:profile('z-sorting', function()	
-			table.sort(drawTable.object,function(a,b)
-				return a[1] < b[1] end)
-
-			table.sort(drawTable.roof,function(a,b)
-				return a[1] < b[1] end)
+			table.sort(drawTable.object,self._zSortFn)
+			table.sort(drawTable.roof,self._zSortFn)
 		--end) -- profile
 	
 		--[[

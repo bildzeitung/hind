@@ -328,8 +328,8 @@ function World:initialize()
 	self._camera:viewport(0,0,width,height)
 	
 	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
-	self._terrainGenerator:generate(499904,499904,256,256)
-	self._terrainGenerator:generate(500160,499904,256,256)
+	self._terrainGenerator:generate(499904,499904,256,256,'Sir Gallahad')
+	self._terrainGenerator:generate(500160,499904,256,256,'Sir Gallahad')
 	
 	self._map = factories.createMap('outdoor')	
 	

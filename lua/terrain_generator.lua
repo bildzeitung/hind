@@ -212,7 +212,9 @@ end
 --
 --  Generates a map
 --
-function TerrainGenerator:generate(xpos, ypos, sx, sy)
+function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
+	self._heroName = heroName
+	
 	self._actors = {}
 	local actors = self._actors
 	self._tiles = {}
@@ -420,45 +422,26 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	npc:name('Bilbo')
 	self:addActor(npc, xpos + 120, ypos + 120)
 	
-	--[[
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc }
+	local d = dg:dialog{ npc = npc:name(), hero = self._heroName }
 	d.on_finish = function(self)
 		self._npc:removeDialog(self)
 	end
 	npc:addDialog(d)	
-	]]
-	--[[
-	local npc = Actor.create('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:direction('down')
-	npc:animation('stand')
-	npc:position(499990*32,500000*32)
-	npc:name('Larry')
-	actors[npc._id] = npc	
-	
-	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
 
-	local npc = Actor.create('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:direction('down')
-	npc:animation('stand')
-	npc:position(499980*32,500000*32)
-	npc:name('Jimbo')
-	actors[npc._id] = npc	
-	
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
+	local d = dg:dialog{ npc = npc:name(), hero = self._heroName }
 	d.on_finish = function(self)
 		self._npc:removeDialog(self)
 	end
-	]]
+	npc:addDialog(d)	
+
+	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
+	local d = dg:dialog{ npc = npc:name(), hero = self._heroName }
+	d.on_finish = function(self)
+		self._npc:removeDialog(self)
+	end
+	npc:addDialog(d)	
 	
 	return actors
 end

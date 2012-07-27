@@ -52,11 +52,10 @@ function Actor:_clone(values)
 		table.merge(Collidable(values), Drawable(values)),
 		Object._clone(self,values))
 			
-	o._dialogs = {}	
-  	o._lastPosUpdate = { 0, 0 }	
-	o._velocity = { 0, 0 }
 	o.ACTOR = true
-	o._currentAction = nil	
+  	o._lastPosUpdate = values._lastPosUpdate or { 0, 0 }	
+	o._velocity = values._velocity or { 0, 0 }	
+	o._currentAction = values._currentAction or nil	
 	o._health = values._health or 0
 	o._maxHealth = values._maxHealth or o._health
 
@@ -181,31 +180,6 @@ function Actor:name(n)
 end
 
 --
---  Adds a dialog to the actor
---
-function Actor:addDialog(d)
-	self._dialogs[d:name()] = d
-end
-
---
---  Removes a dialog from the actor
---
-function Actor:removeDialog(d)
-	if type(d) == 'string' then
-		self._dialogs[d] = nil
-	else
-		self._dialogs[d:name()] = nil
-	end
-end
-
---
---  The list of dialogs this actor currently owns
---
-function Actor:dialogs()
-	return self._dialogs
-end
-
---
 --  Sets or gets the Actor's health
 --
 function Actor:health(value, absolute, other)
@@ -249,21 +223,13 @@ end
 --  Defines serialization / deserialization
 --
 function Actor:__persistTable()
-	return 
-	{
-		_filename = self._filename,
-		_id = self._id,
-		_name = self._name,
-		_health = self._health,
-		_maxHealth = self._maxHealth,
-		_currentAnimation = self._currentAnimation._name,
-		_lastPosUpdate = { self._lastPosUpdate[1], self._lastPosUpdate[2] },
-		_position = { self._position[1], self._position[2] },
-		_velocity = { self._velocity[1], self._velocity[2] },
-		_collidees = table.clone(self._collidees, { nometa = true })
-		--_ignores,
-		--_dialogs,		
-	}
+	local t = StaticActor.__persistTable(self)
+	t._health = self._health
+	t._maxHealth = self._maxHealth
+	t._lastPosUpdate = { self._lastPosUpdate[1], self._lastPosUpdate[2] }
+	t._velocity = { self._velocity[1], self._velocity[2] }
+		
+	return t
 end
 
 --

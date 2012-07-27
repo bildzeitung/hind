@@ -495,6 +495,8 @@ end
 --  Draw the world
 --
 function World:draw()
+	local profiler = self._profiler
+	
 	self._renderer:draw( 
 		self._camera, 
 		{ 	
@@ -504,7 +506,7 @@ function World:draw()
 		self._profiler )
 	
 	-- draw collision boundaries?		
-	--self._--profiler:profile('drawing collision boundaries', function()
+	--profiler:profile('drawing collision boundaries', function()
 			if self._showCollisionBoundaries then
 				local cw = self._camera:window()
 				for k, _ in pairs(self._visibleIds) do
@@ -526,7 +528,7 @@ function World:draw()
 		--end) -- profile
 	
 	-- draw info text
-	--self._--profiler:profile('drawing info text', function()		
+	--profiler:profile('drawing info text', function()		
 			if self._drawInfoText then
 				love.graphics.setColor(255,255,255,255)		
 				love.graphics.setPixelEffect()

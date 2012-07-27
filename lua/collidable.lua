@@ -30,11 +30,11 @@ Collidable = Object{}
 function Collidable:_clone(values)
 	local o = Object._clone(self,values)
 	
-	o._position = { 0, 0 }	
-	o._boundary = { 0, 0, 0, 0 }
-	o._bucketIds = {}
-	o._ignores = {}
-	o._collidees = {}
+	o._position = values._position or { 0, 0 }	
+	o._boundary = values._boundary or { 0, 0, 0, 0 }
+	o._bucketIds = values._bucketIds or {}
+	o._ignores = values._ignores or {}
+	o._collidees = values._collidees or {}
 	o:ignoreCollision(o)
 	
 	return o
@@ -177,4 +177,16 @@ function Collidable:calculateBoundary()
 	self._boundary[2] = self._position[2] + boundary[2] - of[2]
 	self._boundary[3] = self._position[1] + boundary[3] - of[1]
 	self._boundary[4] = self._position[2] + boundary[4] - of[2]
+end
+
+--
+--  Defines serialization / deserialization
+--
+function Collidable:__persistTable()
+	return 
+	{
+		_position = { self._position[1], self._position[2] },
+		_collidees = table.clone(self._collidees, { nometa = true }),
+		_ignores = table.clone(self._ignores, { nometa = true })	
+	}
 end

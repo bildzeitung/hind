@@ -61,15 +61,14 @@ end
 --  Defines serialization / deserialization
 --
 function StaticActor:__persistTable()
-	return 
-	{
-		_filename = self._filename,
-		_id = self._id,
-		_name = self._name,
-		_currentAnimation = self._currentAnimation._name,
-		_position = { self._position[1], self._position[2] },
-		_collidees = table.clone(self._collidees, { nometa = true })		
-	}
+	local t = Collidable.__persistTable(self)
+	t._filename = self._filename
+	t._id = self._id
+	t._name = self._name
+	t._currentAnimation = self._currentAnimation._name
+	t._direction = self._direction
+	
+	return t
 end
 
 --

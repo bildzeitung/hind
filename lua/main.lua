@@ -14,6 +14,7 @@ require 'dialog_viewer'
 require 'inventory_viewer'
 require 'personality_viewer'
 require 'world'
+require 'NPC'
 
 local HERO_DEAD = -99
 local IN_GAME = 10

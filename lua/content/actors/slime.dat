@@ -10,11 +10,11 @@
 			end		
 			
 		if math.random() > 0.95 then
-			local xv = math.random()*200-100
-			local yv = math.random()*200-100
+			local xv = math.random()*100-50
+			local yv = math.random()*100-50
 					
-			if math.abs(xv) < 50 then xv = 0 end
-			if math.abs(yv) < 50 then yv = 0 end
+			if math.abs(xv) < 25 then xv = 0 end
+			if math.abs(yv) < 25 then yv = 0 end
 					
 			self:velocity(xv, yv)				
 				

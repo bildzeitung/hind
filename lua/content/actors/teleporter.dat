@@ -37,7 +37,7 @@
 		default = 
 		{	
 			_tileSet = 'magic_torrent',
-			_offset = { 64, 64 },
+			_offset = { 64, 128 },
 			_name = 'default',
 			_frameDuration = 0.1,
 			_frameStart = 1,

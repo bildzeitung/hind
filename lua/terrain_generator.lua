@@ -401,7 +401,8 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 
 	for i = 1, numActors do		
 		local actor = Actor.create('content/actors/slime.dat')
-		actor:animation('standright')
+		actor:direction('down')
+		actor:animation('stand')
 		local tileX = math.floor(math.random() * (sx - 128)) + xpos + 64
 		local tileY = math.floor(math.random() * (sy - 128)) + ypos + 64		
 		self:addActor(actor, tileX, tileY)
@@ -418,7 +419,8 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
-	npc:animation('standright')
+	npc:direction('down')
+	npc:animation('stand')
 	npc:position(500000*32,500000*32)
 	npc:name('Bilbo')
 	actors[npc._id] = npc	
@@ -432,7 +434,8 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
-	npc:animation('standright')
+	npc:direction('down')
+	npc:animation('stand')
 	npc:position(499990*32,500000*32)
 	npc:name('Larry')
 	actors[npc._id] = npc	
@@ -446,7 +449,8 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
-	npc:animation('standright')
+	npc:direction('down')
+	npc:animation('stand')
 	npc:position(499980*32,500000*32)
 	npc:name('Jimbo')
 	actors[npc._id] = npc	

@@ -32,6 +32,13 @@ NPC = Object{}
 function NPC.create(filename, existing)
 	local t = factories.prepareActor(filename, existing)
 	local n = NPC(t)
+		
+	-- create new dialog objects
+	for k, v in pairs(n._dialogs) do 
+		n._dialogs[k] = Dialog(v)
+		n._dialogs[k]._npc = n
+	end
+	
 	return n
 end
 
@@ -77,7 +84,10 @@ end
 --
 function NPC:__persistTable()
 	local t = Actor.__persistTable(self)
-	t._dialogs = table.clone(self._dialogs, { nometa = true })
+	t._dialogs = {}
+	for k, v in pairs(self._dialogs) do
+		t._dialogs[v:name()] = Dialog.__persistTable(v)
+	end
 		
 	return t
 end
@@ -90,13 +100,6 @@ function NPC:__persist()
 	return function()
 		local n = objects.NPC.create(t._filename, t)		
 		n:animation(n._currentAnimation)	
-		--[[		
-		-- set the npc for the dialogs that
-		-- the npc contains
-		for k, v in pairs(n._dialogs) do
-			v._npc = n
-		end
-		]]		
 		return n
 	end
 end

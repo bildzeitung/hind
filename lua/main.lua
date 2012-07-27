@@ -205,7 +205,7 @@ function love.update(dt)
 					if closest and closest.dialogs and distance < 100 and table.count(closest:dialogs()) > 0 then
 						world._hero:velocity(0,0)
 						world._hero:animation('stand' .. world._hero:direction(), true)
-						local dialogViewer = objects.DialogViewer{ closest }
+						local dialogViewer = objects.DialogViewer{ closest, world._hero }
 						overlays[dialogViewer] = true
 						dialogViewer.on_close = function(self)
 							overlays[dialogViewer] = nil

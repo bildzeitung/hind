@@ -19,7 +19,7 @@ local table, next, pairs, ipairs, type, love
 	
 module('objects')
 
-DialogViewer = Object{ _init = { '_npc' } }
+DialogViewer = Object{ _init = { '_npc', '_hero' } }
 
 -- only need one of these
 DialogViewer._nameFont = love.graphics.newFont(14)
@@ -74,6 +74,12 @@ function DialogViewer:_clone(values)
 	end	
 	
 	local dialogs = o._npc:dialogs()
+	
+	-- set the hero for the dialogs
+	for k, v in pairs(dialogs) do
+		v._hero = o._hero
+	end	
+	
 	local k, dialog = next(dialogs)
 	
 	if table.count(dialogs) > 1 then

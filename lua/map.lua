@@ -20,7 +20,7 @@ module('objects')
 Map = Object{}
 
 -- the size in tiles of the individual map cells
-Map.cellSize = 32
+Map.cellSize = 8
 -- the number of maximum layers in the map
 Map.layers = 4
 -- the number of frames to keep a map cell around for before it is disposed

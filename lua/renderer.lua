@@ -231,8 +231,14 @@ function Renderer:draw(camera, drawables, profiler)
 				if type(t) == 'table' and t.draw then
 					t:draw(camera, drawTable)
 				else
-					for _, i in pairs(t) do
-						i:draw(camera, drawTable)
+					for k, v in pairs(t) do
+						local o
+						if type(v) == 'table' then
+							o = v
+						elseif type(k) == 'table' then
+							o = k
+						end
+						o:draw(camera, drawTable)
 					end
 				end
 			--end) -- profile

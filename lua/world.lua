@@ -810,7 +810,7 @@ function World:update(dt)
 					-- map objects that you can collide with but
 					-- never interact with
 					if v._image then
-						self._visibleObjects[#self._visibleObjects + 1] = v
+						self._visibleObjects[v] = true
 					end	
 				end
 			end	

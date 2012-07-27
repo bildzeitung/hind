@@ -20,7 +20,7 @@ local IN_GAME = 10
 
 --collectgarbage('stop')
 --collectgarbage('setpause',0)
---collectgarbage('setstepmul', 200)
+--collectgarbage('setstepmul', 10)
 
 local Counters
 local Names
@@ -99,10 +99,11 @@ function love.draw()
 	world:draw(profiler)
 	
 	-- draw profile text
-	profiler:profile('drawing profile text', 	
-		function()		
+	profiler:profile('drawing profile text', function()
+			love.graphics.setColor(255,255,255,255)	
 			love.graphics.setFont(smallFont)
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
+			love.graphics.print('MEMORY IN USE '.. string.format('%.2f', collectgarbage('count')), 10, 85)			
 			
 			if drawProfileText then
 				local y = 300
@@ -147,12 +148,11 @@ function love.draw()
 				y=y+15
 				love.graphics.print(string.format('%.5f', 1/total), x, y)
 			end
-		end)
+		end) -- profile
 
-	profiler:profile('drawing loveframes', 
-		function()		
+	profiler:profile('drawing loveframes', function()		
 			loveframes.draw()
-		end)
+		end) -- profile
 end
 
 function love.update(dt)
@@ -163,8 +163,7 @@ function love.update(dt)
 	-- @TODO keyboard handling code is just crap with currently lots of
 	-- junk for just testing purposes
 	-- figure out how to design this and implement properly	
-	profiler:profile('handling keyboard input', 
-		function()
+	profiler:profile('handling keyboard input', function()
 			if not world._hero._currentAction and table.count(overlays) == 0 then
 				local vx, vy = 0, 0
 				-- @ TODO put this into the actor definition file!!!!
@@ -362,14 +361,13 @@ function love.update(dt)
 			if love.keyboard.isDown(',') then		
 				profiler:reset()
 			end	
-		end)
+		end) -- profile
 		
 	world:update(dt, profiler)
 	
-	profiler:profile('updating loveframes', 
-		function()
+	profiler:profile('updating loveframes', function()
 			loveframes.update(dt)
-		end)
+		end) -- profile
 end
 
 function love.mousepressed(x, y, button)

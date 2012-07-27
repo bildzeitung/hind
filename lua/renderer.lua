@@ -205,8 +205,7 @@ function Renderer:draw(camera, drawables, profiler)
 	end
 
 	-- set up the draw table
-	profiler:profile('pre-calculating draw stuff', 
-		function()
+	profiler:profile('pre-calculating draw stuff', function()
 			-- pre calculate what we can
 			drawTable.cw = camera:window()
 			drawTable.cv = camera:viewport()	
@@ -214,21 +213,19 @@ function Renderer:draw(camera, drawables, profiler)
 			drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
 			drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
 			drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
-		end)
+		end) -- profile
 			
 	--[[			
-	profiler:profile('updating lighting effect', 
-		function()
+	profiler:profile('updating lighting effect', function()
 			love.graphics.setPixelEffect(self._currentShader)				
 			self:setDirectionalLight( { spotSize = 2 } )
 			self:updateLightEffect(camera)
-		end)
+		end) -- profile
 	]]
 		
 	-- pre draw the drawable items
 	for k, t in pairs(drawables) do		
-		profiler:profile('pre-drawing ' .. k .. ' drawables', 	
-			function()	
+		profiler:profile('pre-drawing ' .. k .. ' drawables', function()	
 				if type(t) == 'table' and t.draw then
 					t:draw(camera, drawTable)
 				else
@@ -236,24 +233,23 @@ function Renderer:draw(camera, drawables, profiler)
 						i:draw(camera, drawTable)
 					end
 				end
-			end)
+			end) -- profile
 	end
 	
-	profiler:profile('z-sorting', 
-		function()	
+	profiler:profile('z-sorting', function()	
 			table.sort(drawTable.object,function(a,b)
 				return a[1] < b[1] end)
 
 			table.sort(drawTable.roof,function(a,b)
 				return a[1] < b[1] end)
-		end)
+		end) -- profile
 	
 		--[[
 	profiler:profile('updating lighting for objects', 		
 		function()
 			self:setDirectionalLight( { spotSize = 0.3 } )
 			self:updateLightEffect(camera)
-		end)
+		end) -- profile
 		]]
 	
 	-- @TODO the shadow direction
@@ -262,8 +258,7 @@ function Renderer:draw(camera, drawables, profiler)
 	-- in screen space
 
 	-- draw the objects and their shadows
-	profiler:profile('drawing objects and actors and shadows', 		
-		function()
+	profiler:profile('drawing objects and actors and shadows', function()
 			for k, v in ipairs(drawTable.object) do
 				love.graphics.setPixelEffect(self._shaders.shadow)				
 					
@@ -279,11 +274,10 @@ function Renderer:draw(camera, drawables, profiler)
 					v[3], v[4], 0, v[5], v[6], 
 					v[7], v[8])
 			end	
-	end)
+	end) -- profile
 	
 	-- draw the roof shadows
-	profiler:profile('drawing roof shadows', 		
-		function()	
+	profiler:profile('drawing roof shadows', function()	
 			love.graphics.setPixelEffect(self._shaders.shadow)				
 			for k, v in ipairs(drawTable.roof) do		
 				love.graphics.draw(v[2],
@@ -292,30 +286,27 @@ function Renderer:draw(camera, drawables, profiler)
 					self._lighting.shadowSkew[1], 
 					self._lighting.shadowSkew[2])
 			end
-		end)
+		end) -- profile
 	
 	-- draw the roof objects	
-	profiler:profile('drawing roof tiles', 		
-		function()	
+	profiler:profile('drawing roof tiles', function()	
 			love.graphics.setPixelEffect(self._currentShader)		
 			for k, v in ipairs(drawTable.roof) do	
 				love.graphics.draw(v[2], 
 					v[3], v[4], 0, v[5], v[6], 
 					v[7], v[8])
 			end		
-		end)
+		end) -- profile
 
 	-- render all of the text objects
-	profiler:profile('drawing text objects', 	
-		function()		
-			love.graphics.setColorMode('modulate')
+	profiler:profile('drawing text objects', function()		
 			for k, v in ipairs(drawTable.text) do
 				love.graphics.setFont(v[2])
 				love.graphics.setColor(unpack(v[3]))
 				love.graphics.print(v[1], v[4], v[5], 0, 
 					drawTable.zoomX, drawTable.zoomY)	
 			end
-		end)
+		end) -- profile
 end
 
 --

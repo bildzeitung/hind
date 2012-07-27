@@ -504,8 +504,7 @@ function World:draw()
 		self._profiler )
 	
 	-- draw collision boundaries?		
-	self._profiler:profile('drawing collision boundaries',
-		function()
+	self._profiler:profile('drawing collision boundaries', function()
 			if self._showCollisionBoundaries then
 				local cw = self._camera:window()
 				for k, _ in pairs(self._visibleIds) do
@@ -524,14 +523,10 @@ function World:draw()
 					end
 				end		
 			end
-		end)
+		end) -- profile
 	
-	love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)	
-	love.graphics.print('MEMORY IN USE '.. string.format('%.2f', collectgarbage('count')), 10, 85)			
-				
 	-- draw info text
-	self._profiler:profile('drawing info text', 	
-		function()		
+	self._profiler:profile('drawing info text', function()		
 			if self._drawInfoText then
 				love.graphics.setColor(255,255,255,255)		
 				love.graphics.setPixelEffect()
@@ -603,7 +598,7 @@ function World:draw()
 				love.graphics.print('CELLS LOADING '..table.count(self._map._cellsLoading), 400, y)		
 				y = y + 20				
 			end
-		end)		
+		end) -- profile	
 end
 
 --
@@ -696,13 +691,11 @@ end
 --  Updates the World
 ---
 function World:update(dt)
-	self._profiler:profile('executing timed events', 
-		function()
+	self._profiler:profile('executing timed events', function()
 			self:executeTimedEvents()
-		end)
+		end) -- profile
 
-	self._profiler:profile('saving actors', 
-		function()				
+	self._profiler:profile('saving actors', function()				
 			-- save actors if there are any to save
 			local actorsSaved = 0
 			for k, v in pairs(self._actorsToSave) do
@@ -711,21 +704,19 @@ function World:update(dt)
 				actorsSaved = actorsSaved + 1
 				if actorsSaved >= World.saveActorsPerFrame then break end
 			end	
-		end)
+		end) -- profile
 		
-	self._profiler:profile('receiving loaded actors', 
-		function()			
+	self._profiler:profile('receiving loaded actors', function()			
 			-- receive any actors that have been loaded
 			self:receiveLoadedActors()
-		end)
+		end) -- profile
 	
 	-- load actors just so that the functions that are waiting to be
 	-- executed on them can be executed and the actor saved to disk
 	-- again
 	self:cleanUpActorFunctions()
 	
-	self._profiler:profile('updating lighting', 
-		function()
+	self._profiler:profile('updating lighting', function()
 			-- @TODO proper day / night cycles with changing colour
 			-- and direction of light
 			self._renderer._lighting.origin[1] = self._renderer._lighting.origin[1] + 0.0001
@@ -737,86 +728,76 @@ function World:update(dt)
 			local srange = self._renderer._lighting.shadowSkewMinMax[2] - self._renderer._lighting.shadowSkewMinMax[1]
 			local scaled = (self._renderer._lighting.origin[1]  - self._renderer._lighting.originMinMax[1]) / orange
 			self._renderer._lighting.shadowSkew[1] = self._renderer._lighting.shadowSkewMinMax[1] + (scaled * srange)
-		end)
+		end) -- profile
 	
-	self._profiler:profile('permanently removing actors', 
-		function()			
+	self._profiler:profile('permanently removing actors', function()			
 			-- remove all entities that were scheduled for removal
 			for k, v in pairs(self._removals) do		
 				self:removeActor(v)
 				self._removals[k] = nil
 			end	
-		end)
+		end) -- profile
 	
 	-- do the actor's AI updates
-	self._profiler:profile('updating AI', 
-		function()
+	self._profiler:profile('updating AI', function()
 			for _, a in pairs(self._visibleActors) do
 				if a.AI then
 					a:AI()
 				end					
 			end	
-		end)
+		end) -- profile
 
 	-- update the floating texts
-	self._profiler:profile('updating floating texts', 
-		function()		
+	self._profiler:profile('updating floating texts', function()		
 			for _, t in pairs(self._floatingTexts) do
 				t:update(dt)
 			end
-		end)
+		end) -- profile
 		
 	-- update only the visible actors
-	self._profiler:profile('updating actors', 
-		function()		
+	self._profiler:profile('updating actors', function()		
 			for _, a in pairs(self._visibleActors) do
 				a:update(dt)
 			end
-		end)	
+		end) -- profile
 
 	-- update the collision buckets
-	self._profiler:profile('updating collision buckets', 
-		function()			
+	self._profiler:profile('updating collision buckets', function()			
 			for _, a in pairs(self._visibleActors) do
 				a:registerBuckets(self._map._buckets)
 			end	
-		end)
+		end) -- profile
 	
 	-- test collistions for all visible actors
-	self._profiler:profile('testing collisions', 
-		function()				
+	self._profiler:profile('testing collisions', function()				
 			for _, a in pairs(self._visibleActors) do
 				a:checkCollision(self._map._buckets)
 			end	
-		end)
+		end) -- profile
 		
 	-- zoom and center the map on the main character
-	self._profiler:profile('updating camera', 
-		function()
+	self._profiler:profile('updating camera', function()
 			self._camera:zoom(self._zoom )
 			self._camera:center(self._hero._position[1], self._hero._position[2])
 		end)
 	
 	-- get the list of visible ids
-	self._profiler:profile('getting list of ids near map centre', 
-		function()
+	self._profiler:profile('getting list of ids near map centre', function()
 			self._map:visibleIds(self._visibleIds)
-		end)
+		end) -- profile
 	
 	-- clear the list of visible items
-	self._profiler:profile('wiping out old visible items',
-		function()
+	self._profiler:profile('wiping out old visible items', function()
 			for k, _ in pairs(self._visibleObjects) do
 				self._visibleObjects[k] = nil
 			end	
 			for k, _ in pairs(self._visibleActors) do
 				self._visibleActors[k] = nil
 			end	
-		end)
+		end) -- profile
 		
 	-- generate a list of visible items
-	self._profiler:profile('generating list of visible items',
-		function()				
+	self._profiler:profile('generating list of visible items', function()				
 			for k, _ in pairs(self._visibleIds) do
 				for _, v in pairs(self._map._buckets[k]) do
 					if v.ACTOR or v.STATICACTOR then
@@ -829,7 +810,7 @@ function World:update(dt)
 					end	
 				end
 			end	
-		end)
+		end) -- profile
 		
 	self._map:update(dt, self._camera, self._profiler)
 end

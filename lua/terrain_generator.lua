@@ -9,8 +9,6 @@ local Object = (require 'object').Object
 local marshal = require 'marshal'
 local log = require 'log'
 
-require 'map'
-
 local pairs, ipairs, math, table, love
 	= pairs, ipairs, math, table, love
 
@@ -413,24 +411,24 @@ function TerrainGenerator:createActors(xpos, ypos, sx, sy)
 	elseif xpos == 500160 then
 		self:createTeleporter(500310, 500032, 500030, 500032)
 	end
-
 	
-	--[[
-	local npc = Actor.create('content/actors/male_human.dat')
+	local npc = NPC.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000
 	npc:direction('down')
 	npc:animation('stand')
-	npc:position(500000*32,500000*32)
 	npc:name('Bilbo')
-	actors[npc._id] = npc	
+	self:addActor(npc, xpos + 120, ypos + 120)
 	
+	--[[
 	local dg = DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = self._hero }	
+	local d = dg:dialog{ npc = npc }
 	d.on_finish = function(self)
 		self._npc:removeDialog(self)
 	end
-	
+	npc:addDialog(d)	
+	]]
+	--[[
 	local npc = Actor.create('content/actors/male_human.dat')
 	npc._health = 2000
 	npc._maxHealth = 2000

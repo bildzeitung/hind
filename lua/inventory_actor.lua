@@ -284,7 +284,8 @@ function InventoryActor:equipItem(slot, item)
 	
 	self._equipped[slot] = item
 	item._actor = self	
-	
+
+	item:direction(self._direction)
 	if self._currentAnimation then
 		item:animation(self._currentAnimation:name())
 	end

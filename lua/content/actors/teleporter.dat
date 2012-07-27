@@ -9,13 +9,15 @@
 			other:position(self._location[1], self._location[2])
 			other:update(0)
 			other:registerBuckets(world._map._buckets)			
-			
+
+			-- save this because we don't know if other will be around
+			-- in 15000 ms
+			local otherId = other._id
 			-- reset the use of the teleporter after a few seconds
 			world:timer(15000, 
-				function()
-					log.log('-- 15 SECONDS BING! --')
-					self._collidees[other._id] = nil
-				end)
+				function(self)
+					self._collidees[otherId] = nil					
+				end, self._id)
 		end
 	end,
 	location = function(self, x, y)

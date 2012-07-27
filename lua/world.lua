@@ -35,8 +35,9 @@ World = Object{ _init = { '_profiler' } }
 
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
-World.saveActorsPerFrame = 2
-World.loadActorsPerFrame = 2
+World.saveActorsPerFrame = 1
+World.loadActorsPerFrame = 1
+World.actorsToCleanPerFrame = 1
 
 --
 --  World constructor
@@ -45,17 +46,32 @@ function World:_clone(values)
 	local o = Object._clone(self,values)
 			
 	o._renderer = Renderer{}
-	o._removals = {}
 	o._visibleIds = {}
 	o._visibleActors = {}	
 	o._visibleObjects = {}
 	o._floatingTexts = {}		
+	
 	o._zoom = 1
 	o._showCollisionBoundaries = false	
 	o._drawInfoText = true			
+
+	-- actors that are to be permanent removed from
+	-- the game world
+	o._removals = {}	
+	-- actors that still need to be saved to disk
+	-- at the rate of saveActorsPerFrame per frame
 	o._actorsToSave = {}
+	-- actors that are in memory waiting for their	
+	-- corresponding map cells to be loaded
 	o._actorsToRegister = {}
-	
+	-- functions that should be executed
+	-- on actors when they are loaded
+	o._functionsOnLoad = {}
+	-- actors that are being loaded just to
+	-- execute functions on them and then
+	-- save them again
+	o._actorsBeingCleanedUp = {}
+	-- timed functions that have been scheduled
 	o._timedEvents = pq.new()
 	
 	local thread = love.thread.getThread('fileio')
@@ -65,18 +81,59 @@ function World:_clone(values)
 end
 
 --
+--  Sets actors to be loaded so that any
+--  functions that need to be executed on them
+--  will be executed
+--
+function World:cleanUpActorFunctions()
+	local actorsCleanedUp = 0
+	for id, _ in pairs(self._functionsOnLoad) do
+		self._actorsBeingCleanedUp[id] = true
+		self._communicator:send('loadActor',id)
+		
+		actorsCleanedUp = actorsCleanedUp + 1
+		if actorsCleanedUp >= World.actorsToCleanPerFrame then
+			break
+		end
+	end
+end
+
+--
+--  Adds a function to the list of functions to perform when 
+--	an actor is loaded
+--
+function World:addFunctionOnLoad(id, fn)
+	if not self._functionsOnLoad[id] then
+		self._functionsOnLoad[id] = {}
+	end
+	
+	table.insert(self._functionsOnLoad[id], fn)
+end
+
+--
+--  Performs all of the functions for a given
+--  actor id
+--
+function World:performOnLoadFunctions(actor)
+	if not self._functionsOnLoad[actor._id] then return end
+	for _, fn in ipairs(self._functionsOnLoad[actor._id]) do
+		fn(actor)		
+	end
+	self._functionsOnLoad[actor._id] = nil
+end
+
+--
 --  Add a timed event to the world. After ms ms fn will be executed 
 --  with this as argument
 --
--- 	@TODO figure out an efficient way to store
--- 	and query these timed functions. Probably a priority queue would
--- 	be a good option because we always want to execute
--- 	the function that is closest to now so we could store
--- 	the functions with the priority being their execution time	
+--  Inputs:
+--		ms - the number of milliseconds from now to execute the function
+--		fn - the function to execute
+--		id - id of the actor making the request (or nil)
 --
-function World:timer(ms, fn)
+function World:timer(ms, fn, id)
 	local executionTime = love.timer.getMicroTime() + (ms / 1000)
-	self._timedEvents:push(fn, executionTime)
+	self._timedEvents:push({fn, id}, executionTime)
 end
 
 --
@@ -90,12 +147,23 @@ function World:executeTimedEvents()
 	repeat
 		if self._timedEvents:isempty() then break end
 		notReady = true
-		local fn, ms = self._timedEvents:pop()
+		local t, ms = self._timedEvents:pop()
 		if ms <= love.timer.getMicroTime() then
-			fn()
 			notReady = false
+			local fn = t[1]
+			local id = t[2]			
+			if id then
+				local actor = self:actor(id)
+				if not actor then
+					self:addFunctionOnLoad(id, fn)
+				else
+					fn(actor)
+				end
+			else
+				fn()
+			end
 		else
-			self._timedEvents:push(fn,ms)
+			self._timedEvents:push(t,ms)
 		end		
 	until notReady 
 end
@@ -130,16 +198,29 @@ function World:receiveLoadedActors()
 			received = true
 			local actor = marshal.decode(s)
 			
-			-- if an actor wanders off the currently loaded map
-			-- it needs to be saved to disk and added to cell that it wandered
-			-- off to
-			actor.on_no_buckets = function(actor)
-				self:addActorToCell(actor)
+			-- perform any actions that have been waiting for this actor
+			self:performOnLoadFunctions(actor)
+			
+			-- was this actor loaded just to clean up functions that needed
+			-- to be executed?
+			if self._actorsBeingCleanedUp[actor._id] then
+				-- save the actor again
+				self._actorsToSave[actor._id] = actor
+				-- no need to clean up this actor anymore
+				self._actorsBeingCleanedUp[actor._id] = nil
+			else			
+				-- if an actor wanders off the currently loaded map
+				-- it needs to be saved to disk and added to cell that it wandered
+				-- off to
+				actor.on_no_buckets = function(actor)
+					self:addActorToCell(actor)
+				end
+				
+				-- update the actor and register it in collision buckets
+				actor:update(0)
+				actor:registerBuckets(self._map._buckets)
 			end
-			
-			actor:update(0)
-			actor:registerBuckets(self._map._buckets)
-			
+						
 			actorsLoaded = actorsLoaded + 1
 			if actorsLoaded >= World.loadActorsPerFrame then 
 				break
@@ -175,10 +256,11 @@ function World:addActorToCell(actor)
 		-- register the actor again when the map cell is loaded
 		self:addActorToRegister(actor, hash)
 	else	
-		-- save the actor and add it to the cell
+		-- save the actor 
 		self._actorsToSave[actor._id] = actor
 		self:disposeActor(actor)						
 
+		-- add the actor to the cell
 		self._communicator:send('addActorToCell',actor._id)	
 		self._communicator:send('addActorToCell',hash)
 	end
@@ -189,8 +271,8 @@ end
 --  Returns true if an actor exists in the game world
 --	false otherwise
 --
-function World:actorExists(id)
-	return self._visibleActors[id] ~= nil
+function World:actor(id)
+	return self._visibleActors[id]
 end
 
 --
@@ -271,7 +353,12 @@ function World:initialize()
 		-- load all of the actors saved in this map cell
 		for i = 1, #mc._actors do
 			local id = mc._actors[i]
-			if not self:actorExists(id) then
+			if not self:actor(id) then
+				-- if actors were being loaded just to
+				-- clean up their functions then
+				-- we want them for real now!
+				self._actorsBeingCleanedUp[id] = nil
+				-- load the actor
 				self:loadActor(id)
 			end
 		end
@@ -631,6 +718,11 @@ function World:update(dt)
 			-- receive any actors that have been loaded
 			self:receiveLoadedActors()
 		end)
+	
+	-- load actors just so that the functions that are waiting to be
+	-- executed on them can be executed and the actor saved to disk
+	-- again
+	self:cleanUpActorFunctions()
 	
 	self._profiler:profile('updating lighting', 
 		function()

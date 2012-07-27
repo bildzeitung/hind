@@ -21,11 +21,11 @@ Drawable = Object{}
 function Drawable:_clone(values)
 	local o = Object._clone(self,values)
 	
-	o._screenPos = { 0, 0 }
-	o._position = { 0, 0 }
+	o._screenPos = values._screenPos or { 0, 0 }
+	o._position = values._position or { 0, 0 }
 	o._drawTableEntry = { true, true, true, true, 
 		true, true, true, true }
-	o._direction = 'right'
+	o._direction = values._direction or 'right'
 	
 	return o
 end

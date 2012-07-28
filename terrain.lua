@@ -1,135 +1,71 @@
--- heightmap generation according to:
---   http://gameprogrammer.com/fractal.html#diamond
---
--- This is diamond-square algorithm, a kind of twisty red-black with noise
---
+-- fractal outline generator instead
+--[[
+   +----*----+
+   |         |
+   *         * 
+   |         | 
+   +----*----+
+--]]
 
-local base = 32 -- power of two
-local h    = base+1
-local w    = base+1
-
-math.randomseed(os.time())
-math.random() -- discard first value
-
--- init terrain
-local terrain = {}
-for i = 1,h do
-  terrain[i] = {}
+function p(x,y)
+	local m = { __tostring = function(s) return s.x..','..s.y end }
+	return setmetatable({x=x,y=y},m)
 end
 
--- set initial corners
-terrain[1][1] = 32
-terrain[h][1] = 32
-terrain[1][w] = 32
-terrain[h][w] = 32
-
-local mid    = base/2+1
-local step   = base
-local hrange = 32
- 
--- display the terrain map
-function pterrain()
-	for i=1,base+1 do
-	  local str = ''
-	  for j=1,base+1 do
-		local val = terrain[i]
-		if val then val = val[j] or '-' else val = '-' end
-	    str = str .. val .. ' '
-	  end
-	  print(str)
-	end
-	print()
+function mid(a,b)
+	return p( (a.x+b.x)/2, (a.y+b.y)/2 )
 end
 
--- ok, badly named: this fn modifies the value by [-step/2,step/2], and then
--- clamps the values to the range [0,64]
-function clamp(x,y)
-	terrain[y][x] = terrain[y][x] + math.random(-step/2,step/2)
-	terrain[y][x] = math.floor(terrain[y][x])
+function norm(a)
+	return math.sqrt( a.x*a.x + a.y*a.y )
 end
 
-while mid > 1 do
-	local hstep = step / 2  -- ain't no half-steppin'
-	
-	-- diamond step
-	for i=mid,h,step do
-		for j=mid,w,step do
-			terrain[i][j] = ( terrain[i-hstep][j-hstep] + terrain[i-hstep][j+hstep] + 
-						  	  terrain[i+hstep][j-hstep] + terrain[i+hstep][j+hstep] ) / 4
-			clamp(j,i)
-		end
+points = { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
+
+-- assume connected, in a sequence
+-- fracturing consists of:
+--  - adding a middle point to each line segment
+--  - iterating through the intial points; take the prev and next points in the list and
+--    calculate the perpendicular vector norm
+--  - scale the x,y of said norm and add it to the initial point (so, we wobble it)
+--  - return the new point set and the subdivision scaling factor (length) value to use
+-- 
+function fracture(points)
+	local nextgen = {}
+
+	for i=1,#points do
+		local a,b = points[i],points[(i% #points)+1]
+		local m   = mid(a,b)
+		nextgen[#nextgen+1] = a
+		nextgen[#nextgen+1] = m
 	end
 
-	--pterrain()
-	
-	function diamond( x, y )
-	  local avg = 0
-	  local sum = 0
+	local length = points.length
+	for i=1,#nextgen,2 do
+		local nxt = nextgen[i+1]
+		local prv = nextgen[(i+#nextgen-2)%#nextgen+1]
+		local cur = nextgen[i]
 
-	  if x < w then
-	    sum = sum + terrain[y][x+hstep]
-	    avg = avg + 1
-	  end
+		local dspx = math.random(length) - (length/2) -- [-length,length]
+		local dspy = math.random(length) - (length/2) -- [-length,length]
+		local v   = p(nxt.x - prv.x, nxt.y-prv.y)
+		local nrm = norm(v)
+		v = p(-v.y/nrm*dspy,v.x/nrm*dspx)
 
-	  if x-step > 0 then
-	    sum = sum + terrain[y][x-hstep]
-	    avg = avg + 1
-	  end
-
-	  if y-step > 0 then
-	    sum = sum + terrain[y-hstep][x]
-	    avg = avg + 1
-	  end
-
-	  if y < h then
-	    sum = sum + terrain[y+hstep][x]
-	    avg = avg + 1
-	  end
-
-	  terrain[y][x] = sum / avg
-	  clamp(x,y)
+		cur.x = v.x + cur.x
+		cur.y = v.y + cur.y
 	end
 
-	-- square step
-	for i=mid,h, step do
-		for j=mid,w, step do
-			diamond( j - hstep, i )
-			diamond( j,         i - hstep )
-			diamond( j + hstep, i )
-			diamond( j,         i + hstep )
-		end
-	end
+	nextgen.length = length / 2
 
-	--pterrain()	
-	--print(';;;')
-
-	step   = step / 2
-	mid    = math.ceil(mid/2)
-	hrange = hrange / 2
+	return nextgen
 end
 
--- @TODO: this must become a running average
-sum = 0
-avg = 0
-for i=1,base+1 do
-	for j=1,base+1 do
-		sum = sum + terrain[i][j]
-	end
+-- do the subdivision
+while points.length > 1 do
+	points = fracture(points)
+	for k,v in ipairs(points) do print(v) end
+	print '--'
 end
-sum = sum / ((base+1)*(base+1))
-print('avg: ',sum)
 
-for i=1,base+1 do
-  local str = ''
-  for j=1,base+1 do
-	local val = terrain[i][j]
-	if val < sum then 
-		val = ' '
-	else
-		val = '.'
-	end
-    str = str .. val .. ' '
-  end
-  print(str)
-end
-print()
+-- raster out the result into the map

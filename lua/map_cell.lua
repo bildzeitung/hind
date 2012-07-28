@@ -53,6 +53,8 @@ function MapCell:_clone(values)
 	o._framesNotUsed = 0	
 	-- the spatial hash for the cell
 	o._hash = false
+	-- the area that the map cell belongs to
+	o._area = false
 	
 	o.__tostring = function()
 		return string.format('Map Cell -> l: %d, t: %d, r: %d, b: %d', 
@@ -106,10 +108,11 @@ end
 --
 --  Sets the tile data for this map cell
 --
-function MapCell:data(tiles, actors)
+function MapCell:data(tiles, area, actors)
 	self._tiles = tiles
+	self._area = area
 
-	local objs = tiles[Map.layers+1]
+	local objs = self._tiles[Map.layers+1]
 	for i = 1, #objs do
 		table.insert(self._objects, self:createObject(objs[i]))
 	end

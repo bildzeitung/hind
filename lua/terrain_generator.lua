@@ -9,8 +9,8 @@ local Object = (require 'object').Object
 local marshal = require 'marshal'
 local log = require 'log'
 
-local pairs, ipairs, math, table, love
-	= pairs, ipairs, math, table, love
+local pairs, ipairs, math, table, love, tostring
+	= pairs, ipairs, math, table, love, tostring
 
 module('objects')
 
@@ -221,6 +221,8 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 	local tiles = self._tiles
 	self._objects = {}
 	local objects = self._objects
+	self._areas = {}
+	local areas = self._areas
 	
 	-- create a table to hold all of the tiles
 	for i = 1, Map.layers do
@@ -229,9 +231,13 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 	for y = 1, sy do		
 		for i = 1, Map.layers do
 			tiles[i][y] = {}
+			areas[y] = {}
 		end
 	end
 		
+	local areaNames = 
+	{ 'Indian Ocean', 'Area 2', 'Area 3', 'Area 4', 'Grasslands', 'Dirtlands', 'Area 7', 'Area 8', 'Area 9', 'Area 10' }
+	
 	-- start with all water	
 	for y = 1, sy do
 		for x = 1, sx do
@@ -256,6 +262,14 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 			end
 		end
 	end
+	
+	-- assign area names
+	for y = 1, sy do
+		for x = 1, sx do			
+			local areaNumber = math.floor(tiles[1][y][x] / 18) + 1
+			areas[y][x] = areaNames[areaNumber]
+		end
+	end			
 	
 	-- generate tile transitions
 	self:transitions(tiles)
@@ -305,6 +319,7 @@ function TerrainGenerator:splitIntoCells(xpos, ypos)
 	local tiles = self._tiles
 	local objects = self._objects
 	local actors = self._actors
+	local areas = self._areas
 	local sy = #tiles[1]
 	local sx = #tiles[1][1]
 	
@@ -338,6 +353,7 @@ function TerrainGenerator:splitIntoCells(xpos, ypos)
 						if i == 1 and objects[yy][xx] then
 							table.insert(mc._tiles[Map.layers+1], objects[yy][xx])
 						end
+						mc._area = areas[yy][xx]
 					end
 				end
 			end
@@ -453,8 +469,11 @@ function TerrainGenerator:saveMapCell(mc)
 	--log.log('Saving generated map cell: ' .. mc._hash)
 	
 	self._communicator:send('saveMapCell',mc._hash)
-	local s = marshal.encode(mc._tiles)		
+	local s = marshal.encode(mc._tiles)
 	self._communicator:send('saveMapCell',s)
+
+	self._communicator:send('saveMapCell',mc._area)
+	
 	local s = marshal.encode(mc._actors)	
 	self._communicator:send('saveMapCell',s)		
 	

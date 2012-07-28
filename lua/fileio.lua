@@ -89,13 +89,19 @@ end
 function saveMapCell(hash)
 	log.log('Save Map Cell: ' .. hash)		
 	local tiles = communicator:demand('saveMapCell')
+	local area = communicator:demand('saveMapCell')
 	local actors = communicator:demand('saveMapCell')
 
 	local f = io.open('map/' .. hash .. '.dat' ,'wb')		
 	if not f then 
 		log.log('There was a problem saving the map cell #' .. hash)
 	end		
+	f:write(#tiles)
+	f:write('_')
 	f:write(tiles)	
+	f:write(#area)
+	f:write('_')
+	f:write(area)
 	f:close()
 	
 	local f = io.open('map/act-' .. hash .. '.dat' ,'wb')		
@@ -112,7 +118,7 @@ end
 function loadMapCell(hash)
 	log.log('Load Map Cell: ' .. hash)		
 	
-	local tiles, actors
+	local tiles, area, actors
 	
 	local f = io.open('map/' .. hash .. '.dat', 'rb')
 	if not f then 
@@ -120,7 +126,12 @@ function loadMapCell(hash)
 		communicator:send('loadedMapCell', 0)
 		return
 	end		
-	tiles = f:read('*all')
+	local bytes = f:read('*number')
+	f:read(1)
+	tiles = f:read(bytes)
+	bytes = f:read('*number')
+	f:read(1)
+	area = f:read(bytes)	
 	f:close()	
 	
 	local f = io.open('map/act-' .. hash .. '.dat' ,'rb')		
@@ -133,6 +144,7 @@ function loadMapCell(hash)
 	
 	communicator:send('loadedMapCell', hash)
 	communicator:send('loadedMapCell', tiles)
+	communicator:send('loadedMapCell', area)
 	communicator:send('loadedMapCell', actors)
 end
 

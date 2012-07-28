@@ -33,6 +33,7 @@ module('objects')
 
 World = Object{ _init = { '_profiler' } }
 
+World.hugeFont = love.graphics.newFont(80)
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
 World.saveActorsPerFrame = 1
@@ -76,6 +77,8 @@ function World:_clone(values)
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }
+	
+	o._eventText = nil
 
 	return o
 end
@@ -505,6 +508,18 @@ function World:draw()
 		}, 
 		self._profiler )
 	
+	--[[
+	local x, y = self._map:posToTile(self._hero._boundary[1], self._hero._boundary[2])
+	local hash = Map.hash(x,y)
+	local cell = self._map._cellsInMemory[hash]
+	
+	if cell then
+		local cw = self._camera:window()
+		local b = cell._extents
+		love.graphics.rectangle('line', b[1] * 32 - cw[1], b[2] * 32 - cw[2], b[3] * 32 - b[1] * 32, b[4] * 32 - b[2] * 32)
+	end
+	]]
+	
 	-- draw collision boundaries?		
 	--profiler:profile('drawing collision boundaries', function()
 			if self._showCollisionBoundaries then
@@ -635,7 +650,36 @@ function World:disposeActor(actor)
 end
 
 --
---  Creates floating text
+--  Creates a floating text that is suitable as an event title
+--
+function World:createEventText(text)
+	local font = World.hugeFont
+	-- @TODO we could store this somewhere if we wanted to instead of
+	-- querying every time
+	local screenWidth, screenHeight = love.graphics.getMode()
+	
+	local textWidth = font:getWidth(text)
+	
+	if self._eventText then
+		self._eventText:on_expired()
+	end
+	
+	self._eventText = factories.createFloatingText( text, World.hugeFont,
+		{ 255, 255, 255, 255}, 
+		{ (screenWidth / 2) - (textWidth / 2), 100},
+		{ 0, 0 }, 5, true)
+		
+	self._eventText.on_expired = function(ft)
+		self._floatingTexts[ft._id] = nil
+		self._eventText = nil
+	end
+	self._floatingTexts[#self._floatingTexts + 1] = self._eventText
+	self._eventText._id = #self._floatingTexts
+end
+
+--
+--  Creates floating text that is located initially at an actors location
+--  and moves up the screen
 --
 function World:createFloatingText(colour, actor, text)
 	local ft = factories.createFloatingText( text, World.largeFont,
@@ -817,4 +861,16 @@ function World:update(dt)
 		--end) -- profile
 		
 	self._map:update(dt, self._camera, self._profiler)
+
+	-- @TODO not sure if this is the right place for this
+	-- or the right way to do it but it works for now
+	-- check if hero has eneterd a new area
+	local x, y = self._map:posToTile(self._hero._boundary[1], self._hero._boundary[2])
+	local hash = Map.hash(x,y)
+	local cell = self._map._cellsInMemory[hash]
+	
+	if cell and self._hero._currentArea ~= cell._area then
+		self._hero._currentArea = cell._area
+		self:createEventText(cell._area)
+	end
 end

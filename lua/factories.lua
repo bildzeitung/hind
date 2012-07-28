@@ -155,8 +155,8 @@ end
 --
 --  Returns a floating text
 --  
-function createFloatingText(text, font, color, position, velocity, aliveTime)
+function createFloatingText(text, font, color, position, velocity, aliveTime, screenSpace)
 	local ft = objects.FloatingText
-		{ text, font, color, position, velocity, aliveTime}
+		{ text, font, color, position, velocity, aliveTime, screenSpace }
 	return ft
 end

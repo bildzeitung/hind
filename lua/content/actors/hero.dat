@@ -6,6 +6,7 @@
 	_health = 50,
 	_experience = 0,
 	_gold = 0,
+	_currentArea = '',
 	_attributes = 
 	{
 		experience = 0, gold = 0, mana = 200, manaRegen = 100, 

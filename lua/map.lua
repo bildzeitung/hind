@@ -281,14 +281,15 @@ function Map:receiveLoadedCells()
 		if hash and hash ~= 0 then
 			received = true			
 			local tiles = self._communicator:demand('loadedMapCell')
+			local area = self._communicator:demand('loadedMapCell')
 			local actors = self._communicator:demand('loadedMapCell')	
 			local x, y = Map.unhash(hash)			
 			local mc = MapCell{ self._tileSet, 
 				{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
 			mc._hash = hash			
 			self._cellsInMemory[hash] = mc
-			self._cellsLoading[hash] = nil			
-			mc:data(marshal.decode(tiles), marshal.decode(actors))
+			self._cellsLoading[hash] = nil				
+			mc:data(marshal.decode(tiles), area, marshal.decode(actors))
 			mc:registerBuckets(self._buckets)
 			if self.on_cell_load then
 				self:on_cell_load(mc)
@@ -306,8 +307,11 @@ end
 --	
 function Map:saveMapCell(mc)
 	self._communicator:send('saveMapCell',mc._hash)
-	local s = marshal.encode(mc._tiles)		
+	local s = marshal.encode(mc._tiles)
 	self._communicator:send('saveMapCell',s)
+	
+	self._communicator:send('saveMapCell',mc._area)	
+	
 	local s = marshal.encode(mc._actors)	
 	self._communicator:send('saveMapCell',s)		
 end

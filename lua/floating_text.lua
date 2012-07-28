@@ -65,9 +65,13 @@ function FloatingText:draw(camera, drawTable)
 			- cwzx)
 		self._screenPos[2] = math.floor((self._position[2] * zoomY)
 			- cwzy)
+		self._drawTable[6] = drawTable.zoomX
+		self._drawTable[7] = drawTable.zoomY
 	else
 		self._screenPos[1] = self._position[1]
 		self._screenPos[2] = self._position[2]
+		self._drawTable[6] = 1
+		self._drawTable[7] = 1
 	end
 	
 	local text = drawTable.text

@@ -33,7 +33,7 @@ module('objects')
 
 World = Object{ _init = { '_profiler' } }
 
-World.hugeFont = love.graphics.newFont(80)
+World.hugeFont = love.graphics.newFont(100)
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
 World.saveActorsPerFrame = 1

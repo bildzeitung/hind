@@ -309,7 +309,7 @@ function Renderer:draw(camera, drawables, profiler)
 				love.graphics.setFont(v[2])
 				love.graphics.setColor(unpack(v[3]))
 				love.graphics.print(v[1], v[4], v[5], 0, 
-					drawTable.zoomX, drawTable.zoomY)	
+					v[6], v[7])	
 			end
 		--end) -- profile
 end

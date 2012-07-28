@@ -37,7 +37,7 @@ World.hugeFont = love.graphics.newFont(100)
 World.largeFont = love.graphics.newFont(24)
 World.smallFont = love.graphics.newFont(12)
 World.saveActorsPerFrame = 1
-World.loadActorsPerFrame = 1
+World.loadActorsPerFrame = 2
 World.actorsToCleanPerFrame = 1
 
 --
@@ -81,6 +81,75 @@ function World:_clone(values)
 	o._eventText = nil
 
 	return o
+end
+
+--
+--  Initialize the world
+--
+--	@TODO replace this with actual procedural generation
+--
+function World:initialize()
+	local width, height, fullscreen, vsync, fsaa = love.graphics.getMode( )
+	self._camera = factories.createCamera()
+	self._camera:window(500000*32,500000*32,width,height)
+	self._camera:viewport(0,0,width,height)
+	
+	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
+	self._terrainGenerator:generate(499904,499904,256,256,'Sir Gallahad')
+	self._terrainGenerator:generate(500160,499904,256,256,'Sir Gallahad')
+	
+	self._map = factories.createMap('outdoor')	
+	self._map._profiler = self._profiler
+	
+	self._map.on_cell_dispose = function(map, mc)
+		-- look at the ids that are going to be removed
+		for k, _ in pairs(mc._bucketIds) do
+			if map._buckets['count' .. k] == 1 then
+				-- get rid of visible actors and objects that were in 
+				-- the buckets that will be disposed
+				for _, v in pairs(map._buckets[k]) do
+					if v._id then
+						self._actorsToSave[v._id] = v
+						self:disposeActor(v)
+					end
+				end
+			end		
+		end			
+	end
+	
+	self._map.on_cell_load = function(map, mc)
+		-- load all of the actors saved in this map cell
+		for i = 1, #mc._actors do
+			local id = mc._actors[i]
+			if not self:actor(id) then
+				-- if actors were being loaded just to
+				-- clean up their functions then
+				-- we want them for real now!
+				self._actorsBeingCleanedUp[id] = nil
+				-- load the actor
+				self:loadActor(id)
+			end
+		end
+		-- register all of the actors that were not saved to the cell
+		-- because they wandered into the cell's space as it was loading
+		if self._actorsToRegister[mc._hash] then
+			for _, actor in ipairs(self._actorsToRegister[mc._hash]) do
+				actor:update(0)
+				actor:registerBuckets(self._map._buckets)
+			end
+			self._actorsToRegister[mc._hash] = nil
+		end
+	end	
+	
+	self:createHero()
+	
+	--@TODO in a cave with a flashlight or similar
+	--[[
+	setSpotLight{ idx = 1, pos = {400,300} },
+								size = {300,225},
+								angle = {0,6.3},
+								color = {2,2,2} }
+	]]
 end
 
 --
@@ -192,6 +261,8 @@ end
 --	by the file io thread
 --
 function World:receiveLoadedActors()
+	local profiler = self._profiler
+	
 	local actorsLoaded = 0
 	local received = false
 	repeat
@@ -199,30 +270,33 @@ function World:receiveLoadedActors()
 		local s = self._communicator:receive('loadedActor')
 		if s then
 			received = true
-			local actor = marshal.decode(s)
-			
-			-- perform any actions that have been waiting for this actor
-			self:performOnLoadFunctions(actor)
-			
-			-- was this actor loaded just to clean up functions that needed
-			-- to be executed?
-			if self._actorsBeingCleanedUp[actor._id] then
-				-- save the actor again
-				self._actorsToSave[actor._id] = actor
-				-- no need to clean up this actor anymore
-				self._actorsBeingCleanedUp[actor._id] = nil
-			else			
-				-- if an actor wanders off the currently loaded map
-				-- it needs to be saved to disk and added to cell that it wandered
-				-- off to
-				actor.on_no_buckets = function(actor)
-					self:addActorToCell(actor)
-				end
+
+			--profiler:profile('creating actors', function()
+				local actor = marshal.decode(s)
 				
-				-- update the actor and register it in collision buckets
-				actor:update(0)
-				actor:registerBuckets(self._map._buckets)
-			end
+				-- perform any actions that have been waiting for this actor
+				self:performOnLoadFunctions(actor)
+				
+				-- was this actor loaded just to clean up functions that needed
+				-- to be executed?
+				if self._actorsBeingCleanedUp[actor._id] then
+					-- save the actor again
+					self._actorsToSave[actor._id] = actor
+					-- no need to clean up this actor anymore
+					self._actorsBeingCleanedUp[actor._id] = nil
+				else			
+					-- if an actor wanders off the currently loaded map
+					-- it needs to be saved to disk and added to cell that it wandered
+					-- off to
+					actor.on_no_buckets = function(actor)
+						self:addActorToCell(actor)
+					end
+					
+					-- update the actor and register it in collision buckets
+					actor:update(0)
+					actor:registerBuckets(self._map._buckets)
+				end
+			--end) -- profile
 						
 			actorsLoaded = actorsLoaded + 1
 			if actorsLoaded >= World.loadActorsPerFrame then 
@@ -317,74 +391,6 @@ function World:closestActor(actor)
 	end
 	
 	return closestActor, minDistance
-end
-
---
---  Initialize the world
---
---	@TODO replace this with actual procedural generation
---
-function World:initialize()
-	local width, height, fullscreen, vsync, fsaa = love.graphics.getMode( )
-	self._camera = factories.createCamera()
-	self._camera:window(500000*32,500000*32,width,height)
-	self._camera:viewport(0,0,width,height)
-	
-	self._terrainGenerator = factories.createTerrainGenerator('outdoor')		
-	self._terrainGenerator:generate(499904,499904,256,256,'Sir Gallahad')
-	self._terrainGenerator:generate(500160,499904,256,256,'Sir Gallahad')
-	
-	self._map = factories.createMap('outdoor')	
-	
-	self._map.on_cell_dispose = function(map, mc)
-		-- look at the ids that are going to be removed
-		for k, _ in pairs(mc._bucketIds) do
-			if map._buckets['count' .. k] == 1 then
-				-- get rid of visible actors and objects that were in 
-				-- the buckets that will be disposed
-				for _, v in pairs(map._buckets[k]) do
-					if v._id then
-						self._actorsToSave[v._id] = v
-						self:disposeActor(v)
-					end
-				end
-			end		
-		end			
-	end
-	
-	self._map.on_cell_load = function(map, mc)
-		-- load all of the actors saved in this map cell
-		for i = 1, #mc._actors do
-			local id = mc._actors[i]
-			if not self:actor(id) then
-				-- if actors were being loaded just to
-				-- clean up their functions then
-				-- we want them for real now!
-				self._actorsBeingCleanedUp[id] = nil
-				-- load the actor
-				self:loadActor(id)
-			end
-		end
-		-- register all of the actors that were not saved to the cell
-		-- because they wandered into the cell's space as it was loading
-		if self._actorsToRegister[mc._hash] then
-			for _, actor in ipairs(self._actorsToRegister[mc._hash]) do
-				actor:update(0)
-				actor:registerBuckets(self._map._buckets)
-			end
-			self._actorsToRegister[mc._hash] = nil
-		end
-	end	
-	
-	self:createHero()
-	
-	--@TODO in a cave with a flashlight or similar
-	--[[
-	setSpotLight{ idx = 1, pos = {400,300} },
-								size = {300,225},
-								angle = {0,6.3},
-								color = {2,2,2} }
-	]]
 end
 
 --

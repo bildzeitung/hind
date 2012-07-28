@@ -31,7 +31,7 @@ Map.lookAhead = Map.cellSize * 4
 Map.bucketCellSize = Map.cellSize * 32
 
 Map.disposeCellsPerFrame = 1
-Map.loadCellsPerFrame = 1
+Map.loadCellsPerFrame = 2
 
 --
 --  Returns a hash value of the supplied coordinates
@@ -279,6 +279,8 @@ end
 --	by the file io thread
 --
 function Map:receiveLoadedCells()
+	local profiler = self._profiler
+	
 	local cellsLoaded = 0
 	local received = false
 	repeat
@@ -291,21 +293,25 @@ function Map:receiveLoadedCells()
 			self._cellsLoading[hash] = nil
 		
 			if self._cellsShouldBeVisible[hash] then
-				received = true							
-				local x, y = Map.unhash(hash)			
-				local mc = MapCell{ self._tileSet, 
-					{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
-				mc._hash = hash			
-				self._cellsInMemory[hash] = mc				
-				mc:data(marshal.decode(tiles), area, marshal.decode(actors))
-				mc:registerBuckets(self._buckets)
-				if self.on_cell_load then
-					self:on_cell_load(mc)
-				end
+			
+				--profiler:profile('creating map cells', function()
+					received = true							
+					local x, y = Map.unhash(hash)			
+					local mc = MapCell{ self._tileSet, 
+						{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
+					mc._hash = hash			
+					self._cellsInMemory[hash] = mc				
+					mc:data(marshal.decode(tiles), area, marshal.decode(actors))
+					mc:registerBuckets(self._buckets)
+					if self.on_cell_load then
+						self:on_cell_load(mc)
+					end
+				--end) -- profile
+				
 				cellsLoaded = cellsLoaded + 1
 				if cellsLoaded >= Map.loadCellsPerFrame then 
 					break
-				end			
+				end				
 			end
 		end
 	until not received 

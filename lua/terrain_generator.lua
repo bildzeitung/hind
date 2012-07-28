@@ -235,9 +235,6 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 		end
 	end
 		
-	local areaNames = 
-	{ 'Indian Ocean', 'Area 2', 'Area 3', 'Area 4', 'Grasslands', 'Dirtlands', 'Area 7', 'Area 8', 'Area 9', 'Area 10' }
-	
 	-- start with all water	
 	for y = 1, sy do
 		for x = 1, sx do
@@ -265,9 +262,16 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 	
 	-- assign area names
 	for y = 1, sy do
-		for x = 1, sx do			
-			local areaNumber = math.floor(tiles[1][y][x] / 18) + 1
-			areas[y][x] = areaNames[areaNumber]
+		for x = 1, sx do
+			if y <= sy / 2 and x <= sx / 2 then
+				areas[y][x] = 'Upper Left'
+			elseif y <= sy / 2 and x > sx / 2 then
+				areas[y][x] = 'Upper Right'
+			elseif y > sy / 2 and x <= sx / 2 then
+				areas[y][x] = 'Lower Left'
+			elseif y > sy / 2 and x > sx / 2 then
+				areas[y][x] = 'Lower Right'
+			end				
 		end
 	end			
 	

@@ -76,6 +76,7 @@ function Map:_clone(values)
 	o._cellsLoading = {}	
 	o:createBuckets()
 	o._visibleCells = {}
+	o._cellsShouldBeVisible = {}
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }	
@@ -165,17 +166,22 @@ function Map:visibleCells()
 	for k, v in pairs(cells) do
 		cells[k] = nil
 	end
+	local shouldBeVisible = self._cellsShouldBeVisible
+	for k, v in pairs(shouldBeVisible) do
+		shouldBeVisible[k] = nil
+	end
 	
 	-- get all of the visible cells
 	for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
 		for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do			
-			local mc = self:mapCell(x,y)
+			local mc, hash = self:mapCell(x,y)
+			shouldBeVisible[hash] = true
 			if mc then
 				mc._visible = true
 				mc._framesNotUsed = 0
-				cells[#cells+1] = mc
+				cells[#cells+1] = mc				
 			else
-				cells[#cells+1] = false
+				cells[#cells+1] = false				
 			end
 		end		
 	end
@@ -251,14 +257,14 @@ function Map:mapCell(x, y)
 	
 	local mc = self._cellsInMemory[hash]	
 	
-	if mc then 
-		return mc 
-	else		
+	if not mc then
 		if not self._cellsLoading[hash] then
 			self._cellsLoading[hash] = true
 			self:loadMapCell(hash)
 		end		
 	end
+	
+	return mc, hash
 end
 
 --
@@ -279,24 +285,27 @@ function Map:receiveLoadedCells()
 		received = false
 		local hash = self._communicator:receive('loadedMapCell')
 		if hash and hash ~= 0 then
-			received = true			
 			local tiles = self._communicator:demand('loadedMapCell')
 			local area = self._communicator:demand('loadedMapCell')
 			local actors = self._communicator:demand('loadedMapCell')	
-			local x, y = Map.unhash(hash)			
-			local mc = MapCell{ self._tileSet, 
-				{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
-			mc._hash = hash			
-			self._cellsInMemory[hash] = mc
-			self._cellsLoading[hash] = nil				
-			mc:data(marshal.decode(tiles), area, marshal.decode(actors))
-			mc:registerBuckets(self._buckets)
-			if self.on_cell_load then
-				self:on_cell_load(mc)
-			end
-			cellsLoaded = cellsLoaded + 1
-			if cellsLoaded >= Map.loadCellsPerFrame then 
-				break
+			self._cellsLoading[hash] = nil
+		
+			if self._cellsShouldBeVisible[hash] then
+				received = true							
+				local x, y = Map.unhash(hash)			
+				local mc = MapCell{ self._tileSet, 
+					{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
+				mc._hash = hash			
+				self._cellsInMemory[hash] = mc				
+				mc:data(marshal.decode(tiles), area, marshal.decode(actors))
+				mc:registerBuckets(self._buckets)
+				if self.on_cell_load then
+					self:on_cell_load(mc)
+				end
+				cellsLoaded = cellsLoaded + 1
+				if cellsLoaded >= Map.loadCellsPerFrame then 
+					break
+				end			
 			end
 		end
 	until not received 

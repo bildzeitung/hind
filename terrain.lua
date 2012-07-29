@@ -89,7 +89,7 @@ print("Bounds",minpt,maxpt)
 
 -- raster out the result into the map
 local imin = p(1,1)
-local imax = p(32,32)
+local imax = p(124,124)
 local stx  = (imax.x-imin.x)/(maxpt.x-minpt.x)
 local sty  = (imax.y-imin.y)/(maxpt.y-minpt.y)
 
@@ -119,9 +119,43 @@ end
 for k,v in ipairs(points) do
 	local x = math.floor((v.x-minpt.x)*stx+imin.x)
 	local y = math.floor((v.y-minpt.y)*sty+imin.y)
-	--print(v,x,y)
-	map[y][x] = 1
 	points[k] = p(x,y)
+end
+
+-- use Bresenham to raster out the line segments
+function bresenham(p0,p1,m)
+	m[p0.y][p0.x] = 1
+	
+	local dx = math.abs(p1.x-p0.x)
+	local dy = math.abs(p1.y-p0.y)
+	
+	local sx, sy
+	if p0.x < p1.x then sx=1 else sx=-1 end
+	if p0.y < p1.y then sy=1 else sy=-1 end
+	
+	local err = dx-dy
+	
+	while true do
+		m[p0.y][p0.x] = 1
+		
+		if (p0.x == p1.x) and (p0.y == p1.y) then return end
+		
+		local e2 = 2*err
+		if e2 > -dy then
+			err = err-dy
+			p0.x = p0.x+sx
+		end
+		
+		if e2 < dx then
+			err = err+dx
+			p0.y = p0.y+sy
+		end
+	end
+end
+
+-- raster out the island onto the map
+for i=1,#points do
+	bresenham(points[i],points[(i% #points)+1],map)
 end
 
 displaymap(map)

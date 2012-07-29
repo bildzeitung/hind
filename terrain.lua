@@ -133,6 +133,38 @@ end
 --
 --
 --
+local function floodfill(m,pt)
+	local q = {}
+	
+	q[#q+1] = pt
+	
+	while #q>0 do
+		local pt = table.remove(q)
+		if m[pt.y][pt.x] == 0 then
+			m[pt.y][pt.x] = 1
+			
+			if pt.x > 1 then -- west
+				q[#q+1] = p(pt.x-1,pt.y)
+			end
+			
+			if pt.y > 1 then -- north
+				q[#q+1] = p(pt.x,pt.y-1)
+			end
+			
+			if pt.x < #m[pt.y] then -- east
+ 				q[#q+1] = p(pt.x+1,pt.y)
+			end
+			
+			if pt.y < #m then -- south
+				q[#q+1] = p(pt.x,pt.y+1)
+			end
+		end		
+	end
+end
+
+--
+--
+--
 function generatemap(points,height,width)
 	points = points or { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
 	
@@ -176,6 +208,8 @@ function generatemap(points,height,width)
 	for i=1,#points do
 		bresenham(points[i],points[(i% #points)+1],map)
 	end
+	
+	floodfill(map,p(math.floor(width/2),math.floor(height/2)))
 		
 	return map
 end

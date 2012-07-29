@@ -1,3 +1,5 @@
+module(...,package.seeall)
+
 -- fractal outline generator instead
 --[[
    +----*----+
@@ -5,9 +7,20 @@
    *         * 
    |         | 
    +----*----+
+
+   Basically, take an initial shape (currently hardcoded as a square), and 
+  take each line segment and subdivide it (the *'s). Then, wiggle the original
+  points by some value perpendicular to the *'s around it. Repeat process to
+  make the map more detailed. 
+
+  Re-map the point set into a map structure, drawing lines using Bresenham's 
+  algorithm.
 --]]
 
-function p(x,y)
+--
+-- simple point constructor; just has nice printing. Includes copy constructor
+--
+local function p(x,y)
 	local m = { __tostring = function(s) return s.x..','..s.y end }
 
 	-- copy constructor
@@ -18,17 +31,21 @@ function p(x,y)
 	return setmetatable({x=x,y=y},m)
 end
 
-function mid(a,b)
+--
+-- given two points, return a new point between them
+--
+local function mid(a,b)
 	return p( (a.x+b.x)/2, (a.y+b.y)/2 )
 end
 
-function norm(a)
+--
+-- given a point (vector), return the Euclidean norm
+--
+local function norm(a)
 	return math.sqrt( a.x*a.x + a.y*a.y )
 end
 
-points = { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
-
--- assume connected, in a sequence
+--
 -- fracturing consists of:
 --  - adding a middle point to each line segment
 --  - iterating through the intial points; take the prev and next points in the list and
@@ -36,7 +53,7 @@ points = { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
 --  - scale the x,y of said norm and add it to the initial point (so, we wobble it)
 --  - return the new point set and the subdivision scaling factor (length) value to use
 -- 
-function fracture(points)
+local function fracture(points)
 	local nextgen = {}
 
 	for i=1,#points do
@@ -67,44 +84,9 @@ function fracture(points)
 	return nextgen
 end
 
--- do the subdivision
-while points.length > 1 do
-	points = fracture(points)
-	--for k,v in ipairs(points) do print(v) end
-	--print '--'
-end
-
---  get bounding box
-local minpt = p(points[1])
-local maxpt = p(points[1])
-for _,v in ipairs(points) do
-	if v.x < minpt.x then minpt.x = v.x end
-	if v.y < minpt.y then minpt.y = v.y end
-
-	if v.x > maxpt.x then maxpt.x = v.x end
-	if v.y > maxpt.y then maxpt.y = v.y end
-end
-
-print("Bounds",minpt,maxpt)
-
--- raster out the result into the map
-local imin = p(1,1)
-local imax = p(124,124)
-local stx  = (imax.x-imin.x)/(maxpt.x-minpt.x)
-local sty  = (imax.y-imin.y)/(maxpt.y-minpt.y)
-
-print('Scaling: ',stx,sty)
-
-local map = {}
-
--- init map
-for i=1,imax.y do
-	map[i] = {}
-	for j =1,imax.x do
-		map[i][j] = 0
-	end
-end
-
+--
+--
+--
 function displaymap(m)
 	for i=1,#m do
 		local s = ''
@@ -115,15 +97,8 @@ function displaymap(m)
 	end
 end
 
--- transform window (line segment) space into view (map/raster) space 
-for k,v in ipairs(points) do
-	local x = math.floor((v.x-minpt.x)*stx+imin.x)
-	local y = math.floor((v.y-minpt.y)*sty+imin.y)
-	points[k] = p(x,y)
-end
-
 -- use Bresenham to raster out the line segments
-function bresenham(p0,p1,m)
+local function bresenham(p0,p1,m)
 	m[p0.y][p0.x] = 1
 	
 	local dx = math.abs(p1.x-p0.x)
@@ -153,9 +128,52 @@ function bresenham(p0,p1,m)
 	end
 end
 
--- raster out the island onto the map
-for i=1,#points do
-	bresenham(points[i],points[(i% #points)+1],map)
-end
+--
+--
+--
+function generatemap(points,height,width)
+	points = points or { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
+	
+	-- do the subdivision
+	while points.length > 1 do points = fracture(points) end
+	
+	--  get bounding box
+	local minpt = p(points[1])
+	local maxpt = p(points[1])
+	for _,v in ipairs(points) do
+		if v.x < minpt.x then minpt.x = v.x end
+		if v.y < minpt.y then minpt.y = v.y end
 
-displaymap(map)
+		if v.x > maxpt.x then maxpt.x = v.x end
+		if v.y > maxpt.y then maxpt.y = v.y end
+	end
+	
+	-- setup the map
+	local imin = p(1,1)
+	local imax = p(width,height)
+	
+	-- setup the scaling transformation
+	local stx  = (imax.x-imin.x)/(maxpt.x-minpt.x)
+	local sty  = (imax.y-imin.y)/(maxpt.y-minpt.y)
+	
+	-- init map
+	local map = {}
+	for i=1,imax.y do
+		map[i] = {}
+		for j =1,imax.x do map[i][j] = 0 end
+	end
+	
+	-- transform window (line segment) space into view (map/raster) space 
+	for k,v in ipairs(points) do
+		local x = math.floor((v.x-minpt.x)*stx+imin.x)
+		local y = math.floor((v.y-minpt.y)*sty+imin.y)
+		points[k] = p(x,y)
+	end
+
+	-- raster out the island onto the map
+	for i=1,#points do
+		bresenham(points[i],points[(i% #points)+1],map)
+	end
+		
+	return map
+end

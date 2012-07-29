@@ -12,6 +12,8 @@ require 'map_cell'
 
 local log = require 'log'
 
+local ffi = require 'ffi'
+
 local table, pairs, ipairs, math, io, love, tostring
 	= table, pairs, ipairs, math, io, love, tostring
 	
@@ -29,6 +31,10 @@ Map.unusedFrames = 60
 Map.lookAhead = Map.cellSize * 4
 -- the size of a bucket cell
 Map.bucketCellSize = Map.cellSize * 32
+-- the maximum number of tile rows in memory at once
+Map.maximumRows = Map.cellSize * 50
+-- the maximum number of tile rows in memory at once
+Map.maximumColumns = Map.cellSize * 50
 
 Map.disposeCellsPerFrame = 1
 Map.loadCellsPerFrame = 2
@@ -77,9 +83,14 @@ function Map:_clone(values)
 	o:createBuckets()
 	o._visibleCells = {}
 	o._cellsShouldBeVisible = {}
+	o._walkableMatrix = ffi.new('uint8_t[?]', 
+		Map.maximumRows * Map.maximumColumns)
 	
 	local thread = love.thread.getThread('fileio')
 	o._communicator = ThreadCommunicator{ thread }	
+	
+	local thread = love.thread.getThread('pathfind')
+	o._pathCommunicator = ThreadCommunicator{ thread }	
 	
 	return o
 end
@@ -156,6 +167,40 @@ function Map:update(dt, camera, profiler)
 	--profiler:profile('receiving loaded map cells', function()
 			self:receiveLoadedCells()
 		--end) -- profile
+end
+
+--
+--  Calculates the walkable matrix based on the cells that are in memory
+--
+function Map:calculateWalkableMatrix()
+	local profiler = self._profiler
+	profiler:profile('calculating walkable matrix', function()
+
+		self:visibleCells()
+		local cells = self._visibleCells
+		local walkable = self._walkableMatrix
+		local cc, ws = 0, 0
+		for y = self._cellMinMax[2], self._cellMinMax[4], Map.cellSize do
+			for x = self._cellMinMax[1], self._cellMinMax[3], Map.cellSize do				
+				local cell = cells[cc]	
+				if cell then					
+					local tiles = cell._tiles[Map.layers+2]		
+					for yy = 1, Map.cellSize do					
+						for xx = 1, Map.cellSize do					
+							walkable[ws] = tiles[yy][xx]
+							ws = ws + 1
+						end
+					end	
+				end
+				cc = cc + 1
+			end
+		end	
+		
+		self._pathCommunicator:send('setMatrix', marshal.encode(self._cellMinMax))
+		self._pathCommunicator:send('setMatrix', 
+			ffi.string(self._walkableMatrix, Map.maximumRows * Map.maximumColumns))
+			
+	end) -- profile
 end
 
 --
@@ -283,6 +328,7 @@ function Map:receiveLoadedCells()
 	
 	local cellsLoaded = 0
 	local received = false
+	local cellLoaded = false
 	repeat
 		received = false
 		local hash = self._communicator:receive('loadedMapCell')
@@ -295,7 +341,8 @@ function Map:receiveLoadedCells()
 			if self._cellsShouldBeVisible[hash] then
 			
 				--profiler:profile('creating map cells', function()
-					received = true							
+					received = true			
+					cellLoaded = true
 					local x, y = Map.unhash(hash)			
 					local mc = MapCell{ self._tileSet, 
 						{Map.cellSize, Map.cellSize}, {x, y}, Map.layers }
@@ -315,6 +362,8 @@ function Map:receiveLoadedCells()
 			end
 		end
 	until not received 
+	
+	if cellLoaded then self:calculateWalkableMatrix() end
 end
 
 --
@@ -361,6 +410,8 @@ function Map:disposeMapCell(mc)
 	mc:unregisterBuckets(self._buckets)
 	-- remove the references to all resources
 	self._cellsInMemory[mc._hash] = nil	
+	
+	self:calculateWalkableMatrix()
 end
 
 --

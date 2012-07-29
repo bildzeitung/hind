@@ -5,13 +5,10 @@
 ]]
 
 require 'table_ext'
-
-local log = require 'log'
-
-local marshal = require 'marshal'
-
+require 'love.timer'
 require 'thread_communicator'
-
+local log = require 'log'
+local marshal = require 'marshal'
 local thread = love.thread.getThread()
 local communicator = objects.ThreadCommunicator{ thread }
 
@@ -193,5 +190,7 @@ while true do
 		loadMapCell(msg)
 	elseif cmd == 'addActorToCell' then
 		addActorToCell(msg)
+	else
+		love.timer.sleep(0.001)
 	end
 end

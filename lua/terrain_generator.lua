@@ -343,19 +343,27 @@ function TerrainGenerator:splitIntoCells(xpos, ypos)
 			for i = 1, Map.layers do
 				mc._tiles[i] = {}
 			end
+			mc._tiles[Map.layers+1] = {}						
+			mc._tiles[Map.layers+2] = {}	
+			
 			for i = 1, Map.layers do
 				for y = 1, Map.cellSize do
-					mc._tiles[i][y] = {}
+					mc._tiles[i][y] = {}					
 				end
 			end
-			mc._tiles[Map.layers+1] = {}
+			for y = 1, Map.cellSize do
+				mc._tiles[Map.layers+2][y] = {}					
+			end			
 			
 			for i = 1, Map.layers do
 				for yy = y, y + Map.cellSize - 1 do
 					for xx = x, x + Map.cellSize - 1 do
 						mc._tiles[i][yy-y+1][xx-x+1] = tiles[i][yy][xx]
+						mc._tiles[Map.layers+2][yy-y+1][xx-x+1] = 0
 						if i == 1 and objects[yy][xx] then
 							table.insert(mc._tiles[Map.layers+1], objects[yy][xx])
+							-- a tile with an object is unwalkable
+							mc._tiles[Map.layers+2][yy-y+1][xx-x+1] = 1
 						end
 						mc._area = areas[yy][xx]
 					end

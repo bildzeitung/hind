@@ -30,6 +30,9 @@ function love.load()
 	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
 	fileiothread:start()
 	
+	pathfindthread = love.thread.newThread('pathfind', 'pathfind.lua') 
+	pathfindthread:start()	
+	
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)

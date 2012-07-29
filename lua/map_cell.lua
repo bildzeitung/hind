@@ -25,6 +25,7 @@ function MapCell:_clone(values)
 	o._totalTiles = o._size[1] * o._size[2] * o._layers	
 	-- a table for the tiles in layers	
 	-- info about objects is stored in layer Map.layers + 1
+	-- info about the walkability of tiles is stored in layer Map.layers + 2
 	o._tiles = {}
 	-- holds the objects that are created
 	-- from the info in the tile structure

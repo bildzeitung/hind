@@ -1,5 +1,3 @@
-module(...,package.seeall)
-
 -- fractal outline generator instead
 --[[
    +----*----+
@@ -16,6 +14,7 @@ module(...,package.seeall)
   Re-map the point set into a map structure, drawing lines using Bresenham's 
   algorithm.
 --]]
+module(...,package.seeall)
 
 --
 -- simple point constructor; just has nice printing. Includes copy constructor
@@ -70,8 +69,10 @@ local function fracture(points)
 
 		local dspx = math.random(length) - (length/2) -- [-length,length]
 		local dspy = math.random(length) - (length/2) -- [-length,length]
-		local v   = p(nxt.x - prv.x, nxt.y-prv.y)
+		local v   = p(nxt.x - prv.x, nxt.y-prv.y)     -- vector
 		local nrm = norm(v)
+		
+		-- perpendicular to norm, project a random distance
 		v = p(-v.y/nrm*dspy,v.x/nrm*dspx)
 
 		cur.x = v.x + cur.x
@@ -85,7 +86,7 @@ end
 
 
 --
---
+-- Debug function to view generated map
 --
 function displaymap(m)
 	for i=1,#m do
@@ -131,7 +132,13 @@ local function bresenham(p0,p1,m)
 end
 
 --
+-- Simple flood fill. 
 --
+-- The 80s want this algorithm back. Uses a queue instead of being recursive.
+--
+-- Params
+--   m, a map (table of tables)
+--  pt, a p()-generated starting point
 --
 local function floodfill(m,pt)
 	local q = {}
@@ -163,7 +170,22 @@ local function floodfill(m,pt)
 end
 
 --
+-- Return an island generated using a simple subdivision algorithm.
+-- 
+-- Params:
+--   points, a table of p()-generated points; treated as a closed polygon and
+--           the points are assumed to be in order; no set ranges (it'll be
+--           re-mapped onto the rasterized map anyway).
 --
+--           Important: a named parameter, called 'length' must be present,
+--           and this specifies how far the points can be moved. This is 
+--           divided by two (2) until < 2 for each subdivision round.
+--
+--  height, width, these are the size of the map, in pixels
+--
+-- Returns:
+--   a table of tables, with each entry representing a map square; 
+--   1 == "grass", 0 == "water"
 --
 function generatemap(points,height,width)
 	points = points or { p(0,0), p(0,64), p(64,64), p(64,0) ; length = 64 }
@@ -209,6 +231,7 @@ function generatemap(points,height,width)
 		bresenham(points[i],points[(i% #points)+1],map)
 	end
 	
+	-- assume the center of the map is a grass space; fill out from there
 	floodfill(map,p(math.floor(width/2),math.floor(height/2)))
 		
 	return map

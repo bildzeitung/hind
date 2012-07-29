@@ -20,7 +20,7 @@ module(...,package.seeall)
 --
 -- simple point constructor; just has nice printing. Includes copy constructor
 --
-local function p(x,y)
+function p(x,y)
 	local m = { __tostring = function(s) return s.x..','..s.y end }
 
 	-- copy constructor

@@ -250,33 +250,6 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 		end
 	end	
 		
-	--[[
-	-- start with all water	
-	for y = 1, sy do
-		for x = 1, sx do
-			tiles[1][y][x] = 11
-			if math.random() > 0.5 then
-				tiles[1][y][x] = math.floor(math.random() * 3) + 16
-			end
-		end
-	end			
-	
-	-- now add some land
-	for y = Map.cellSize, sy - Map.cellSize - 1, Map.cellSize do
-		for x = Map.cellSize, sx - Map.cellSize - 1, Map.cellSize do
-			local tt = math.floor(math.random(2)) + 3
-			for yy = y, y + Map.cellSize - 1 do
-				for xx = x, x + Map.cellSize - 1 do
-					tiles[1][yy][xx] = 11 + (tt*18)
-					if math.random() > 0.5 then
-						tiles[1][yy][xx] = math.floor(math.random() * 3) + 16 + (tt*18)
-					end
-				end
-			end
-		end
-	end
-	]]
-	
 	-- assign area names
 	for y = 1, sy do
 		for x = 1, sx do

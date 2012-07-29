@@ -4,6 +4,8 @@
 	Created JUN-21-2012
 ]]
 
+local terrain = require 'terrain'
+
 local Object = (require 'object').Object
 
 local marshal = require 'marshal'
@@ -234,7 +236,21 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 			areas[y] = {}
 		end
 	end
+	
+	
+	local map = terrain.generatemap(nil,sx,sy)	
+	
+	for y = 1,sy do
+		for x = 1,sx do
+			if map[y][x] > 0 then 
+				tiles[1][y][x] = 11 + (18*5)
+			else 
+				tiles[1][y][x] = 11
+			end
+		end
+	end	
 		
+	--[[
 	-- start with all water	
 	for y = 1, sy do
 		for x = 1, sx do
@@ -259,6 +275,7 @@ function TerrainGenerator:generate(xpos, ypos, sx, sy, heroName)
 			end
 		end
 	end
+	]]
 	
 	-- assign area names
 	for y = 1, sy do

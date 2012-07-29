@@ -3,7 +3,7 @@
 		if other.gold then
 			soundEffects['coin_pickup']:rewind()
 			love.audio.play(soundEffects['coin_pickup'])
-			removals[self._id] = self
+			world:scheduleRemoval(self)
 			other:gold(self._value)
 			self._value = nil			
 		end

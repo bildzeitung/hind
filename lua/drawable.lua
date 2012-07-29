@@ -21,10 +21,26 @@ Drawable = Object{}
 function Drawable:_clone(values)
 	local o = Object._clone(self,values)
 	
-	o._screenPos = { 0, 0 }
-	o._position = { 0, 0 }
+	o._screenPos = values._screenPos or { 0, 0 }
+	o._position = values._position or { 0, 0 }
+	o._drawTableEntry = { true, true, true, true, 
+		true, true, true, true }
+	o._direction = values._direction or 'right'
 	
 	return o
+end
+
+--
+--  Sets or gets the current direction
+--  
+function Drawable:direction(d)
+	if not d then return self._direction end
+	
+	if self._direction ~= d then
+		self._changeDirection = true
+	end
+	
+	self._direction = d
 end
 
 --
@@ -39,7 +55,13 @@ function Drawable:animation(a, r)
 		return self._currentAnimation
 	end
 	
-	self._currentAnimation = self._animations[a]
+	-- switch to the new animation
+	if self._animations[a] then
+		self._currentAnimation = self._animations[a]
+	else
+		self._currentAnimation = self._animations[a .. self._direction]
+	end				
+	
 	if r then
 		self._currentAnimation:reset()
 	end	
@@ -67,10 +89,16 @@ function Drawable:draw(camera, drawTable)
 	local tq = ts:quads()
 	local frame = self._currentAnimation:frame()
 	
-	object[#object+1] = { 
-		self._position[2] + of[2] - (self._position[1] * 1e-14),
-		tq[frame], self._screenPos[1], self._screenPos[2],
-		zoomX, zoomY, of[1], of[2] }
+	self._drawTableEntry[1] = self._position[2] + of[2] - (self._position[1] * 1e-14)
+	self._drawTableEntry[2] = tq[frame]
+	self._drawTableEntry[3] = self._screenPos[1]
+	self._drawTableEntry[4] = self._screenPos[2]
+	self._drawTableEntry[5] = zoomX
+	self._drawTableEntry[6] = zoomY
+	self._drawTableEntry[7] = of[1]
+	self._drawTableEntry[8] = of[2]
+			
+	object[#object+1] = self._drawTableEntry
 end
 
 --

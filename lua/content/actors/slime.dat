@@ -4,48 +4,55 @@
 	_health = 15,
 	_maxHealth = 15,
 	AI = function(self)
-		if self._currentAction ~= 'die' then
-			if self._currentAction ~= 'attack' and math.random() > 0.95 then
-				local xv = math.random()*200-100
-				local yv = math.random()*200-100
-						
-				if math.abs(xv) < 50 then xv = 0 end
-				if math.abs(yv) < 50 then yv = 0 end
-						
-				self:velocity(xv, yv)				
-					
-				if yv > 0 then
-					self:animation('walkdown')
-				elseif yv < 0 then
-					self:animation('walkup')
-				end
-						
-				if xv > 0 then 
-					self:animation('walkright')
-				elseif xv < 0 then
-					self:animation('walkleft')
-				end
+		if self._currentAction == 'die' 
+			or self._currentAction == 'attack' then 
+				return 
 			end		
-			if math.random() > 0.995 then
-				self:action('attack')
-			end										
-		end				
+			
+		if math.random() > 0.95 then
+			local xv = math.random()*100-50
+			local yv = math.random()*100-50
+					
+			if math.abs(xv) < 25 then xv = 0 end
+			if math.abs(yv) < 25 then yv = 0 end
+					
+			self:velocity(xv, yv)				
+				
+			if yv > 0 then
+				self:direction('down')
+				self:animation('walk')
+			elseif yv < 0 then
+				self:direction('up')
+				self:animation('walk')
+			end
+					
+			if xv > 0 then 
+				self:direction('right')
+				self:animation('walk')
+			elseif xv < 0 then
+				self:direction('left')
+				self:animation('walk')
+			end
+		end		
+		if math.random() > 0.995 then
+			self:action('attack')
+		end	
 	end,
 	on_set_health = function(self, newValue, justset)
 		if justset < 0 then
-			createFloatingText({255,0,0,255},self, -justset)
+			world:createFloatingText({255,0,0,255},self, -justset)
 		end
 	end,
 	on_begin_die = function(self)		
 		self:velocity(0,0)
 		if self._killer.experience then
 			self._killer:experience(100)			
-			createFloatingText({0,255,255,255},self._killer, 100)
+			world:createFloatingText({0,255,255,255},self._killer, 100)
 		end
 	end,		
 	on_end_die = function(self, other)			
-		removals[self._id] = self						
-		dropItem(self)
+		world:scheduleRemoval(self)
+		world:dropItem(self)
 	end,
 	on_begin_attack = function(self)
 	end,

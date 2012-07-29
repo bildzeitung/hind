@@ -1,0 +1,48 @@
+{
+	_ignoresHits = true,
+	_location = {},
+	on_collide = function(self, other)
+		if other.HERO and not self._collidees[other._id] then	
+			self._collidees[other._id] = true
+			soundEffects['coin_pickup']:rewind()
+			love.audio.play(soundEffects['coin_pickup'])
+			other:position(self._location[1], self._location[2])
+			other:update(0)
+			other:registerBuckets(world._map._buckets)			
+
+			-- save this because we don't know if other will be around
+			-- in 15000 ms
+			local otherId = other._id
+			-- reset the use of the teleporter after a few seconds
+			world:timer(15000, 
+				function(self)
+					self._collidees[otherId] = nil					
+				end, self._id)
+		end
+	end,
+	location = function(self, x, y)
+		if not x then return self._location end
+		
+		self._location[1] = x
+		self._location[2] = y
+	end,
+	__persistTable = function (self)
+		local t = objects.StaticActor.__persistTable(self)
+		t._location = { self._location[1], self._location[2] }
+		
+		return t
+	end,
+	_animations = 
+	{
+		default = 
+		{	
+			_tileSet = 'magic_torrent',
+			_offset = { 64, 128 },
+			_name = 'default',
+			_frameDuration = 0.1,
+			_frameStart = 1,
+			_frameEnd = 16,
+			_looping = 'loop'
+		}
+	}
+}

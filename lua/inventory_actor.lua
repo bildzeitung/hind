@@ -10,12 +10,30 @@ require 'actor'
 
 local log = require 'log'
 
+local factories = require 'factories'
+
 local table, pairs, ipairs, type, love
 	= table, pairs, ipairs, type, love
 	
 module('objects')
 
 InventoryActor = Object{}
+
+--
+--  Returns a new inventory actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--		existing - a table with existing information to merge into
+--		the actor (for deserialization)
+--
+function InventoryActor.create(filename, existing)
+	local t = factories.prepareActor(filename, existing)
+	local a = InventoryActor(t)
+	return a
+end
 
 --
 --  InventoryActor constructor
@@ -30,6 +48,18 @@ function InventoryActor:_clone(values)
 	o._inventory = {}
 	o.INVENTORYACTOR = true
 	
+	o._animSyncFn = function(anim)
+		for _, item in pairs(o._equipped) do
+			if item._currentAnimation._frameStart == anim._frameStart and
+				item._currentAnimation._frameEnd == anim._frameEnd then
+			
+					item._currentAnimation._frameCounter = anim._frameCounter
+					item._currentAnimation._frameDir = anim._frameDir
+					item._currentAnimation._currentFrame = anim._currentFrame
+			end
+		end
+	end
+		
 	return o
 end
 
@@ -45,6 +75,22 @@ function InventoryActor:update(dt)
 end
 
 --
+--  Sets or gets the current direction
+--  
+function InventoryActor:direction(d)
+	local ret = Drawable.direction(self, d)
+	
+	if d then
+		-- set the directions for the equipped items
+		for _, item in pairs(self._equipped) do
+			item:direction(d)
+		end
+	end
+	
+	return ret
+end
+
+--
 --  Sets or gets the current animation
 --
 --  Inputs:
@@ -52,30 +98,27 @@ end
 --		r - true if the animation should be reset
 --
 function InventoryActor:animation(a, r)	
-	if a and self._currentAnimation then
-		self._currentAnimation.on_frame_change = nil
-	end
+	local oldAnimation = self._currentAnimation
 	
 	local ret = Drawable.animation(self, a, r)
 	
+	-- was the animation changed?
+	if oldAnimation == self._currentAnimation then
+		return
+	end
+	
 	if a then
+		if oldAnimation then
+			oldAnimation.on_frame_change = nil
+		end
+	
 		-- set the animations for the equipped items
 		for _, item in pairs(self._equipped) do
 			item:animation(a, r)
 		end
 	
 		-- sync the animations
-		self._currentAnimation.on_frame_change = function(anim)
-			for _, item in pairs(self._equipped) do
-				if item._currentAnimation._frameStart == anim._frameStart and
-					item._currentAnimation._frameEnd == anim._frameEnd then
-				
-						item._currentAnimation._frameCounter = anim._frameCounter
-						item._currentAnimation._frameDir = anim._frameDir
-						item._currentAnimation._currentFrame = anim._currentFrame
-				end
-			end
-		end
+		self._currentAnimation.on_frame_change = self._animSyncFn
 	end
 	
 	return ret
@@ -241,7 +284,8 @@ function InventoryActor:equipItem(slot, item)
 	
 	self._equipped[slot] = item
 	item._actor = self	
-	
+
+	item:direction(self._direction)
 	if self._currentAnimation then
 		item:animation(self._currentAnimation:name())
 	end

@@ -13,8 +13,26 @@ require 'dialog_generator'
 require 'dialog_viewer'
 require 'inventory_viewer'
 require 'personality_viewer'
+require 'world'
+require 'NPC'
+
+local HERO_DEAD = -99
+local IN_GAME = 10
+
+--collectgarbage('stop')
+collectgarbage('setpause', 100)
+collectgarbage('setstepmul', 400)
+
+local Counters
+local Names
 
 function love.load()	
+	fileiothread = love.thread.newThread('fileio', 'fileio.lua') 
+	fileiothread:start()
+	
+	pathfindthread = love.thread.newThread('pathfind', 'pathfind.lua') 
+	pathfindthread:start()	
+	
 	profiler = objects.Profiler{}	
 	
 	largeFont = love.graphics.newFont(24)
@@ -45,7 +63,7 @@ function love.load()
 		'chain_armour', 'chain_helmet', 'plate_shoes', 
 		'plate_pants', 'longsword', 'monster', 'coins', 
 		'magic_firelion', 'magic_iceshield', 'potions',
-		'inventory_items'
+		'inventory_items', 'magic_torrent'
 	}
 		
 	for _, v in ipairs(load) do
@@ -53,79 +71,7 @@ function love.load()
 		tileSets[ts:name()] = ts
 	end
 	
-	-- the size of the world
-	local worldX = 500 * 32
-	local worldY = 500 * 32
-	buckets = createBuckets(250, worldX, worldY)
-		
-	daMap = factories.createMap('outdoor', { worldX / 32, worldY / 32 })
-	daMap:generate()
-	daMap:transitions()
-
-	daMap:createColliders(buckets)
-	
-	daCamera = factories.createCamera()
-	daCamera:window(2000,2000,screenWidth,screenHeight)
-	daCamera:viewport(0,0,screenWidth,screenHeight)
-	
-	shadowCanvas = love.graphics.newCanvas(screenWidth,screenHeight)
-	
-	createActors()
-	
-	npc = factories.createActor('content/actors/male_human.dat')
-	npc._health = 2000
-	npc._maxHealth = 2000
-	npc:animation('standright')
-	npc:position(daMap:size()[1]/2 - 100,daMap:size()[2]/2)
-	npc:map(daMap)
-	actors[npc._id] = npc
-	npc:name('Bilbo')
-	
-	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-	
-	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-
-	local dg = objects.DialogGenerator{ 'content/dialogs/lost_item.dat' }
-	local d = dg:dialog{ npc = npc, hero = hero }	
-	d.on_finish = function(self)
-		self._npc:removeDialog(self)
-	end
-		
-	zoom = 1
-	showCollisionBoundaries = false
-	
-	visibleIds = {}
-	visibleActors = {}	
-	visibleObjects = {}
-
-	-- add the actors to the collision buckets
-	for k, v in pairs(actors) do
-		v:update(0.16)
-		v:registerBuckets(buckets)
-	end	
-	-- add the map collision items
-	daMap:registerBuckets(buckets)	
-	
-	--@TODO in a cave with a flashlight or similar
-	--[[
-	setSpotLight{ idx = 1, pos = {400,300} },
-								size = {300,225},
-								angle = {0,6.3},
-								color = {2,2,2} }
-	]]
-	
-	drawInfoText = true
-	floatingTexts = {}		
-	removals = {}	
-	renderer = objects.Renderer{}
+	drawProfileText = true
 	
 	music = love.audio.newSource( 'content/sounds/theme.ogg', 'stream' )
 	--music:setVolume(0.15)
@@ -135,433 +81,151 @@ function love.load()
 	loveframes.config['DEBUG'] = false
 	loveframes.util.SetActiveSkin('Hind')
 	
-	state = 'normalGame'
+	state = IN_GAME
+	overlays = {}	
 	
-	overlays = {}
-end
-
---
---  Creates and returns the collision buckets
---
-function createBuckets(cellSize, worldX, worldY)
-	local b = {}
-
-	b.cellSize = cellSize
-	b.columns = math.floor(worldX / b.cellSize)
-	b.rows = math.floor(worldY / b.cellSize)	
-	b.hash = function(x,y)
-		return math.floor(math.floor(x / b.cellSize) +
-				(math.floor(y / b.cellSize) * b.columns)) + 1
-	end		
-	
-	-- create new collision buckets
-	for i = 1, b.columns * b.rows do
-		b[i] = {}
+	world = objects.World{ profiler }
+	world:initialize()
+	world._hero.on_end_die = function(self, other)			
+		state = HERO_DEAD
 	end
-	
-	return b
-end
-
---
---  Creates floating text
---
-function createFloatingText(colour, actor, text)
-	local ft = factories.createFloatingText( text, largeFont,
-		colour, { actor._position[1], actor._position[2] },
-		{ 0, -120 }, 1 )
-	ft.on_expired = function(self)
-		floatingTexts[self] = nil
-	end
-	floatingTexts[ft] = true
-	
-	-- @TODO find a better way to seperate floating texts!
-	for k1, _ in pairs(floatingTexts) do
-		for k2, _ in pairs(floatingTexts) do
-			if k1 ~= k2 and k1._position[1] == k2._position[1] and
-			k1._position[2] == k2._position[2] then
-				k2._position[2] = k2._position[2] + 20
-			end
-		end
-	end
-end
-
---
---
---
-function createItem(description, position, cb)
-	item = factories.createStaticActor(description)
-	item:position(position[1], position[2])
-	if cb then cb(item) end
-	item:update(0)
-	item:registerBuckets(buckets)			
-end
-
---
---  Drop an item
---
-function dropItem(actor)
-	-- drop an item
-	if math.random() > 0.25 then		
-		if math.random() > 0.25 then
-			createItem('content/actors/coins.dat', actor:position(),
-				function(item)
-					item:value(math.floor(math.random()*100))
-				end)
-		else
-			createItem('content/actors/potions.dat', actor:position(),
-				function(item)
-					item:setType('weak','healing')
-				end)
-		end
-	end
-end
-
-function createBunchOPotions(pos)
-	-- create bunch o' potions
-	for y = -300, -50, 34 do
-		for x = -400, 400, 34 do
-			local pos = { pos[1], pos[2] }
-			pos[1] = pos[1] + x
-			pos[2] = pos[2] + y
-			createItem('content/actors/potions.dat', pos,
-				function(item)
-					item:setType('weak','healing')
-				end)
-		end
-	end
-end
-
---
---  Creates the actors
---
-function createActors()
-	local numActors = 2000
-	local size = daMap:size()
-	
-	actors = {}
-	hero = factories.createInventoryActor('content/actors/hero.dat')
-	
-	for k, v in pairs(hero._attributes) do
-		hero['_'..k] = v
-		hero[k] = function(self, value, absolute)
-			if not value then
-				return self['_'..k]
-			end
-			
-			if absolute then
-				self['_'..k] = value
-			else
-				self['_'..k] = self['_'..k] + value
-			end
-			
-			if self['on_set_' .. k]  then
-				return self['on_set_' .. k](self, self['_'..k], value) 
-			end
-		end
-	end	
-	hero._attributes = nil
-	
-	for k, v in pairs(hero._personality) do
-		hero['_'..k] = 0		
-		hero[k] = function(self, value, absolute)
-			if not value then
-				return self['_'..k]
-			end
-			
-			if absolute then
-				self['_'..k] = value
-			else
-				self['_'..k] = self['_'..k] + value
-			end
-			
-			if self['on_set_' .. k]  then
-				return self['on_set_' .. k](self, self['_'..k], value) 
-			end
-		end
-	end
-	
-	hero:name('Sir Gallahad')
-	local chainArmour = factories.createActorItem('content/actors/chain_armour.dat')
-	local chainHelmet = factories.createActorItem('content/actors/chain_helmet.dat')
-	local plateShoes = factories.createActorItem('content/actors/plate_shoes.dat')
-	local platePants = factories.createActorItem('content/actors/plate_pants.dat')
-	local longSword = factories.createActorItem('content/actors/longsword.dat')
-
-	hero:addItem(longSword)
-	hero:addItem(platePants)
-	hero:addItem(plateShoes)
-	hero:addItem(chainHelmet)
-	hero:addItem(chainArmour)	
-	
-	hero:animation('standright')	
-	
-	--[[
-	hero:equipItem('weapon',longSword)		
-	hero:equipItem('legs',platePants)	
-	hero:equipItem('head',chainHelmet)	
-	hero:equipItem('torso',chainArmour)	
-	hero:equipItem('feet',plateShoes)	
-	
-	]]
-	
-	hero.on_set_greed = function(self, newValue, justSet)
-		createFloatingText({0,255,255,255}, hero, 'Greed: ' .. justSet)
-	end
-	
-	hero.on_set_likeable = function(self, newValue, justSet)
-		createFloatingText({0,255,255,255}, hero, 'Likeable: ' .. justSet)
-	end	
-
-	hero.on_set_luck = function(self, newValue, justSet)
-		createFloatingText({0,255,255,255}, hero, 'Luck: ' .. justSet)
-	end	
-	
-	--[[
-	-- give the hero items that will complete the dialogs
-	table.insert(hero._inventory, { name = 'questItem_Bilbo_puppy'})
-	table.insert(hero._inventory, { name = 'questItem_Bilbo_kitten'})
-	table.insert(hero._inventory, { name = 'questItem_Bilbo_mojo'})
-	table.insert(hero._inventory, { name = 'questItem_Bilbo_mind'})
-	]]
-	
-	-- put the hero in the middle of the map for fun
-	hero:position(size[1]/2,size[2]/2)
-	hero:map(daMap)
-	table.insert(actors, hero)
-
-	--createBunchOPotions(hero:position())
-				
-	local sx = 0
-	local sy = 0
-	for i = 1, numActors do		
-		io.write('ACTORS ARE BEING GENERATED.. ' .. ((i / numActors) * 100) .. '%             \r')
-		local a = factories.createActor('content/actors/slime.dat')
-		a:animation('standright')
-		a:position(math.random() * (size[1]-1000) + 1000, math.random() * (size[2]-1000) + 1000)
-		a:map(daMap)
-		actors[a._id] = a
-	end	
-	
-	print()
 end
 
 function love.draw()
 	love.graphics.setColor(255,255,255,255)
 	
-	if hero.dead then		
+	if state == HERO_DEAD then		
 		love.graphics.setFont(largeFont)
 		love.graphics.print('GAME OVER', 300, 300)
 		return
 	end
-
-	renderer:draw( daCamera, { floatingTexts = floatingTexts, map = daMap,
-			actors = visibleActors, objects = visibleObjects }, profiler )
-		
-	-- draw collision boundaries?		
-	profiler:profile('drawing collision boundaries',
-		function()
-			if showCollisionBoundaries then
-				local cw = daCamera:window()
-				for k, _ in pairs(visibleIds) do
-					for _, v in pairs(buckets[k]) do
-						if v._boundary then
-							local b = v._boundary
-							love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
-
-							if v._equipped then
-								for _, item in pairs(v._equipped) do
-									local b = item._boundary
-									love.graphics.rectangle('line', b[1] - cw[1], b[2] - cw[2], b[3] - b[1], b[4] - b[2])
-								end						
-							end
-						end			
-					end
-				end		
-			end
-		end)
-		
-	--[[
-	for v, _ in pairs(visibleActors) do
-		if v._health then
-			love.graphics.print(tostring(v._health), v._screenPos[1], v._screenPos[2])
-		end		
-	end
-	]]
-
-	-- draw info text
-	profiler:profile('drawing info text', 	
-		function()		
-			love.graphics.setColor(255,255,255,255)		
-			love.graphics.setPixelEffect()
-			
-			love.graphics.setFont(largeFont)
-			love.graphics.print('HEALTH: ' .. hero:health() .. '/' .. hero._maxHealth, 10, 10)			
-			love.graphics.print('GOLD: ' .. hero:gold(), 250, 10)
-			love.graphics.print('EXPERIENCE: ' .. hero:experience(), 500, 10)			
-			love.graphics.print('SPELL: ' .. hero._spells[hero._currentSpell][2], 0, 40)						
-			love.graphics.print('MANA: ' .. hero:mana(), 250, 40)
-			love.graphics.print('COST: ' .. hero._spells[hero._currentSpell][3], 500, 40)						
-			
-			love.graphics.setFont(smallFont)		
-
-			local y = 0
-			for k, v in ipairs(hero._inventory) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 750, y)
-				y=y+20
-			end
-			
-			local y = 0
-			for k, v in pairs(hero._equipped) do
-				love.graphics.print(k .. ' ' .. v:name() .. ' ' .. v:count(), 900, y)
-				y=y+20
-			end
-			
+	
+	world:draw(profiler)
+	
+	-- draw profile text
+	--profiler:profile('drawing profile text', function()
+			love.graphics.setColor(255,255,255,255)	
+			love.graphics.setFont(smallFont)
 			love.graphics.print('FPS: '..love.timer.getFPS(), 10, 70)
+			love.graphics.print('MEMORY IN USE '.. string.format('%.2f', collectgarbage('count')), 10, 85)			
 			
-			if drawInfoText then
-				local y = 85
-				for k, v in pairs(hero._bucketIds) do
-					local count = table.count(buckets[k])
-					love.graphics.print('ID: '..k.. ' NUM ITEMS: ' .. count, 10, y)		
-					y = y + 20
-				end
-				
-				love.graphics.print('DT: ' .. hero._latestDt, 10, y)		
-				y=y+20		
-				
-				love.graphics.print('Position: ' .. hero._position[1] .. ', ' .. 
-					hero._position[2], 10, y)		
-				y=y+20
-				
-				love.graphics.print('Boundary: ' .. hero._boundary[1] .. ', ' .. 
-					hero._boundary[2] .. ', ' .. 
-					hero._boundary[3] .. ', ' .. 
-					hero._boundary[4], 10, y)		
-				y=y+20
-				
-				if hero._collidee then
-					love.graphics.print('Collidee: ' .. hero._collidee._boundary[1] .. ', ' .. 
-					hero._collidee._boundary[2] .. ', ' .. 
-					hero._collidee._boundary[3] .. ', ' .. 
-					hero._collidee._boundary[4], 10, y)		
-					y=y+20
-				end
-				
-				local cw = daCamera:window()
-				local cv = daCamera:viewport()
-				love.graphics.print('Window: ' .. cw[1] .. ', ' .. 
-					cw[2] .. ', ' .. 
-					cw[3] .. ', ' .. 
-					cw[4], 10, y)		
-				y=y+20
-				
-				love.graphics.print('Viewport: ' .. cv[1] .. ', ' .. 
-					cv[2] .. ', ' .. 
-					cv[3] .. ', ' .. 
-					cv[4], 10, y)		
-				y=y+20
-		
+			if drawProfileText then
+				local y = 300
 				local total = 0	
-				y = 200
-				love.graphics.print('=== PROFILES ===', 10, y)
+				love.graphics.print('===== PROFILES ======', 0, y)
+				love.graphics.print('= C =', 275, y)
+				love.graphics.print('= T =', 325, y)
+				love.graphics.print('= M =', 425, y)
 				y = y + 20
 				
+				local avgs = {}
+				
 				for k, v in pairs(profiler:profiles()) do
-					local avg = v.sum / v.count
-					if avg > 0.0009 then
-						love.graphics.print(k,10, y)				
-						love.graphics.print(v.count, 280, y)				
-						love.graphics.print(string.format('%.5f', v.sum / v.count),
-							330, y)		
+					avgs[#avgs+1] = { name = k, mem_avg = v.mem_sum / v.count, time_avg = v.time_sum / v.count, count = v.count }
+				end
+				
+				--table.sort(avgs, function(a,b) return a.mem_avg > b.mem_avg end)
+				table.sort(avgs, function(a,b) return a.name > b.name end)
+				
+				local x = 0
+				for _, v in pairs(avgs) do
+					--if v.time_avg > 0.00009 or v.mem_avg > 0.001 then
+						love.graphics.print(v.name, x, y)				
+						love.graphics.print(v.count, x + 275, y)				
+						love.graphics.print(string.format('%.5f', v.time_avg),x + 325, y)		
+						love.graphics.print(string.format('%.5f', v.mem_avg),x + 425, y)		
 						y=y+15		
+					--end
+					total = total + v.time_avg
+					
+					if y > 640 then 
+						y = 340
+						x = x + 500
 					end
-					total = total + avg
 				end	
 				
-				love.graphics.print('=== TOTAL AVG TIME ===', 10, y)
+				love.graphics.print('=== TOTAL AVG TIME ===', x, y)
 				y=y+15
-				love.graphics.print(string.format('%.5f', total), 10, y)
+				love.graphics.print(string.format('%.5f', total), x, y)
 				y=y+15
-				love.graphics.print('=== EXPECTED FPS ===', 10, y)
+				love.graphics.print('=== EXPECTED FPS ===', x, y)
 				y=y+15
-				love.graphics.print(string.format('%.5f', 1/total), 10, y)
+				love.graphics.print(string.format('%.5f', 1/total), x, y)
 			end
-		end)
-		
-	loveframes.draw()
+		--end) -- profile
+
+	--profiler:profile('drawing loveframes', function()		
+			loveframes.draw()
+		--end) -- profile
 end
 
 function love.update(dt)
-	if hero.dead then		
+	if state == HERO_DEAD then		
 		return
 	end
 
-	profiler:profile('updating lighting', 
-		function()
-			-- @TODO proper day / night cycles with changing colour
-			-- and direction of light
-			renderer._lighting.origin[1] = renderer._lighting.origin[1] + 0.0001
-			if renderer._lighting.origin[1] > renderer._lighting.originMinMax[2] then 
-				renderer._lighting.origin[1] = renderer._lighting.originMinMax[1]
-			end	
-				
-			local orange = renderer._lighting.originMinMax[2] - renderer._lighting.originMinMax[1]
-			local srange = renderer._lighting.shadowSkewMinMax[2] - renderer._lighting.shadowSkewMinMax[1]
-			local scaled = (renderer._lighting.origin[1]  - renderer._lighting.originMinMax[1]) / orange
-			renderer._lighting.shadowSkew[1] = renderer._lighting.shadowSkewMinMax[1] + (scaled * srange)
-		end)
-	
-	profiler:profile('handling keyboard input', 
-		function()
-			if not hero._currentAction and table.count(overlays) == 0 then
+	-- @TODO keyboard handling code is just crap with currently lots of
+	-- junk for just testing purposes
+	-- figure out how to design this and implement properly	
+	--profiler:profile('handling keyboard input', function()
+			if not world._hero._currentAction and table.count(overlays) == 0 then
 				local vx, vy = 0, 0
-			
+				-- @ TODO put this into the actor definition file!!!!
+				-- n.b. this is a good value for testing but makes the hero 
+				-- walk very fast
+				local speed = 125
+				-- @ TODO put this into the actor definition file!!!!
+				
 				if love.keyboard.isDown('up') then
-					hero:animation('walkup')		
-					vy = -125
+					world._hero:direction('up')
+					world._hero:animation('walk')		
+					vy = -speed
 				elseif
 					love.keyboard.isDown('down') then
-					hero:animation('walkdown')		
-					vy = 125
+					world._hero:direction('down')
+					world._hero:animation('walk')		
+					vy = speed
 				end
-				
 				if love.keyboard.isDown('left') then
-					hero:animation('walkleft')
-					vx = -125
+					world._hero:direction('left')
+					world._hero:animation('walk')
+					vx = -speed
 				elseif
 					love.keyboard.isDown('right') then
-					hero:animation('walkright')		
-					vx = 125
+					world._hero:direction('right')
+					world._hero:animation('walk')
+					vx = speed
 				end
 				
-				hero:velocity(vx, vy)
+				world._hero:velocity(vx, vy)
 				
 				if vx == 0 and vy == 0 then
-					hero:animation('stand' .. hero:direction(), true)
+					world._hero:animation('stand')
 				end
 				
 				if love.keyboard.isDown('lctrl') then
-					if hero:distanceFrom(npc) < 100 and table.count(npc:dialogs()) > 0 then
-						hero:velocity(0,0)
-						hero:animation('stand' .. hero:direction(), true)
-						dialogViewer = objects.DialogViewer{ npc }
+					local closest, distance = world:closestActor(world._hero)
+					if closest and closest.dialogs and distance < 100 and table.count(closest:dialogs()) > 0 then
+						world._hero:velocity(0,0)
+						world._hero:animation('stand' .. world._hero:direction(), true)
+						local dialogViewer = objects.DialogViewer{ closest, world._hero }
 						overlays[dialogViewer] = true
 						dialogViewer.on_close = function(self)
 							overlays[dialogViewer] = nil
 						end
 					else
-						hero:action('attack')
+						world._hero:action('attack')
 					end
 				end
 				
 				if love.keyboard.isDown('lshift') then	
-					hero:action('spellcast')
+					world._hero:action('spellcast')
 				end		
 
 				if love.keyboard.isDown('i') then
-					hero:velocity(0,0)
-					hero:animation('stand' .. hero:direction(), true)
-					inventoryViewer = objects.InventoryViewer{ hero }
+					world._hero:velocity(0,0)
+					world._hero:animation('stand' .. world._hero:direction(), true)
+					local inventoryViewer = objects.InventoryViewer{ world._hero }
 					overlays[inventoryViewer] = true
 					inventoryViewer.on_close = function(self)
 						overlays[inventoryViewer] = nil
@@ -569,63 +233,65 @@ function love.update(dt)
 				end		
 				
 				if love.keyboard.isDown('p') then
-					hero:velocity(0,0)
-					hero:animation('stand' .. hero:direction(), true)
-					personalityViewer = objects.PersonalityViewer{ hero }
+					world._hero:velocity(0,0)
+					world._hero:animation('stand' .. world._hero:direction(), true)
+					local personalityViewer = objects.PersonalityViewer{ world._hero }
 					overlays[personalityViewer] = true
 					personalityViewer.on_close = function(self)
 						overlays[personalityViewer] = nil
 					end
 				end	
 			end
-							
+			
+			if love.keyboard.isDown('escape') then
+				os.exit()
+			end
+
 			if love.keyboard.isDown('q') then
-				zoom = 1
+				world._zoom  = 1
 			end
 			
 			if love.keyboard.isDown('w') then
-				zoom = 2
+				world._zoom  = 2
 			end
 			
-			if love.keyboard.isDown('e') then
-				zoom = 3
-			end	
-			
 			if love.keyboard.isDown('r') then
-				zoom = 4
+				world._zoom  = 4
 			end		
 
 			if love.keyboard.isDown('t') then
-				zoom = 0.5
+				world._zoom  = 0.5
 			end		
 			
 			if love.keyboard.isDown('a') then
-				zoom = zoom + 0.01
+				world._zoom  = world._zoom  + 0.01
 			end
 			
 			if love.keyboard.isDown('z') then
-				zoom = zoom - 0.01
+				world._zoom  = world._zoom  - 0.01
 			end	
 			
+			if world._zoom < 0.1 then world._zoom  = 0.1 end
+			
 			if love.keyboard.isDown('h') then
-				showCollisionBoundaries = true
+				world._showCollisionBoundaries = true
 			end		
 
 			if love.keyboard.isDown('n') then
-				showCollisionBoundaries = false
+				world._showCollisionBoundaries = false
 			end	
 			
 			if love.keyboard.isDown('=') then
-				hero._currentSpell = hero._currentSpell + 1
-				if hero._currentSpell > #hero._spells then
-					hero._currentSpell = #hero._spells
+				world._hero._currentSpell = world._hero._currentSpell + 1
+				if world._hero._currentSpell > #world._hero._spells then
+					world._hero._currentSpell = #world._hero._spells
 				end
 			end			
 
 			if love.keyboard.isDown('-') then	
-				hero._currentSpell = hero._currentSpell - 1
-				if hero._currentSpell < 1 then
-					hero._currentSpell = 1
+				world._hero._currentSpell = world._hero._currentSpell - 1
+				if world._hero._currentSpell < 1 then
+					world._hero._currentSpell = 1
 				end
 			end			
 		
@@ -634,177 +300,78 @@ function love.update(dt)
 			-- each light could also generate it's own shadow
 			-- redraw!!!!!!	
 			if love.keyboard.isDown('1') then		
-				renderer:shader('light')
+				world._renderer:shader('light')
 				
 				-- morning
-				renderer:setDirectionalLight( { fallOff = 0.35 } )
-				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				world._renderer:setDirectionalLight( { fallOff = 0.35 } )
+				world._renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 						angle = {-1, 7}, lightColor = {1.7,1.4,1.1}, world = false }		
-				for i = 2, renderer:maxLights() do
-					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+				for i = 2, world._renderer:maxLights() do
+					world._renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
 				end				
 			end
 			
 			if love.keyboard.isDown('2') then		
-				renderer:shader('light')
+				world._renderer:shader('light')
 				
 				-- midday
-				renderer:setDirectionalLight( { fallOff = 0.35 } )
-				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				world._renderer:setDirectionalLight( { fallOff = 0.35 } )
+				world._renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 						angle = {-1, 7}, lightColor = {2.5,2.5,2.5}, world = false }		
-				for i = 2, renderer:maxLights() do
-					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+				for i = 2, world._renderer:maxLights() do
+					world._renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
 				end			
 			end
 			
 			if love.keyboard.isDown('3') then		
-				renderer:shader('light')
+				world._renderer:shader('light')
 				
 				-- dusk
-				renderer:setDirectionalLight( { fallOff = 0.35 } )
-				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				world._renderer:setDirectionalLight( { fallOff = 0.35 } )
+				world._renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 						angle = {-1, 7}, lightColor = {2.0,1.6,1.4}, world = false }		
-				for i = 2, renderer:maxLights() do
-					renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
+				for i = 2, world._renderer:maxLights() do
+					world._renderer:setSpotLight{ idx = i, pos = {0,0}, size = {0,0}, 
 							angle = {0, 0}, lightColor = {0,0,0}, world = false }		
 				end					
 			end	
 			
 			if love.keyboard.isDown('4') then		
-				renderer:shader('light')
+				world._renderer:shader('light')
 				
 				-- night
-				renderer:setDirectionalLight( { fallOff = 0.35 } )
-				renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
+				world._renderer:setDirectionalLight( { fallOff = 0.35 } )
+				world._renderer:setSpotLight{ idx = 1, pos = {400,300}, size = {1600,1200}, 
 						angle = {-1, 7}, lightColor = {0.5,0.5,1.1}, world = false }
 				-- random spot lights
-				renderer:setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
+				world._renderer:setSpotLight{ idx = 2, pos = {8000,8000}, size = {100,100}, 
 						angle = {-1, 7}, lightColor = {3,3,3}, world = true }				
-				renderer:setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75},
+				world._renderer:setSpotLight{ idx = 3, pos = {7600,7600}, size = {75,75},
 						angle = {-1, 7}, lightColor = {3,1,1}, world = true }
-				renderer:setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
+				world._renderer:setSpotLight{ idx = 4, pos = {8400,8400}, size = {400,400}, 
 						angle = {1, 3}, lightColor = {0.5,0.5,2}, world = true }
-				renderer:setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
+				world._renderer:setSpotLight{ idx = 5, pos = {8500,7600}, size = {80,400}, 
 						angle = {4,4.5}, lightColor = {2,2,2}, world = true }
 						
-				renderer:updateLightEffect(daCamera)
+				world._renderer:updateLightEffect(world._camera)
 			end		
 				
 			if love.keyboard.isDown('o') then
-				renderer:shader(nil)
+				world._renderer:shader(nil)
 			end
 			
 			if love.keyboard.isDown(',') then		
 				profiler:reset()
-			end		
-
-			if love.keyboard.isDown('[') then		
-				drawInfoText = true
-			end		
-			
-			if love.keyboard.isDown(']') then		
-				drawInfoText = false
-			end				
-		end)
-	
-	-- remove all entities that were scheduled for removal
-	for k, v in pairs(removals) do		
-		-- unregister the actor from the buckets
-		for b, _ in pairs(v._bucketIds) do
-			buckets[b][v._id] = nil
-		end				
-		-- remove actor from actor list
-		actors[k] = nil
-		-- remove actor from list of visible actors
-		visibleActors[v] = nil
-	end	
-	
-	-- do the actor's AI updates
-	profiler:profile('updating AI', 
-		function()
-			for a, _ in pairs(visibleActors) do
-				if a.AI then
-					a:AI()
-				end					
 			end	
-		end)
-
-	-- update the floating texts
-	profiler:profile('updating floating texts', 
-		function()		
-			for t, _ in pairs(floatingTexts) do
-				t:update(dt)
-			end
-		end)
+		--end) -- profile
 		
-	-- update only the visible actors
-	profiler:profile('updating actors', 
-		function()		
-			for a, _ in pairs(visibleActors) do
-				a:update(dt)
-			end
-		end)	
-
-	-- update the collision buckets
-	profiler:profile('updating collision buckets', 
-		function()			
-			for a, _ in pairs(visibleActors) do
-				a:registerBuckets(buckets)
-			end	
-	end)
+	world:update(dt, profiler)
 	
-	-- test collistions for all visible actors
-	profiler:profile('testing collisions', 
-		function()				
-			for a, _ in pairs(visibleActors) do
-				a:checkCollision(buckets)
-			end	
-		end)
-		
-	-- zoom and center the map on the main character
-	profiler:profile('updating camera', 
-		function()
-			daCamera:zoom(zoom)
-			daCamera:center(hero._position[1], hero._position[2])
-		end)
-	
-	-- get the list of visible ids
-	profiler:profile('getting list of ids near map centre', 
-		function()
-			visibleIds = daMap:nearIds(daCamera, buckets, 2)
-		end)
-	
-	-- clear the list of visible items
-	profiler:profile('wiping out old visible items',
-		function()
-			for k, _ in pairs(visibleObjects) do
-				visibleObjects[k] = nil
-			end	
-			for k, _ in pairs(visibleActors) do
-				visibleActors[k] = nil
-			end	
-		end)
-		
-	-- generate a list of visible items
-	profiler:profile('generating list of visible items',
-		function()				
-			for k, _ in pairs(visibleIds) do
-				for _, v in pairs(buckets[k]) do
-					if v.ACTOR or v.STATICACTOR then
-						visibleActors[v] = true
-					end
-					-- map objects that you can collide with but
-					-- never interact with
-					if v._image then
-						visibleObjects[v] = true
-					end	
-				end
-			end	
-		end)
-		
-	loveframes.update(dt)
+	--profiler:profile('updating loveframes', function()
+			loveframes.update(dt)
+		--end) -- profile
 end
 
 function love.mousepressed(x, y, button)
@@ -843,6 +410,55 @@ function love.keyreleased(key)
 	for overlay, _ in pairs(overlays) do
 		if overlay.keyreleased then
 			overlay:keyreleased(key)
+		end	
+	end
+	
+	if key == '[' then		
+		world._drawInfoText = not world._drawInfoText
+	end		
+			
+	if key == 'e' then
+		drawProfileText = not drawProfileText
+	end	
+	
+	if key == 'd' then
+		local function hook ()
+		  local f = debug.getinfo(2, 'f').func
+		  if Counters[f] == nil then    
+			Counters[f] = 1
+			Names[f] = debug.getinfo(2, 'Sn')
+		  else  
+			Counters[f] = Counters[f] + 1
+		  end
+		end
+
+		local function getname (func)
+		  local n = Names[func]
+		  if n.what == "C" then
+			return n.name
+		  end
+		  local loc = string.format("[%s]:%s", n.short_src, n.linedefined)
+		  if n.namewhat ~= "" then
+			return string.format("%s (%s)", loc, n.name)
+		  else
+			return string.format("%s", loc)
+		  end
+		end				
+		
+		if not debugMode then
+			debugMode = true
+			Counters = {}
+			Names = {}									
+			debug.sethook(hook, 'c')
+		else		
+			debugMode = false
+			debug.sethook()  
+			for func, count in pairs(Counters) do
+				if count > 1000 then
+					local msg = tostring(getname(func)) .. ' : ' .. count
+					log.log(msg)
+				end
+			end	
 		end	
 	end
 end

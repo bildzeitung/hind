@@ -1,12 +1,12 @@
 {
 	_baseTable = 'content/actors/male_human.dat',	
-	dead = false,
 	HERO = true,
 	_maxInventoryCount = 72,
 	_maxHealth = 50,
 	_health = 50,
 	_experience = 0,
 	_gold = 0,
+	_currentArea = '',
 	_attributes = 
 	{
 		experience = 0, gold = 0, mana = 200, manaRegen = 100, 
@@ -59,11 +59,11 @@
 	end,
 	on_set_health = function(self, newValue, justset)
 		if justset < 0 then
-			createFloatingText({255,0,0,255},self, -justset)
+			world:createFloatingText({255,0,0,255},self, -justset)
 			soundEffects['human_hurt_1']:rewind()
 			love.audio.play(soundEffects['human_hurt_1'])		
 		else
-			createFloatingText({0,255,0,255},self, justset)
+			world:createFloatingText({0,255,0,255},self, justset)
 		end
 	end,	
 	on_begin_spellcast = function(self)
@@ -75,16 +75,16 @@
 	on_end_spellcast = function(self)
 		local spell = self._spells[self._currentSpell]
 		local magic = 
-			factories.createActor('content/actors/magic_'..
+			objects.Actor.create('content/actors/magic_'..
 			spell[1] .. '.dat')			
 		magic._actor = self
 		self:ignoreCollision(magic)
 		magic:ignoreCollision(self)				
-		magic:map(daMap)	
-		magic:animation('attack'..self:direction())				
+		magic:direction(self:direction())
+		magic:animation('attack')				
 		magic:position(self._position[1], self._position[2])
 		magic:update(0)
-		magic:registerBuckets(buckets)				
+		magic:registerBuckets(world._map._buckets)				
 		magic:action('attack')
 	end,
 	on_begin_attack = function(self)
@@ -107,8 +107,5 @@
 	end,
 	on_begin_die = function(self, other)		
 		self:velocity(0,0)
-	end,	
-	on_end_die = function(self, other)			
-		self.dead = true
 	end
 }

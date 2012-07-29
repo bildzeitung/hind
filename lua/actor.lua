@@ -11,12 +11,30 @@ require 'collidable'
 
 local log = require 'log'
 
+local factories = require 'factories'
+
 local table, pairs, ipairs, type, love
 	= table, pairs, ipairs, type, love
 	
 module('objects')
 
 Actor = Object{}
+
+--
+--  Returns a new actor loaded
+--	from the provided data file
+--
+--  Inputs:
+--		filename - the name of the data file
+--		that describes the actor
+--		existing - a table with existing information to merge into
+--		the actor (for deserialization)
+--
+function Actor.create(filename, existing)
+	local t = factories.prepareActor(filename, existing)
+	local a = Actor(t)
+	return a
+end
 
 --
 --  Actors support the following Events:
@@ -34,23 +52,14 @@ function Actor:_clone(values)
 		table.merge(Collidable(values), Drawable(values)),
 		Object._clone(self,values))
 			
-	o._dialogs = {}	
-  	o._lastPosUpdate = { 0, 0 }	
-	o._velocity = { 0, 0 }
-	o._map = nil
 	o.ACTOR = true
-	o._currentAction = nil	
+  	o._lastPosUpdate = values._lastPosUpdate or { 0, 0 }	
+	o._velocity = values._velocity or { 0, 0 }	
+	o._currentAction = values._currentAction or nil	
 	o._health = values._health or 0
 	o._maxHealth = values._maxHealth or o._health
-	
-	return o
-end
 
---
---  Sets the map that the actor is acting on
---
-function Actor:map(m)
-	self._map = m
+	return o
 end
 
 --
@@ -77,32 +86,11 @@ function Actor:update(dt)
 	self._position[1] = self._position[1] + self._lastPosUpdate[1]		
 	self._position[2] = self._position[2] + self._lastPosUpdate[2]
 	
-	-- @TODO do we want to do bounds checking on position
-	-- or just let map boundaries handle that by
-	-- not letting the character go past a certain point
-	local x, y = 800, 600
-	local ms = self._map:size()
-	if self._position[1] < x then self._position[1] = x end
-	if self._position[1] > ms[1] - x then self._position[1] = ms[1] - x end
-	if self._position[2] < y then self._position[2] = y end
-	if self._position[2] > ms[2] - y then self._position[2] = ms[2] - y end	
-	
 	-- update the current animation
 	self._currentAnimation:update(dt)
 	
 	-- calculate the bounding boxes
 	self:calculateBoundary()
-end
-
---
---  Returns the direction the actor is facing
---  
-function Actor:direction()
-	local currentAnim = self:animation():name()
-	if currentAnim:find('left') then return 'left' end
-	if currentAnim:find('right') then return 'right' end
-	if currentAnim:find('up') then return 'up' end
-	if currentAnim:find('down') then return 'down' end
 end
 
 --
@@ -133,11 +121,7 @@ function Actor:action(name, cancel)
 		currentAnim = self._currentAnimation:name()
 	end
 	-- switch to the new animation
-	if self._animations[name] then
-		self:animation(name, true)
-	else
-		self:animation(name .. self:direction(), true)
-	end	
+	self:animation(name, true)
 	-- set the callback for when the animation ends
 	self._currentAnimation.done_cb = function()
 		if currentAnim then
@@ -196,31 +180,6 @@ function Actor:name(n)
 end
 
 --
---  Adds a dialog to the actor
---
-function Actor:addDialog(d)
-	self._dialogs[d:name()] = d
-end
-
---
---  Removes a dialog from the actor
---
-function Actor:removeDialog(d)
-	if type(d) == 'string' then
-		self._dialogs[d] = nil
-	else
-		self._dialogs[d:name()] = nil
-	end
-end
-
---
---  The list of dialogs this actor currently owns
---
-function Actor:dialogs()
-	return self._dialogs
-end
-
---
 --  Sets or gets the Actor's health
 --
 function Actor:health(value, absolute, other)
@@ -257,5 +216,30 @@ function Actor:maxHealth(value, absolute)
 		self._maxHealth = value
 	else
 		self._maxHealth = self._maxHealth + value
+	end
+end
+
+--
+--  Defines serialization / deserialization
+--
+function Actor:__persistTable()
+	local t = StaticActor.__persistTable(self)
+	t._health = self._health
+	t._maxHealth = self._maxHealth
+	t._lastPosUpdate = { self._lastPosUpdate[1], self._lastPosUpdate[2] }
+	t._velocity = { self._velocity[1], self._velocity[2] }
+		
+	return t
+end
+
+--
+--  Used for marshal to define serialization
+--
+function Actor:__persist()
+	local t = self:__persistTable()
+	return function()
+		local a = objects.Actor.create(t._filename, t)		
+		a:animation(a._currentAnimation)		
+		return a
 	end
 end

@@ -13,7 +13,10 @@ local table, math
 	
 module('objects')
 
-FloatingText = Object{ _init = { '_text', '_font', '_color', '_position', '_velocity', '_timeToLive' } }
+FloatingText = Object{ _init = { 
+		'_text', '_font', '_color', 
+		'_position', '_velocity', '_timeToLive', 
+		'_screenSpace' }}
 
 --
 --  FloatingTexts support the following Events:
@@ -27,6 +30,7 @@ function FloatingText:_clone(values)
 	local o = table.merge(Drawable(values), Object._clone(self,values))
 		
 	o._currentTime = 0
+	o._drawTable = { true, true, true, true, true }
 	
 	return o
 end
@@ -56,14 +60,26 @@ function FloatingText:draw(camera, drawTable)
 		drawTable.zoomX, drawTable.zoomY,
 		drawTable.cwzx, drawTable.cwzy		
 
-	self._screenPos[1] = math.floor((self._position[1] * zoomX) 
-		- cwzx)
-	self._screenPos[2] = math.floor((self._position[2] * zoomY)
-		- cwzy)
+	if not self._screenSpace then
+		self._screenPos[1] = math.floor((self._position[1] * zoomX) 
+			- cwzx)
+		self._screenPos[2] = math.floor((self._position[2] * zoomY)
+			- cwzy)
+		self._drawTable[6] = drawTable.zoomX
+		self._drawTable[7] = drawTable.zoomY
+	else
+		self._screenPos[1] = self._position[1]
+		self._screenPos[2] = self._position[2]
+		self._drawTable[6] = 1
+		self._drawTable[7] = 1
+	end
 	
 	local text = drawTable.text
+	self._drawTable[1] = self._text
+	self._drawTable[2] = self._font
+	self._drawTable[3] = self._color
+	self._drawTable[4] = self._screenPos[1]
+	self._drawTable[5] = self._screenPos[2]
 	
-	text[#text+1] = { 
-		self._text, self._font, self._color, self._screenPos[1], self._screenPos[2]
-	}
+	text[#text+1] = self._drawTable
 end

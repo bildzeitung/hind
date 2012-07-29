@@ -45,7 +45,6 @@ local function norm(a)
 	return math.sqrt( a.x*a.x + a.y*a.y )
 end
 
---
 -- fracturing consists of:
 --  - adding a middle point to each line segment
 --  - iterating through the intial points; take the prev and next points in the list and
@@ -84,6 +83,7 @@ local function fracture(points)
 	return nextgen
 end
 
+
 --
 --
 --
@@ -97,7 +97,9 @@ function displaymap(m)
 	end
 end
 
+--
 -- use Bresenham to raster out the line segments
+--
 local function bresenham(p0,p1,m)
 	m[p0.y][p0.x] = 1
 	

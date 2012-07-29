@@ -12,8 +12,8 @@ local Object = (require 'object').Object
 
 local log = require 'log'
 	
-local pairs, math, type
-	= pairs, math, type
+local pairs, math, type, table
+	= pairs, math, type, table
 	
 module('objects')
 
@@ -27,7 +27,7 @@ function Dialog:_clone(values)
 
 	o.DIALOG = true
 	
-	o._currentBranch = false
+	o._currentBranch = values._currentBranch or false
 	
 	return o
 end
@@ -138,4 +138,17 @@ end
 --  
 function Dialog:name()
 	return self._name
+end
+
+--
+--  Defines serialization / deserialization
+--
+function Dialog:__persistTable()
+	return 
+	{
+		_branches = table.clone(self._branches, { deep = true, nometa = true }),
+		_continuations = table.clone(self._continuations, { deep = true, nometa = true }),
+		_currentBranch = self._currentBranch,
+		_name = self._name
+	}
 end

@@ -48,8 +48,9 @@ function DialogGenerator:dialog(params)
 	f:close()
 
 	-- replace npc and hero names
-	dialogScript = dialogScript:gsub('%@NPC%@', npc:name())
-	dialogScript = dialogScript:gsub('%@HERO%@', hero:name())
+	dialogScript = dialogScript:gsub('%@NPC%@', npc)
+	dialogScript = dialogScript:gsub('%@HERO%@', hero)
+	
 	-- replace quest giver name
 	if quest then
 		dialogScript = dialogScript:gsub('%@QUEST_GIVER%@', quest:giver():name())
@@ -82,7 +83,7 @@ function DialogGenerator:dialog(params)
 	-- replace && with _
 	dialogScript = dialogScript:gsub('%&%&', '_')
 	
-	log.log(dialogScript)
+	--log.log(dialogScript)
 	
 	-- generate a table from the dialog script
 	local t = loadstring('return ' .. dialogScript)()
@@ -181,15 +182,11 @@ function DialogGenerator:dialog(params)
 		end
 	end
 	
-	log.log(table.dump(t))
+	--log.log(table.dump(t))
 	
 	local d = Dialog(t)
 	
 	d._quest = quest
-	d._npc = npc	
-	d._hero = hero
-	
-	npc:addDialog(d)
 	
 	return d
 end

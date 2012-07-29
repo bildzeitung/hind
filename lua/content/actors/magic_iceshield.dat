@@ -13,45 +13,15 @@
 			self._actor._position[2])	
 	end,
 	on_end_attack = function(self)
-		removals[self._id] = self				
+		world:scheduleRemoval(self)
 	end,
 	_animations = 
 	{
-		attackup = 
+		attack = 
 		{	
 			_tileSet = 'magic_iceshield',
 			_offset = { 56, 88 },
-			_name = 'attackup',
-			_frameDuration = 0.06,
-			_frameStart = 1,
-			_frameEnd = 16,
-			_looping = 'once'
-		},
-		attackleft = 
-		{	
-			_tileSet = 'magic_iceshield',
-			_offset = { 56, 88 },
-			_name = 'attackleft',
-			_frameDuration = 0.06,
-			_frameStart = 1,
-			_frameEnd = 16,
-			_looping = 'once'
-		},		
-		attackdown = 
-		{	
-			_tileSet = 'magic_iceshield',
-			_offset = { 56, 88 },
-			_name = 'attackdown',
-			_frameDuration = 0.06,
-			_frameStart = 1,
-			_frameEnd = 16,
-			_looping = 'once'
-		},
-		attackright = 
-		{	
-			_tileSet = 'magic_iceshield',
-			_offset = { 56, 88 },
-			_name = 'attackright',
+			_name = 'attack',
 			_frameDuration = 0.06,
 			_frameStart = 1,
 			_frameEnd = 16,

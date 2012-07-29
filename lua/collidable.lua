@@ -6,8 +6,10 @@
 
 local Object = (require 'object').Object
 
-local pairs, table, print
-	= pairs, table, print
+local log = require 'log'
+
+local pairs, table, tostring
+	= pairs, table, tostring
 	
 module('objects')
 
@@ -17,6 +19,9 @@ Collidable = Object{}
 --  Collidable support the following Events:
 --		on_collide(other) - will be called when the collidable collides
 --							with another collidable
+--		on_no_buckets() - will be called when none of the coliision
+--							buckets the collidable tried to register in 
+--							were available
 --
 
 --
@@ -25,11 +30,11 @@ Collidable = Object{}
 function Collidable:_clone(values)
 	local o = Object._clone(self,values)
 	
-	o._position = { 0, 0 }	
-	o._boundary = { 0, 0, 0, 0 }
-	o._bucketIds = {}	
-	o._ignores = {}
-	o._collidees = {}
+	o._position = values._position or { 0, 0 }	
+	o._boundary = values._boundary or { 0, 0, 0, 0 }
+	o._bucketIds = values._bucketIds or {}
+	o._ignores = values._ignores or {}
+	o._collidees = values._collidees or {}
 	o:ignoreCollision(o)
 	
 	return o
@@ -89,14 +94,14 @@ end
 --  that the object currently occupies
 --
 function Collidable:spatialBuckets(b)
-	local ids = {}
-		
-	ids[b.hash(self._boundary[1], self._boundary[2])] = true
-	ids[b.hash(self._boundary[1], self._boundary[4])] = true
-	ids[b.hash(self._boundary[3], self._boundary[2])] = true
-	ids[b.hash(self._boundary[3], self._boundary[4])] = true
+	for k, _ in pairs(self._bucketIds) do
+		self._bucketIds[k] = nil
+	end
 	
-	return ids
+	self._bucketIds[b.hash(self._boundary[1], self._boundary[2])] = true
+	self._bucketIds[b.hash(self._boundary[1], self._boundary[4])] = true
+	self._bucketIds[b.hash(self._boundary[3], self._boundary[2])] = true
+	self._bucketIds[b.hash(self._boundary[3], self._boundary[4])] = true
 end
 
 --
@@ -106,23 +111,41 @@ end
 function Collidable:registerBuckets(buckets)	
 	-- unregister the old bucket ids
 	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = nil
+		local bucket = buckets[k]
+		if bucket then
+			bucket[self._id] = nil
+		end
 	end	
 	
 	-- calculates the spatial buckets
-	self._bucketIds = self:spatialBuckets(buckets)
+	self:spatialBuckets(buckets)
 	
 	-- register the new buckets ids
+	local bucketFound = false
 	for k, _ in pairs(self._bucketIds) do
-		buckets[k][self._id] = self
+		local bucket = buckets[k]
+		if bucket then
+			bucket[self._id] = self
+			bucketFound = true
+		else
+			self._bucketIds[k] = nil
+		end
 	end	
+	
+	if not bucketFound then
+		if self.on_no_buckets then
+			self:on_no_buckets()
+		end
+	end
 end
 
 --
 --  Adds an item to the collision ignore list
 --
 function Collidable:ignoreCollision(item)
-	self._ignores[item._id] = true
+	if item._id then
+		self._ignores[item._id] = true
+	end
 end
 
 --
@@ -143,6 +166,8 @@ end
 --  Performs a collision calculation
 --
 function Collidable:calculateBoundary()	
+	-- @TODO fix this, a collider shouldn't need to have an animation
+	-- :-(
 	-- update the boundary box 
 	local ts = self._currentAnimation:tileSet()
 	local bs = ts:boundaries()
@@ -152,4 +177,16 @@ function Collidable:calculateBoundary()
 	self._boundary[2] = self._position[2] + boundary[2] - of[2]
 	self._boundary[3] = self._position[1] + boundary[3] - of[1]
 	self._boundary[4] = self._position[2] + boundary[4] - of[2]
+end
+
+--
+--  Defines serialization / deserialization
+--
+function Collidable:__persistTable()
+	return 
+	{
+		_position = { self._position[1], self._position[2] },
+		_collidees = table.clone(self._collidees, { nometa = true }),
+		_ignores = table.clone(self._ignores, { nometa = true })	
+	}
 end

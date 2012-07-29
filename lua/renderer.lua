@@ -50,7 +50,18 @@ function Renderer:_clone(values)
 	end
 	
 	o:loadShaders()
-		
+	
+	o._drawTable = { 
+		cw = true, cv = true, 
+		zoomX = true, zoomY = true, 
+		cwzx = true, cwzt = true,
+		object = {},
+		roof = {},
+		text = {}	
+	}	
+	
+	o._zSortFn = function(a,b) return a[1] < b[1] end
+
 	return o
 end
 
@@ -131,7 +142,12 @@ end
 --
 --  Update the light effect
 --
+-- 	@TODO
+--	cloning a table like this every frame is horrific
+--  this code needs to change if we are going to use dynamic lighting!!!
+--
 function Renderer:updateLightEffect(camera)
+	--[[
 	self._shaders.light:send('origin', self._lighting.origin)
 	self._shaders.light:send('fallOff', self._lighting.fallOff)
 	self._shaders.light:send('spotSize', self._lighting.spotSize)
@@ -171,23 +187,27 @@ function Renderer:updateLightEffect(camera)
 			self._shaders.light:send(k, unpack(v))
 		end
 	end
+	]]
 end
 
 --
 --  Render a list of drawable items
 -- 
-function Renderer:draw(camera, drawables, profiler)
-	local drawTable = {
-		base = {},
-		overlay = {},
-		object = {},
-		roof = {},
-		text = {}
-	}
+function Renderer:draw(camera, drawables, profiler)	
+	local drawTable = self._drawTable
 	
+	for k, v in pairs(drawTable.object) do
+		drawTable.object[k] = nil
+	end
+	for k, v in pairs(drawTable.roof) do
+		drawTable.roof[k] = nil
+	end
+	for k, v in pairs(drawTable.text) do
+		drawTable.text[k] = nil
+	end
+
 	-- set up the draw table
-	profiler:profile('pre-calculating draw stuff', 
-		function()
+	--profiler:profile('pre-calculating draw stuff', function()
 			-- pre calculate what we can
 			drawTable.cw = camera:window()
 			drawTable.cv = camera:viewport()	
@@ -195,61 +215,47 @@ function Renderer:draw(camera, drawables, profiler)
 			drawTable.zoomY = drawTable.cv[4] / drawTable.cw[4] 
 			drawTable.cwzx = drawTable.cw[1] * drawTable.zoomX
 			drawTable.cwzy = drawTable.cw[2] * drawTable.zoomY
-		end)
-	
-	-- pre draw the drawable items
-	for k, t in pairs(drawables) do			
-		profiler:profile('pre-drawing ' .. k .. ' drawables', 	
-			function()	
-				if type(t) == 'table' and t.draw then
-					t:draw(camera, drawTable)
-				else
-					for i, _ in pairs(t) do
-						i:draw(camera, drawTable)
-					end
-				end
-			end)
-	end
+		--end) -- profile
 			
-	profiler:profile('updating lighting effect', 
-		function()
+	--[[			
+	--profiler:profile('updating lighting effect', function()
 			love.graphics.setPixelEffect(self._currentShader)				
 			self:setDirectionalLight( { spotSize = 2 } )
 			self:updateLightEffect(camera)
-		end)
-
-	profiler:profile('drawing base tiles', 
-		function()						
-			for k, v in ipairs(drawTable.base) do
-				love.graphics.draw(v[2],
-					v[3], v[4], 0, v[5], v[6], 
-					v[7], v[8])
-			end
-		end)
-	
-	profiler:profile('drawing overlay tiles', 
-		function()		
-			for k, v in ipairs(drawTable.overlay) do
-				love.graphics.draw(v[2],
-					v[3], v[4], 0, v[5], v[6], 
-					v[7], v[8])
-			end
-		end)
-	
-	profiler:profile('z-sorting', 
-		function()	
-			table.sort(drawTable.object,function(a,b)
-				return a[1] < b[1] end)
-
-			table.sort(drawTable.roof,function(a,b)
-				return a[1] < b[1] end)
-		end)
+		--end) -- profile
+	]]
 		
-	profiler:profile('updating ligthing for objects', 		
+	-- pre draw the drawable items
+	for k, t in pairs(drawables) do		
+		--profiler:profile('pre-drawing ' .. k .. ' drawables', function()	
+				if type(t) == 'table' and t.draw then
+					t:draw(camera, drawTable)
+				else
+					for k, v in pairs(t) do
+						local o
+						if type(v) == 'table' then
+							o = v
+						elseif type(k) == 'table' then
+							o = k
+						end
+						o:draw(camera, drawTable)
+					end
+				end
+			--end) -- profile
+	end
+	
+	--profiler:profile('z-sorting', function()	
+			table.sort(drawTable.object,self._zSortFn)
+			table.sort(drawTable.roof,self._zSortFn)
+		--end) -- profile
+	
+		--[[
+	--profiler:profile('updating lighting for objects', 		
 		function()
 			self:setDirectionalLight( { spotSize = 0.3 } )
 			self:updateLightEffect(camera)
-		end)
+		--end) -- profile
+		]]
 	
 	-- @TODO the shadow direction
 	-- should be calculated based on the position
@@ -257,8 +263,7 @@ function Renderer:draw(camera, drawables, profiler)
 	-- in screen space
 
 	-- draw the objects and their shadows
-	profiler:profile('drawing objects and actors and shadows', 		
-		function()
+	--profiler:profile('drawing objects and actors and shadows', function()
 			for k, v in ipairs(drawTable.object) do
 				love.graphics.setPixelEffect(self._shaders.shadow)				
 					
@@ -274,11 +279,10 @@ function Renderer:draw(camera, drawables, profiler)
 					v[3], v[4], 0, v[5], v[6], 
 					v[7], v[8])
 			end	
-	end)
+	--end) -- profile
 	
 	-- draw the roof shadows
-	profiler:profile('drawing roof shadows', 		
-		function()	
+	--profiler:profile('drawing roof shadows', function()	
 			love.graphics.setPixelEffect(self._shaders.shadow)				
 			for k, v in ipairs(drawTable.roof) do		
 				love.graphics.draw(v[2],
@@ -287,34 +291,27 @@ function Renderer:draw(camera, drawables, profiler)
 					self._lighting.shadowSkew[1], 
 					self._lighting.shadowSkew[2])
 			end
-		end)
+		--end) -- profile
 	
 	-- draw the roof objects	
-	profiler:profile('drawing roof tiles', 		
-		function()	
+	--profiler:profile('drawing roof tiles', function()	
 			love.graphics.setPixelEffect(self._currentShader)		
 			for k, v in ipairs(drawTable.roof) do	
 				love.graphics.draw(v[2], 
 					v[3], v[4], 0, v[5], v[6], 
 					v[7], v[8])
 			end		
-		end)
+		--end) -- profile
 
 	-- render all of the text objects
-	profiler:profile('drawing text objects', 	
-		function()		
-			local f = love.graphics.getFont()
-			local cm = love.graphics.getColorMode()
-			love.graphics.setColorMode('modulate')
-			for k, v in pairs(drawTable.text) do
+	--profiler:profile('drawing text objects', function()		
+			for k, v in ipairs(drawTable.text) do
 				love.graphics.setFont(v[2])
 				love.graphics.setColor(unpack(v[3]))
 				love.graphics.print(v[1], v[4], v[5], 0, 
-					drawTable.zoomX, drawTable.zoomY)	
+					v[6], v[7])	
 			end
-			if f then love.graphics.setFont(f) end
-			love.graphics.setColorMode(cm)
-		end)
+		--end) -- profile
 end
 
 --

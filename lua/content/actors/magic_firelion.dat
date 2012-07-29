@@ -23,7 +23,7 @@
 		end
 	end,
 	on_end_attack = function(self)
-		removals[self._id] = self				
+		world:scheduleRemoval(self)
 	end,
 	on_collide = function(self, other)
 		if self._currentAction == 'attack' and other._currentAction ~= 'die' and other.health then	
